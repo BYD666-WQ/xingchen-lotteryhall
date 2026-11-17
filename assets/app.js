@@ -316,7 +316,7 @@
       return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + esc(DEFS[historyGame].name) + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>';
     }).join('');
     if (!rows) rows = '<tr><td colspan="4"><span class="data-empty">数据加载中…</span></td></tr>';
-    return '<div class="page-head"><div><div class="page-kicker">RESULTS</div><h1 class="page-title">开奖记录</h1><div class="page-sub">主站真实数据 · 近 20 期</div></div><span class="demo-pill">REAL</span></div>' +
+    return '<div class="page-head"><div><div class="page-kicker">RESULTS</div><h1 class="page-title">开奖记录</h1><div class="page-sub">主站真实数据 · 当前可获取 ' + ((g && g.history.length) || 0) + ' 期</div></div><span class="demo-pill">REAL</span></div>' +
       '<div class="chips">' + chips + '</div>' +
       '<div class="history-wrap"><div class="table-scroll"><table class="hist"><thead><tr><th>期号</th><th>彩种</th><th>开奖号码</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
       '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="更多历史记录为演示入口">加载更多</button></div>' +
