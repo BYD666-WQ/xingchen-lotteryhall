@@ -3,49 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#080b16">
-<meta name="description" content="幸运大厅 · 彩票大厅演示站点，全部数据为样例，不构成任何投注建议。">
-<title>幸运大厅 · 彩票大厅演示</title>
+<meta name="theme-color" content="#DC3C41">
+<meta name="description" content="彩票大厅演示站，开奖数据来自主站只读接口，纯展示，不构成任何投注建议。">
+<title>彩票大厅 · 演示站点</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 <div id="app">
-  <div class="ambient" aria-hidden="true"></div>
-  <header class="topbar">
-    <a class="brand" href="#/lotteryhall" aria-label="幸运大厅首页">
-      <span class="brand-mark">L</span>
-      <span class="brand-copy"><b>LUCKY HALL</b><i>幸运大厅</i></span>
-    </a>
-    <div class="top-actions">
-      <span class="demo-pill">演示</span>
-      <button id="refreshDataBtn" class="icon-btn refresh-btn" type="button" aria-label="刷新数据" title="刷新数据">↻</button>
-      <button class="icon-btn guest-btn" type="button" data-demo="账号系统为演示占位，暂不提供登录">游客</button>
+  <header class="appbar">
+    <a class="logo" href="#/lotteryhall"><b>彩票大厅</b><i>LOTTERY HALL</i></a>
+    <div class="appbar-actions">
+      <button id="refreshDataBtn" class="refresh-mini" type="button" aria-label="刷新数据" title="刷新数据">↻</button>
+      <button class="app-btn" type="button" data-demo="APP 下载为演示入口，暂不提供安装包">APP</button>
     </div>
   </header>
 
   <main id="view" class="view" aria-live="polite"></main>
 
-  <footer class="demo-footer">
-    <span class="dot"></span>演示站点 · 数据为样例 · 不构成任何投注建议
-  </footer>
+  <footer class="demo-footer"><span class="demo-dot"></span>演示站点 · 数据为样例 · 不构成任何投注建议</footer>
 
-  <nav class="tabbar" aria-label="底部导航">
-    <a href="#/lotteryhall" data-tab="lotteryhall"><span class="tab-ico">▦</span><span>大厅</span></a>
-    <a href="#/history" data-tab="history"><span class="tab-ico">◎</span><span>开奖</span></a>
-    <a href="#/trend" data-tab="trend"><span class="tab-ico">↗</span><span>走势</span></a>
-    <a href="#/rank" data-tab="rank"><span class="tab-ico">♛</span><span>排行</span></a>
-    <a href="#/me" data-tab="me"><span class="tab-ico">●</span><span>我的</span></a>
+  <nav class="bottomtab" aria-label="底部导航">
+    <a href="#/lotteryhall" data-tab="lotteryhall"><b>⌂</b><span>首页</span></a>
+    <a href="#/trend" data-tab="trend"><b>↗</b><span>走势</span></a>
+    <a href="#/history" data-tab="history"><b>◎</b><span>记录</span></a>
+    <a href="#/me" data-tab="me"><b>●</b><span>我的</span></a>
   </nav>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <button class="float-sign" type="button" data-demo="签到 / 活动为演示入口，不产生任何数据">签<br>到</button>
 
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="modal" class="modal" hidden>
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <span class="modal-kicker">DEMO ONLY</span>
+      <span class="modal-kicker">DEMO</span>
       <h3 id="modal-title">演示模式</h3>
-      <p id="modal-body">当前为展示站点，不提供充值、下注或账号登录。</p>
+      <p id="modal-body">当前为展示站点，不提供充值、下注、账号或提现服务。</p>
       <button type="button" class="btn btn-primary btn-block" data-close-modal>知道了</button>
     </div>
   </div>
