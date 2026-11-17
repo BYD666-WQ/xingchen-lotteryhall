@@ -41,7 +41,7 @@ img{max-width:100%;display:block}
 .notice{height:44px;display:flex;align-items:center;gap:7px;padding:0 11px;background:#fff;border-bottom:1px solid #f0f0f0;overflow:hidden}
 .notice-ico{width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;flex:none}
 .notice-track{flex:1;overflow:hidden;white-space:nowrap;min-width:0}
-.notice-track span{display:inline-block;padding-left:0;font-size:14.56px;color:#333;animation:marquee 16s linear infinite;white-space:nowrap}
+.notice-track span{display:inline-block;padding-left:0;font-size:14.56px;color:#333;animation:marquee 16s linear 4s infinite;white-space:nowrap}
 .notice-track span em{font-style:normal;color:var(--red)}
 @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-60%)}}
 .notice-more{font-size:12.48px;color:var(--muted);flex:none;min-height:32px;display:flex;align-items:center;padding-left:4px}
