@@ -6,21 +6,20 @@
     'https://cdn.jsdelivr.net/gh/BYD666-WQ/xingchen-caixun@main/',
     'https://raw.githubusercontent.com/BYD666-WQ/xingchen-caixun/main/'
   ];
-  var DEFS = {
-    newhk: { name: '新港', icon: '港', color: '#e6a62f', drawKey: 'newhk', desc: '每日 21:34 · 主站新港' },
-    newmo: { name: '新澳', icon: '澳', color: '#3d8ed0', drawKey: 'newmo', desc: '每日 21:30 · 主站新澳' },
-    hk: { name: '香港', icon: '香', color: '#d94b62', drawKey: 'hk', desc: '周日 21:30 · 主站香港' }
-  };
-  var ORDER = ['newhk', 'newmo', 'hk'];
-  var PLACEHOLDERS = [
-    { name: '老澳门', icon: '老', color: '#7d8da8' },
-    { name: '快乐 8', icon: '8', color: '#4cae78' },
-    { name: '北京赛车', icon: '车', color: '#c88742' }
+  var CONFIG = window.LH_GAMES || [
+    { id:'newhk', name:'新港', provider:'主站', enabled:true, icon:'港', color:'#e6a62f', drawKey:'newhk', desc:'每日 21:34 · 主站新港' },
+    { id:'newmo', name:'新澳', provider:'主站', enabled:true, icon:'澳', color:'#3d8ed0', drawKey:'newmo', desc:'每日 21:30 · 主站新澳' },
+    { id:'hk', name:'香港', provider:'主站', enabled:true, icon:'香', color:'#d94b62', drawKey:'hk', desc:'周日 21:30 · 主站香港' },
+    { id:'oldmo', name:'老澳', provider:'待接入', enabled:false, icon:'老', color:'#8d98aa', note:'老澳数据待接入，接入后自动开放' }
   ];
+  var DEFS = {};
+  CONFIG.forEach(function (g) { DEFS[g.id] = g; });
+  var ORDER = CONFIG.filter(function (g) { return g.enabled; }).map(function (g) { return g.id; });
+  var PLACEHOLDERS = CONFIG.filter(function (g) { return !g.enabled; });
   var RED = [1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46];
   var BLUE = [3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48];
   var KEY = 'Xc9vF2026';
-  var state = { games: {}, config: {}, updated: 0, error: '', loading: false };
+  var state = { games: {}, config: {}, attrs: {}, updated: 0, error: '', loading: false };
   var historyGame = 'newhk';
   var countdownTimer = 0;
   var bannerTimer = 0;
@@ -130,26 +129,29 @@
     }
     return go();
   }
-  function setData(manual, draw, cfg) {
+  function setData(manual, draw, cfg, attrs) {
     var now = Date.now(), games = {};
     var m = parseManual(manual, now); if (m) games.newhk = Object.assign({}, DEFS.newhk, m);
     var dm = parseDraw(draw, 'Macau'); if (dm) games.newmo = Object.assign({}, DEFS.newmo, dm);
     var dh = parseDraw(draw, 'HongKong'); if (dh) games.hk = Object.assign({}, DEFS.hk, dh);
     ORDER.forEach(function (id) { if (games[id]) games[id].timeCfg = timeCfg(cfg, DEFS[id].drawKey); });
     ORDER.forEach(function (id) { if (!games[id] && state.games[id]) games[id] = state.games[id]; });
-    state.games = games; state.config = cfg || state.config || {}; state.updated = Date.now(); state.error = '';
+    state.games = games; state.config = cfg || state.config || {};
+    var amap = {};(attrs && attrs.rows || []).forEach(function (r) { var n = parseInt(r.num, 10); if (n) amap[n] = { z: r.zodiac || '', color: r.color || colorOf(n) }; });
+    if (Object.keys(amap).length) state.attrs = amap; state.updated = Date.now(); state.error = '';
   }
   function loadData(silent) {
     if (state.loading) return Promise.resolve();
     state.loading = true; setRefreshBusy(true);
-    var jobs = [fetchOne('data/manual-draw.json'), fetchOne('data/draw.json'), fetchOne('data/site-config.json')];
+    var jobs = [fetchOne('data/manual-draw.json'), fetchOne('data/draw.json'), fetchOne('data/site-config.json'), fetchOne('data/num-attrs.json')];
     var all = Promise.allSettled ? Promise.allSettled(jobs) : Promise.all(jobs.map(function (p) { return p.then(function (v) { return { status: 'fulfilled', value: v }; }, function (e) { return { status: 'rejected', reason: e }; }); }));
     return all.then(function (res) {
       var manual = res[0] && res[0].status === 'fulfilled' ? res[0].value : null;
       var draw = res[1] && res[1].status === 'fulfilled' ? res[1].value : null;
       var cfg = res[2] && res[2].status === 'fulfilled' ? res[2].value : null;
-      if (!manual && !draw && !cfg) throw new Error('数据源不可达');
-      setData(manual, draw, cfg);
+      var attrs = res[3] && res[3].status === 'fulfilled' ? res[3].value : null;
+      if (!manual && !draw && !cfg && !attrs) throw new Error('数据源不可达');
+      setData(manual, draw, cfg, attrs);
       if (!silent) { showToast('数据已更新'); render(true); }
       else render(true);
     }).catch(function (e) {
@@ -195,13 +197,14 @@
     return '<a class="game-cell" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">第 ' + shortIssue(g.last.issue) + ' 期</span></a>';
   }
   function placeholderCell(x) {
-    return '<button class="game-cell placeholder" type="button" data-demo="「' + esc(x.name) + '」为演示彩种，暂未接入数据"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + x.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + x.name + '</span><span class="game-issue">演示彩种</span></button>';
+    var note = x.note || (x.provider === '待接入' ? '数据待接入' : '演示彩种');
+    return '<a class="game-cell placeholder" href="#/game/' + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + x.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + x.name + '</span><span class="game-issue">' + esc(note) + '</span></a>';
   }
   function hotGrid() {
     return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">热门彩种</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid">' + ORDER.map(realCell).join('') + PLACEHOLDERS.map(placeholderCell).join('') + '</div></section>';
   }
   function hallPage() {
-    return banner() + notice() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
+    return banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
       '<div class="mini-note">数据来自主站只读接口 · 每 30 秒自动刷新 · 仅作演示</div>';
   }
   function gameStats(g) {
@@ -214,12 +217,14 @@
   }
   function gamePage(id) {
     var def = DEFS[id]; if (!def) return hallPage();
+    if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
     var g = state.games[id];
     if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-last card"><div class="data-empty">正在读取 ' + def.name + ' 数据…</div></div>';
     var last = g.last, hist = (g.history || []).slice(0, 10);
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
     return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
       '<section class="detail-head"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><div><div class="page-kicker">' + def.name + ' · 实时数据</div><h1 class="page-title">' + def.name + '开奖</h1><div class="page-sub">' + esc(def.desc) + '</div></div></section>' +
+      '<a class="bet-entry" href="#/bet/' + id + '">模拟投注 · 演示 <span>不扣款</span></a>' +
       '<section class="detail-last"><div class="detail-label">上期开奖 <span>第 ' + shortIssue(last.issue) + ' 期</span></div><div class="detail-balls">' + balls(last.nums) + '</div><div class="wave-legend"><span><i class="r"></i>红波</span><span><i class="b"></i>蓝波</span><span><i class="g"></i>绿波</span><span class="special-legend">+ 后为特码</span></div></section>' +
       '<section class="next-card"><div><span>下期开奖</span><b>第 ' + shortIssue(g.nextIssue) + ' 期</b><em>' + g.timeCfg.time + (id === 'hk' ? ' · 周日' : ' · 每日') + '</em></div><strong data-cd="' + id + '">' + countdownText(g) + '</strong></section>' +
       '<div class="section"><div class="section-head"><h2 class="section-title">波色 / 生肖统计</h2><span class="section-link">近 10 期</span></div><div class="trend-panel">' + gameStats(g) + '</div></div>' +
@@ -258,15 +263,125 @@
   function mePage() {
     return catTabs('') + '<div class="page-head"><div><div class="page-kicker">PROFILE</div><h1 class="page-title">我的</h1><div class="page-sub">游客模式 · 演示账号</div></div></div>' +
       '<section class="profile"><span class="avatar">游</span><div class="profile-main"><b>游客</b><span>当前为演示游客，无需登录</span><span class="tag">DEMO ACCOUNT</span></div></section>' +
-      '<div class="demo-account-note"><b>演示账户</b><span>本站不提供余额、充值、提现、登录或任何真实交易。</span></div>' +
+      '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务。</span></div>' +
       '<div class="menu"><button class="menu-row" type="button" data-demo="安全中心为演示入口"><span class="menu-ico">⌁</span><span class="txt">安全中心</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="消息中心为演示入口"><span class="menu-ico">◌</span><span class="txt">消息中心</span><em>0 条</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="客服为演示入口"><span class="menu-ico">?</span><span class="txt">帮助与客服</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="关于页面：演示站点，数据来自主站只读接口"><span class="menu-ico">i</span><span class="txt">关于本站</span><em>v0.3</em><span class="arrow">›</span></button></div>' +
-      '<div class="mini-note">这是纯展示空壳站，不提供真实账号、余额、充值、提现或下注服务。</div>';
+      '<div class="mini-note">这是纯展示空壳站，不提供真实账号、交易或下注服务。</div>';
+  }
+  var ZODIACS = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+  var HOWTO = [
+    { id:'special', name:'特码', odds:'48.8', rule:'选 1 个号码，开奖特码（第 7 个号码）与你选的号码相同即中。', example:'选 01，开奖特码为 01 → 命中。' },
+    { id:'one-zodiac', name:'一肖', odds:'4.9', rule:'选 1 个生肖，开奖特码的生肖与你选的生肖相同即中。', example:'选「马」，特码为 13（马）→ 命中。' },
+    { id:'two-side', name:'两面', odds:'1.96', rule:'按特码的大小、单双、合数单双或尾数大小判断，选对即中。', example:'选「大」，特码 41（大）→ 命中。' },
+    { id:'color', name:'色波', odds:'2.8', rule:'按特码的波色判断，红波 / 蓝波 / 绿波三选一，选对即中。', example:'选「红波」，特码 34（红波）→ 命中。' },
+    { id:'special-zodiac', name:'特肖', odds:'4.9', rule:'专门判断特码生肖；与一肖的区别是只结算特码这一位。', example:'选「兔」，特码 16（兔）→ 命中。' },
+    { id:'regular', name:'正码 1-6', odds:'7.8', rule:'从正码 1 至正码 6 中选择一个位置；演示结算规则：该位置号码为单数即算命中。', example:'选「正码一」，第 1 个正码开出 16 → 命中。' },
+    { id:'miss', name:'自选不中', odds:'2.0', rule:'选 1 个号码，开奖的 7 个号码中都不包含它即中。', example:'选 49，开奖号码没有 49 → 命中。' },
+    { id:'combo', name:'连肖', odds:'3.2 起', rule:'选择 2–5 个生肖的组合，开奖特码生肖在组合内即中；组合越长赔率越高。', example:'选「马 + 兔」，特码为马 → 命中。' }
+  ];
+  var ODDS = { special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 };
+  var BET_CATS = [
+    { id:'special', name:'特码', short:'特' },
+    { id:'one-zodiac', name:'一肖', short:'肖' },
+    { id:'two-side', name:'两面', short:'两' },
+    { id:'color', name:'色波', short:'波' },
+    { id:'special-zodiac', name:'特肖', short:'特' },
+    { id:'regular', name:'正码1-6', short:'正' },
+    { id:'miss', name:'自选不中', short:'不' },
+    { id:'combo', name:'连肖', short:'连' }
+  ];
+  var betState = { game:'newhk', cat:'special', tab:'credit', qty:'1', sel:{} };
+  var POINTS_KEY = 'lh-demo-points', BETS_KEY = 'lh-demo-bets';
+  function loadPoints() { var n = parseInt(localStorage.getItem(POINTS_KEY), 10); return isFinite(n) ? n : 10000; }
+  function savePoints(n) { try { localStorage.setItem(POINTS_KEY, String(n)); } catch (e) {} }
+  function loadBets() { try { var b = JSON.parse(localStorage.getItem(BETS_KEY) || '[]'); return Array.isArray(b) ? b : []; } catch (e) { return []; } }
+  function saveBets() { try { localStorage.setItem(BETS_KEY, JSON.stringify(bets)); } catch (e) {} }
+  var points = loadPoints();
+  var bets = loadBets();
+  function pointsBar() { return '<div class="points-bar"><span>演示积分</span><b data-points-value>' + points + '</b><button type="button" data-reset-points>重置积分</button></div>'; }
+  function updatePointsUI() { $$('[data-points-value]').forEach(function (el) { el.textContent = points; }); }
+  function attrFor(n) { return state.attrs[parseInt(n,10)] || { z:'', color:colorOf(n) }; }
+  function isSel(k) { return !!betState.sel[k]; }
+  function selectedCount() { return Object.keys(betState.sel).length; }
+  function totalNotes() { var q = parseInt(betState.qty, 10); return (isFinite(q) && q > 0) ? selectedCount() * q : 0; }
+  function totalCost() { return totalNotes() * 2; }
+  function betHelp(cat) { return '<a class="help-link" href="#/howto/' + cat + '" aria-label="玩法说明">?</a>'; }
+  function zodiacGrid(prefix, odds) {
+    return '<div class="zodiac-grid">' + ZODIACS.map(function (z) {
+      var key = prefix + '-' + z;
+      return '<button type="button" class="bet-zodiac ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + z + '肖" data-odds="' + odds + '"><span class="zcircle">' + z + '</span><em>' + odds + '</em></button>';
+    }).join('') + '</div>';
+  }
+  function numberGrid(prefix, odds) {
+    var out = '';
+    for (var i = 1; i <= 49; i++) {
+      var c = pad(i), a = attrFor(i), key = prefix + '-' + c, w = a.color === '红' ? 'r' : a.color === '蓝' ? 'b' : 'g';
+      out += '<button type="button" class="bet-num c-' + w + (isSel(key) ? ' on' : '') + '" data-bet="' + key + '" data-label="' + c + ' ' + (a.z || '') + '" data-odds="' + odds + '"><b>' + c + '</b><i>' + esc(a.z || '') + '</i><em>' + odds + '</em></button>';
+    }
+    return '<div class="num-bet-grid">' + out + '</div>';
+  }
+  function optionGrid(items, prefix) {
+    return '<div class="bet-options">' + items.map(function (x) {
+      var key = prefix + '-' + x.k;
+      return '<button type="button" class="bet-option ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + esc(x.n) + '" data-odds="' + x.o + '"' + (x.z ? ' data-zodiacs="' + x.z + '"' : '') + '><span>' + esc(x.n) + '</span><em>' + x.o + '</em></button>';
+    }).join('') + '</div>';
+  }
+  function betContent(cat) {
+    if (cat === 'special') return '<div class="bet-content-head"><div><h2>特码</h2><p>选一个号码，命中开奖特码即中</p></div>' + betHelp('special') + '</div>' + zodiacGrid('special-z', ODDS.oneZodiac) + numberGrid('special-n', ODDS.special);
+    if (cat === 'one-zodiac') return '<div class="bet-content-head"><div><h2>一肖</h2><p>选一个生肖，命中特码生肖即中</p></div>' + betHelp('one-zodiac') + '</div>' + zodiacGrid('one-z', ODDS.oneZodiac);
+    if (cat === 'special-zodiac') return '<div class="bet-content-head"><div><h2>特肖</h2><p>只判断特码生肖，选一个生肖</p></div>' + betHelp('special-zodiac') + '</div>' + zodiacGrid('spz-z', ODDS.specialZodiac);
+    if (cat === 'two-side') return '<div class="bet-content-head"><div><h2>两面</h2><p>大小 / 单双 / 合单合双 / 尾数大小</p></div>' + betHelp('two-side') + '</div>' + optionGrid([{k:'big',n:'大',o:'1.96'},{k:'small',n:'小',o:'1.96'},{k:'odd',n:'单',o:'1.96'},{k:'even',n:'双',o:'1.96'},{k:'sum-odd',n:'合单',o:'1.96'},{k:'sum-even',n:'合双',o:'1.96'},{k:'tail-big',n:'尾大',o:'1.96'},{k:'tail-small',n:'尾小',o:'1.96'}], 'two');
+    if (cat === 'color') return '<div class="bet-content-head"><div><h2>色波</h2><p>特码波色三选一</p></div>' + betHelp('color') + '</div>' + optionGrid([{k:'r',n:'红波',o:'2.8'},{k:'b',n:'蓝波',o:'2.8'},{k:'g',n:'绿波',o:'2.8'}], 'color');
+    if (cat === 'regular') return '<div class="bet-content-head"><div><h2>正码 1-6</h2><p>选择正码位置，按该位置开奖号码结算</p></div>' + betHelp('regular') + '</div>' + optionGrid([{k:'1',n:'正码一',o:'7.8'},{k:'2',n:'正码二',o:'7.8'},{k:'3',n:'正码三',o:'7.8'},{k:'4',n:'正码四',o:'7.8'},{k:'5',n:'正码五',o:'7.8'},{k:'6',n:'正码六',o:'7.8'}], 'reg');
+    if (cat === 'miss') return '<div class="bet-content-head"><div><h2>自选不中</h2><p>选一个号码，7 个开奖号码都不包含它即中</p></div>' + betHelp('miss') + '</div>' + numberGrid('miss-n', ODDS.miss);
+    return '<div class="bet-content-head"><div><h2>连肖</h2><p>选一组生肖组合，特码生肖在组合内即中</p></div>' + betHelp('combo') + '</div>' + optionGrid([{k:'c1',n:'马 + 兔',o:'3.2',z:'马,兔'},{k:'c2',n:'龙 + 蛇 + 猴',o:'5.5',z:'龙,蛇,猴'},{k:'c3',n:'鼠 + 牛 + 虎 + 猪',o:'9.8',z:'鼠,牛,虎,猪'},{k:'c4',n:'马 + 兔 + 龙 + 蛇 + 猴',o:'18.0',z:'马,兔,龙,蛇,猴'}], 'combo');
+  }
+  function betBalls(nums) {
+    if (!nums) return '';
+    var out = '', sum = 0;
+    nums.forEach(function (x, i) {
+      sum += parseInt(x.c, 10) || 0;
+      if (i === 6) out += '<i class="bet-plus">+</i>';
+      out += '<span class="bet-ball ' + waveClass(x.c) + '"><b>' + esc(x.c) + '</b><small>' + esc(x.z || '') + '</small></span>';
+    });
+    return { html:out, sum:sum };
+  }
+  function betPage(id) {
+    var def = DEFS[id] || DEFS.newhk, g = state.games[id];
+    if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
+    if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState('正在读取 ' + def.name + ' 数据…');
+    var open = betBalls(g.last.nums);
+    var title = def.name + '六合彩';
+    var credit = betState.tab === 'credit';
+    var cat = betState.cat || 'special';
+    var qty = parseInt(betState.qty, 10) || 1;
+    var cost = totalNotes() * 2;
+    var my = '<div class="my-bets"><div class="my-bets-head"><h2>模拟注单</h2><span>本地记录 · 演示积分</span></div>' + (bets.length ? bets.slice(0, 4).map(function (b) {
+      var st = b.status === 'pending' ? '<em class="pending">待开奖</em>' : (b.payout > 0 ? '<em class="win">已结算 +' + b.payout + ' 积分</em>' : '<em class="lost">已结算 · 未中</em>');
+      return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span>' + st + '</div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
+    }).join('') : '<div class="my-bet-empty">还没有模拟注单，选号后可记录一张本地注单</div>') + '</div>';
+    return '<a class="back-link" href="#/game/' + id + '">‹ 返回 ' + def.name + '详情</a>' + pointsBar() +
+      '<div class="bet-head"><div><span class="bet-kicker">模拟投注 · 仅演示</span><h1>' + title + '</h1><div class="bet-period">第 <b>' + shortIssue(g.last.issue) + '</b> 期 · 下期 ' + shortIssue(g.nextIssue) + '</div></div><div class="bet-clock">投注中<br><b data-cd="' + id + '">' + countdownText(g) + '</b></div></div>' +
+      '<div class="bet-open"><div class="bet-open-label">上期开奖 <span>第 ' + shortIssue(g.last.issue) + ' 期</span></div><div class="bet-open-balls">' + open.html + '<span class="bet-sum">总和 <b>' + open.sum + '</b></span></div></div>' +
+      '<div class="bet-tabs"><button type="button" class="' + (credit ? 'on' : '') + '" data-bet-tab="credit">信用</button><button type="button" class="' + (!credit ? 'on' : '') + '" data-bet-tab="path">路子图</button></div>' +
+      (credit ? '<div class="bet-layout"><div class="bet-cats">' + BET_CATS.map(function (c) { return '<button type="button" class="' + (cat === c.id ? 'on' : '') + '" data-bet-cat="' + c.id + '"><span>' + c.short + '</span>' + c.name + '</button>'; }).join('') + '</div><div class="bet-center">' + betContent(cat) + '</div></div>' : '<div class="bet-path">' + emptyState('路子图演示占位，暂未开放') + '</div>') +
+      '<div class="odds-note">演示赔率，非真实 · 每注固定 2 演示积分 · 不构成任何投注建议</div>' + my +
+      '<div class="bet-bar"><div class="bet-bar-row"><span class="bet-label">注数</span>' + [10,20,50,100].map(function (n) { return '<button type="button" class="amount-chip ' + (String(qty) === String(n) ? 'on' : '') + '" data-qty="' + n + '">' + n + '</button>'; }).join('') + '<input id="betQty" type="text" inputmode="numeric" placeholder="自定义" value="' + esc(qty) + '"></div><div class="bet-bar-row"><span class="bet-selected">已选 <b data-bet-count>' + totalNotes() + '</b> 注 · 需 <b data-bet-cost>' + cost + '</b> 积分</span><button type="button" class="bet-clear" data-bet-clear>清空</button><button type="button" class="bet-submit" data-bet-submit>立即投注</button></div></div>';
+  }
+  function howtoPage(anchor) {
+    var active = anchor || 'special';
+    var nav = HOWTO.map(function (h) { return '<a class="' + (h.id === active ? 'on' : '') + '" href="#/howto/' + h.id + '">' + h.name + '</a>'; }).join('');
+    var blocks = HOWTO.map(function (h) {
+      return '<section class="howto-block" id="howto-' + h.id + '"><div class="howto-head"><h2>' + h.name + '</h2><span>演示赔率 ' + h.odds + '</span></div><p><b>规则：</b>' + h.rule + '</p><p><b>举例：</b>' + h.example + '</p><a class="howto-back" href="#/bet/newhk">去模拟投注 →</a></section>';
+    }).join('');
+    return '<div class="page-head"><div><div class="page-kicker">PLAY GUIDE</div><h1 class="page-title">玩法说明</h1><div class="page-sub">纯演示 · 赔率非真实</div></div><span class="demo-pill">DEMO</span></div><nav class="howto-nav">' + nav + '</nav><div class="howto-points"><b>演示积分怎么玩</b><p>初始 10000 演示积分，每注固定消耗 2 积分；选号后选择注数，记录模拟注单。开奖后按演示赔率在本地自动结算，中奖增加积分。不涉及真实支付、账户或提现。</p></div><div class="howto-list">' + blocks + '</div><div class="mini-note">所有玩法均为模拟演示，不构成任何投注建议。</div>';
   }
   var ROUTES = { lotteryhall: hallPage, history: historyPage, trend: trendPage, rank: rankPage, me: mePage };
-  var TITLES = { lotteryhall: '彩票大厅', history: '开奖记录', trend: '号码走势', rank: '高手排行', me: '我的' };
+  var TITLES = { lotteryhall: '彩票大厅', history: '开奖记录', trend: '号码走势', rank: '高手排行', me: '我的', howto: '玩法说明' };
   function currentRoute() {
     var h = String(location.hash || '').replace(/^#\/?/, ''), parts = h.split('/');
     if (parts[0] === 'game' && DEFS[parts[1]]) return { name: 'game', id: parts[1] };
+    if (parts[0] === 'bet' && DEFS[parts[1]]) return { name: 'bet', id: parts[1] };
+    if (parts[0] === 'howto') return { name: 'howto', anchor: parts[1] || 'special' };
     return { name: ROUTES[parts[0]] ? parts[0] : 'lotteryhall', id: null };
   }
   function setBottomTab(name) { var tab = name === 'game' ? 'lotteryhall' : name; $$('.bottomtab a').forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-tab') === tab); }); }
@@ -283,22 +398,110 @@
     }, 4000);
   }
   function render(keepScroll) {
+    settleBets();
     var r = currentRoute(), view = $('#view'); if (!view) return;
-    if (r.name === 'game') view.innerHTML = gamePage(r.id); else view.innerHTML = ROUTES[r.name] ? ROUTES[r.name]() : hallPage();
+    if (r.name === 'bet') betState.game = r.id;
+    document.body.classList.toggle('bet-mode', r.name === 'bet');
+    if (r.name === 'game') view.innerHTML = gamePage(r.id);
+    else if (r.name === 'bet') view.innerHTML = betPage(r.id);
+    else if (r.name === 'howto') view.innerHTML = howtoPage(r.anchor);
+    else view.innerHTML = ROUTES[r.name] ? ROUTES[r.name]() : hallPage();
     setBottomTab(r.name);
-    document.title = (r.name === 'game' ? DEFS[r.id].name + '开奖' : TITLES[r.name]) + ' · 彩票大厅（演示）';
-    if (!keepScroll) window.scrollTo(0, 0);
+    var ttl = r.name === 'game' ? DEFS[r.id].name + '开奖' : (r.name === 'bet' ? (DEFS[r.id].name + '模拟投注') : (r.name === 'howto' ? '玩法说明' : TITLES[r.name]));
+    document.title = ttl + ' · 彩票大厅（演示）';
+    if (!keepScroll) {
+      if (r.name === 'howto' && r.anchor) setTimeout(function () { var el = document.getElementById('howto-' + r.anchor); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); else window.scrollTo(0, 0); }, 30);
+      else window.scrollTo(0, 0);
+    }
     clearInterval(countdownTimer); updateCountdowns(); countdownTimer = setInterval(updateCountdowns, 1000);
     startBanner();
   }
   function showToast(msg) { var el = $('#toast'); if (!el) return; el.textContent = msg || '演示功能，敬请期待'; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2200); }
-  function showModal(msg) { var m = $('#modal'); if (!m) return; $('#modal-body').textContent = msg || '当前为展示站点，不提供充值、下注或账号登录。'; m.hidden = false; modalOpen = true; }
+  function showModal(msg) { var m = $('#modal'); if (!m) return; $('#modal-body').textContent = msg || '当前为展示站点，不提供真实交易或账户服务。'; m.hidden = false; modalOpen = true; }
   function closeModal() { var m = $('#modal'); if (m) m.hidden = true; modalOpen = false; }
+  function selectionWins(s, draw) {
+    if (!draw || !draw.nums || draw.nums.length < 7) return false;
+    var nums = draw.nums, spec = nums[6], c = parseInt(spec.c, 10), z = spec.z || '', key = s.key;
+    if (key.indexOf('special-n-') === 0) return c === parseInt(key.split('-')[2], 10);
+    if (key.indexOf('special-z-') === 0 || key.indexOf('one-z-') === 0 || key.indexOf('spz-z-') === 0) return z === key.split('-')[2];
+    if (key === 'two-big') return c >= 25;
+    if (key === 'two-small') return c < 25;
+    if (key === 'two-odd') return c % 2 === 1;
+    if (key === 'two-even') return c % 2 === 0;
+    if (key === 'two-sum-odd' || key === 'two-sum-even') { var ds = String(c).split('').reduce(function (a, b) { return a + (parseInt(b,10)||0); }, 0); return key === 'two-sum-odd' ? ds % 2 === 1 : ds % 2 === 0; }
+    if (key === 'two-tail-big') return c % 10 >= 5;
+    if (key === 'two-tail-small') return c % 10 < 5;
+    if (key === 'color-r') return (spec.color || colorOf(c)) === '红';
+    if (key === 'color-b') return (spec.color || colorOf(c)) === '蓝';
+    if (key === 'color-g') return (spec.color || colorOf(c)) === '绿';
+    if (key.indexOf('reg-') === 0) { var pos = parseInt(key.split('-')[1], 10); var n = nums[pos - 1]; return !!n && parseInt(n.c, 10) % 2 === 1; }
+    if (key.indexOf('miss-n-') === 0) { var miss = parseInt(key.split('-')[2], 10); return nums.every(function (n) { return parseInt(n.c, 10) !== miss; }); }
+    if (key.indexOf('combo-') === 0) { var zs = String(s.zodiacs || '').split(','); return zs.indexOf(z) >= 0; }
+    return false;
+  }
+  function settleBets() {
+    var changed = false;
+    bets.forEach(function (b) {
+      if (b.status !== 'pending') return;
+      var g = state.games[b.game]; if (!g) return;
+      var draw = (g.history || []).filter(function (x) { return x.issue === b.targetIssue; })[0];
+      if (!draw) return;
+      var payout = 0, wins = 0;
+      (b.selections || []).forEach(function (s) { if (selectionWins(s, draw)) { payout += Math.round((s.odds || 0) * 2 * b.qty); wins++; } });
+      b.status = 'settled'; b.payout = payout; b.won = wins; b.settledAt = Date.now();
+      points += payout; changed = true;
+    });
+    if (changed) { savePoints(points); saveBets(); }
+  }
+  function updateBetBar() {
+    var notes = totalNotes(), cost = notes * 2;
+    $$('[data-bet-count]').forEach(function (el) { el.textContent = notes; });
+    $$('[data-bet-cost]').forEach(function (el) { el.textContent = cost; });
+    var input = $('#betQty'); if (input && String(input.value) !== String(betState.qty)) input.value = betState.qty;
+    $$('.amount-chip').forEach(function (b) { b.classList.toggle('on', String(b.getAttribute('data-qty')) === String(betState.qty)); });
+    updatePointsUI();
+  }
+  document.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'betQty') {
+      betState.qty = String(e.target.value || '').replace(/[^\d]/g, '') || '1';
+      e.target.value = betState.qty;
+      updateBetBar();
+    }
+  });
   document.addEventListener('click', function (e) {
     var demo = e.target.closest('[data-demo]'); if (demo) { e.preventDefault(); showModal(demo.getAttribute('data-demo')); return; }
     if (e.target.closest('[data-close-modal]')) { closeModal(); return; }
     var hg = e.target.closest('[data-history-game]'); if (hg) { historyGame = hg.getAttribute('data-history-game'); render(); return; }
     var dot = e.target.closest('[data-slide]'); if (dot) { var i = parseInt(dot.getAttribute('data-slide'), 10); var slides = $$('#hallBanner .slide'), dots = $$('#hallBanner .dots button'); slides.forEach(function (s, j) { s.classList.toggle('on', j === i); }); dots.forEach(function (d, j) { d.classList.toggle('on', j === i); }); bannerIndex = i; return; }
+    var bc = e.target.closest('[data-bet-cat]');
+    if (bc) { betState.cat = bc.getAttribute('data-bet-cat'); render(true); return; }
+    var bt = e.target.closest('[data-bet-tab]');
+    if (bt) { betState.tab = bt.getAttribute('data-bet-tab'); render(true); return; }
+    var bb = e.target.closest('[data-bet]');
+    if (bb) {
+      var key = bb.getAttribute('data-bet');
+      if (betState.sel[key]) delete betState.sel[key]; else betState.sel[key] = 1;
+      bb.classList.toggle('on', !!betState.sel[key]);
+      updateBetBar(); return;
+    }
+    var am = e.target.closest('[data-qty]');
+    if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
+    if (e.target.closest('[data-bet-clear]')) { betState.sel = {}; betState.qty = '1'; render(true); return; }
+    if (e.target.closest('[data-reset-points]')) { points = 10000; savePoints(points); updatePointsUI(); showToast('演示积分已重置为 10000'); return; }
+    if (e.target.closest('[data-bet-submit]')) {
+      var nodes = $$('.bet-center [data-bet].on');
+      var qty = parseInt(betState.qty, 10);
+      if (!nodes.length) { showToast('请先选择玩法'); return; }
+      if (!qty || qty < 1) { showToast('请输入注数'); return; }
+      var notes = nodes.length * qty, cost = notes * 2;
+      if (points < cost) { showModal('演示积分不足。当前为模拟投注，不涉及真实交易。'); return; }
+      var g = state.games[betState.game];
+      var selections = nodes.map(function (el) { var key = el.getAttribute('data-bet'); return { key:key, label:el.getAttribute('data-label') || key, odds:parseFloat(el.getAttribute('data-odds')) || 0, zodiacs:el.getAttribute('data-zodiacs') || '' }; });
+      points -= cost; savePoints(points);
+      bets.unshift({ id:Date.now() + '' + Math.floor(Math.random() * 999), game:betState.game, targetIssue:g.nextIssue, placedIssue:g.last.issue, qty:qty, cost:cost, notes:notes, selections:selections, labels:selections.map(function (s) { return s.label; }).join('、'), status:'pending', payout:0, created:Date.now() });
+      saveBets(); betState.sel = {}; betState.qty = '1'; render(true);
+      showModal('模拟投注已记录，演示积分已扣减 ' + cost + ' 分。演示站点 · 不构成任何投注建议。全部为本地模拟，不涉及真实交易。'); return;
+    }
     if (e.target.closest('#refreshDataBtn')) { loadData(false); return; }
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
