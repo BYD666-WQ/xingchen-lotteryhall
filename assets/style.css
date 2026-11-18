@@ -237,7 +237,7 @@ table.hist{width:100%;min-width:0;border-collapse:collapse;font-size:12px;table-
 /* notice edge masks */
 .notice{position:relative}
 .notice:after,.notice:before{content:"";position:absolute;z-index:2;top:0;bottom:0;width:14px;pointer-events:none}
-.notice:before{left:29px;background:linear-gradient(90deg,#fff,rgba(255,255,255,0))}
+.notice:before{left:0;width:10px;background:linear-gradient(90deg,#fff,rgba(255,255,255,0))}
 .notice:after{right:51px;background:linear-gradient(270deg,#fff,rgba(255,255,255,0))}
 .notice-track{position:relative;z-index:1}
 /* quick icon system */
