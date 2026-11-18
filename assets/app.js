@@ -37,14 +37,14 @@
     { name: '数据小酒馆', avatar: '酒', cls: 'v3', tag: '新澳 · 4 连中', value: '61%', label: '命中率', medal: '6' }
   ];
   var QUICK = [
-    { t: '开奖', i: '奖', c: 'linear-gradient(135deg,#ff9b47,#ed5b3e)', href: '#/history' },
-    { t: '走势', i: '势', c: '#4ca4e8', href: '#/trend' },
-    { t: '图谱', i: '谱', c: '#6e8ee8', action: '图谱为演示入口，暂未开放' },
-    { t: '排行榜', i: '榜', c: 'linear-gradient(135deg,#ff6a6e,#dc3c41)', href: '#/rank' },
-    { t: '资料', i: '资', c: '#3e9fe0', action: '资料库为演示入口，暂未开放' },
-    { t: '规则', i: '规', c: '#58b5a6', action: '玩法规则为演示内容' },
-    { t: '客服', i: '服', c: '#4f8fe0', action: '客服为演示入口' },
-    { t: '活动', i: '活', c: 'linear-gradient(135deg,#ff686b,#dc3c41)', action: '活动为演示入口，不产生真实奖励' }
+    { t: '开奖', icon: 'award', i: '奖', c: 'linear-gradient(135deg,#ff9b47,#ed5b3e)', href: '#/history' },
+    { t: '走势', icon: 'trend', i: '势', c: '#4ca4e8', href: '#/trend' },
+    { t: '图谱', icon: 'chart', i: '谱', c: '#6e8ee8', action: '图谱为演示入口，暂未开放' },
+    { t: '排行榜', icon: 'rank', i: '榜', c: 'linear-gradient(135deg,#ff6a6e,#dc3c41)', href: '#/rank' },
+    { t: '资料', icon: 'book', i: '资', c: '#3e9fe0', action: '资料库为演示入口，暂未开放' },
+    { t: '规则', icon: 'rules', i: '规', c: '#58b5a6', action: '玩法规则为演示内容' },
+    { t: '客服', icon: 'support', i: '服', c: '#4f8fe0', action: '客服为演示入口' },
+    { t: '活动', icon: 'activity', i: '活', c: 'linear-gradient(135deg,#ff686b,#dc3c41)', action: '活动为演示入口，不产生真实奖励' }
   ];
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -166,15 +166,18 @@
     });
     return '<span class="ball-row">' + out + '</span>';
   }
+  function emptyState(text) {
+    return '<div class="empty-state"><svg viewBox="0 0 120 96" aria-hidden="true"><use href="#i-empty"></use></svg><span>' + esc(text || '暂无数据') + '</span></div>';
+  }
   function catTabs(active) {
     var items = [['lotteryhall','彩票','#/lotteryhall'],['trend','走势','#/trend'],['history','开奖记录','#/history'],['rank','排行榜','#/rank']];
     return '<nav class="cat-tabs">' + items.map(function (x) { return '<a class="' + (active === x[0] ? 'on' : '') + '" href="' + x[2] + '">' + x[1] + '</a>'; }).join('') + '</nav>';
   }
   function banner() {
     return '<section class="swiper" id="hallBanner">' +
-      '<div class="slide s1 on"><small>THREE GAMES · 真实数据</small><h2>今晚，好运开场</h2><p>新港 / 新澳 / 香港 · 开奖与倒计时实时查看</p><a class="slide-btn" href="#/history">查看开奖 →</a></div>' +
-      '<div class="slide s2"><small>TREND · 近 12 期</small><h2>看懂每一条走势</h2><p>波色、生肖、号码分布，一眼看清</p><a class="slide-btn" href="#/trend">去看走势 →</a></div>' +
-      '<div class="slide s3"><small>LEADERBOARD · 演示榜单</small><h2>高手，都在这里</h2><p>连中纪录与命中率，示例展示</p><a class="slide-btn" href="#/rank">查看排行 →</a></div>' +
+      '<div class="slide s1 on"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.2"><circle cx="160" cy="76" r="52"/><circle cx="160" cy="76" r="34"/><path d="M40 140c30-25 57-26 85-8s45 12 65-9"/><path d="M118 38l7 18 18 7-18 7-7 18-7-18-18-7 18-7 7-18z"/><circle cx="56" cy="56" r="2.5" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="194" cy="136" r="2" fill="rgba(255,255,255,.55)" stroke="none"/></g></svg><small>THREE GAMES · 真实数据</small><h2>今晚，好运开场</h2><p>新港 / 新澳 / 香港 · 开奖与倒计时实时查看</p><a class="slide-btn" href="#/history">查看开奖 →</a></div>' +
+      '<div class="slide s2"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.2"><path d="M36 138l28-38 25 17 30-47 26 22 28-39"/><path d="M36 148h148M36 116h148" opacity=".35"/><circle cx="64" cy="100" r="3" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="119" cy="70" r="3" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="173" cy="53" r="3" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="160" cy="84" r="36" opacity=".35"/></g></svg><small>TREND · 近 12 期</small><h2>看懂每一条走势</h2><p>波色、生肖、号码分布，一眼看清</p><a class="slide-btn" href="#/trend">去看走势 →</a></div>' +
+      '<div class="slide s3"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.2"><path d="M110 36l10 22 24 3-18 17 5 24-21-12-21 12 5-24-18-17 24-3 10-22z"/><path d="M62 52c-15 8-23 21-23 37M158 52c15 8 23 21 23 37"/><circle cx="110" cy="94" r="58" opacity=".25"/><path d="M38 145h144" opacity=".35"/><circle cx="54" cy="127" r="2" fill="rgba(255,255,255,.6)" stroke="none"/><circle cx="168" cy="127" r="2" fill="rgba(255,255,255,.6)" stroke="none"/></g></svg><small>LEADERBOARD · 演示榜单</small><h2>高手，都在这里</h2><p>连中纪录与命中率，示例展示</p><a class="slide-btn" href="#/rank">查看排行 →</a></div>' +
       '<div class="dots">' + [0,1,2].map(function (i) { return '<button type="button" data-slide="' + i + '" class="' + (i === 0 ? 'on' : '') + '" aria-label="第 ' + (i + 1) + ' 张"></button>'; }).join('') + '</div></section>';
   }
   function notice() {
@@ -182,17 +185,17 @@
   }
   function quickGrid() {
     return '<div class="quick-grid">' + QUICK.map(function (q) {
-      var inner = '<span class="qico">' + q.i + '</span>' + q.t;
+      var inner = '<span class="quick-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-' + q.icon + '"></use></svg></span>' + q.t;
       return q.href ? '<a class="quick-item" style="--qc:' + q.c + '" href="' + q.href + '">' + inner + '</a>' : '<button class="quick-item" style="--qc:' + q.c + '" type="button" data-demo="' + esc(q.action) + '">' + inner + '</button>';
     }).join('') + '</div>';
   }
   function realCell(id) {
     var g = state.games[id], def = DEFS[id];
-    if (!g) return '<div class="game-cell"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><span class="game-name">' + def.name + '</span><span class="game-issue">读取中…</span></div>';
-    return '<a class="game-cell" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><span class="game-name">' + def.name + '</span><span class="game-issue">第 ' + shortIssue(g.last.issue) + ' 期</span></a>';
+    if (!g) return '<div class="game-cell skeleton"><span class="sk sk-badge"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span></div>';
+    return '<a class="game-cell" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">第 ' + shortIssue(g.last.issue) + ' 期</span></a>';
   }
   function placeholderCell(x) {
-    return '<button class="game-cell placeholder" type="button" data-demo="「' + esc(x.name) + '」为演示彩种，暂未接入数据"><span class="game-circle" style="--gc:' + x.color + '">' + x.icon + '</span><span class="game-name">' + x.name + '</span><span class="game-issue">演示彩种</span></button>';
+    return '<button class="game-cell placeholder" type="button" data-demo="「' + esc(x.name) + '」为演示彩种，暂未接入数据"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + x.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + x.name + '</span><span class="game-issue">演示彩种</span></button>';
   }
   function hotGrid() {
     return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">热门彩种</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid">' + ORDER.map(realCell).join('') + PLACEHOLDERS.map(placeholderCell).join('') + '</div></section>';
@@ -227,7 +230,7 @@
     var chips = ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('');
     var g = state.games[historyGame];
     var rows = (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
-    if (!rows) rows = '<tr><td colspan="4"><span class="data-empty">数据加载中…</span></td></tr>';
+    if (!rows) rows = '<tr><td colspan="4">' + emptyState('正在读取主站数据…') + '</td></tr>';
     return catTabs('history') + '<div class="page-head"><div><div class="page-kicker">RESULTS</div><h1 class="page-title">开奖记录</h1><div class="page-sub">主站真实数据 · 当前可获取 ' + ((g && g.history.length) || 0) + ' 期</div></div><span class="demo-pill">REAL</span></div>' +
       '<div class="chips">' + chips + '</div><div style="padding:0 10px"><div class="table-scroll"><table class="hist"><thead><tr><th>期号</th><th>彩种</th><th>开奖号码</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
       '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="更多记录为演示入口">加载更多</button></div><div class="mini-note">主站当前可获取近 ' + ((g && g.history.length) || 0) + ' 期；开奖号码与主站一致。</div>';
