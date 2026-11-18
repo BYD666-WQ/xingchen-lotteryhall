@@ -381,7 +381,7 @@
     var h = String(location.hash || '').replace(/^#\/?/, ''), parts = h.split('/');
     if (parts[0] === 'game' && DEFS[parts[1]]) return { name: 'game', id: parts[1] };
     if (parts[0] === 'bet' && DEFS[parts[1]]) return { name: 'bet', id: parts[1] };
-    if (parts[0] === 'howto') return { name: 'howto', anchor: parts[1] || 'special' };
+    if (parts[0] === 'howto') return { name: 'howto', anchor: parts[1] || '' };
     return { name: ROUTES[parts[0]] ? parts[0] : 'lotteryhall', id: null };
   }
   function setBottomTab(name) { var tab = name === 'game' ? 'lotteryhall' : name; $$('.bottomtab a').forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-tab') === tab); }); }
