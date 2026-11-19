@@ -337,7 +337,7 @@
   }
   var AUTH_NEXT = '#/lotteryhall', authMode = 'login', authReady = false, authBusy = false;
   var awUser = null, awRow = null, gameConfigs = {};
-  function emailFor(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9._-]/g, '') + '@lottery-demo.com'; }
+  function emailFor(name) { var s = String(name || '').toLowerCase().replace(/[^a-z0-9._-]/g, ''); if (!s) s = 'u' + Array.from(String(name || 'user')).map(function (c) { return c.codePointAt(0).toString(36); }).join('').slice(0, 20); return s + '@lottery-demo.com'; }
   function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.name || '玩家', id:awUser.$id, email:awUser.email } : null; }
   function saveAccounts() {}
   function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? (u.username.length > 8 ? u.username.slice(0,8) + '…' : u.username) : '登录'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
