@@ -340,7 +340,7 @@
   function emailFor(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9._-]/g, '') + '@lottery-demo.com'; }
   function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.name || '玩家', id:awUser.$id, email:awUser.email } : null; }
   function saveAccounts() {}
-  function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? (u.username.length > 5 ? u.username.slice(0,5) + '…' : u.username) : '登录'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
+  function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? (u.username.length > 8 ? u.username.slice(0,8) + '…' : u.username) : '登录'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
   function apiError(e) { return (e && (e.message || e.type || e.code)) || '网络请求失败'; }
   async function ensureUserRow(user, username) {
     if (!awTables) throw new Error('Appwrite SDK 未加载');
@@ -775,7 +775,7 @@
     var qty = parseInt(betState.qty, 10) || 1;
     var cost = totalNotes() * 2;
     var gc = gameConfigs[id];
-    var cfgNote = gc ? '<div class="bet-cfg">开奖配置：' + (gc.mode === 'manual' ? '手动 ' + (gc.forcedResult || '') : '随机') + ' · 难度 ' + (gc.difficulty || '中') + '</div>' : '';
+    var cfgNote = gc ? '<div class="bet-cfg">开奖配置：' + (gc.mode === 'manual' ? '手动 ' + (gc.forcedResult || '') : '随机') + ' · 难度 ' + (gc.difficulty === 'easy' ? '易' : gc.difficulty === 'hard' ? '难' : '中') + '</div>' : '';
     var my = '<div class="my-bets"><div class="my-bets-head"><h2>模拟注单</h2><span>本地记录 · 演示积分</span></div>' + (bets.length ? bets.slice(0, 4).map(function (b) {
       var st = b.status === 'pending' ? '<em class="pending">待开奖</em>' : (b.payout > 0 ? '<em class="win">已结算 +' + b.payout + ' 积分</em>' : '<em class="lost">已结算 · 未中</em>');
       return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span>' + st + '</div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
