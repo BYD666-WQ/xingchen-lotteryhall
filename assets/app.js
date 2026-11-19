@@ -111,7 +111,7 @@
     return null;
   }
   function countdownText(game) {
-    var d = nextDrawAt(game); if (!d) return '--:--:--';
+    var d = game.mockNext ? new Date(game.mockNext) : nextDrawAt(game); if (!d) return '--:--:--';
     var left = Math.max(0, Math.floor((d.getTime() - Date.now()) / 1000));
     var days = Math.floor(left / 86400), hours = Math.floor(left % 86400 / 3600);
     return (days > 0 ? days + '天 ' : '') + pad(hours) + ':' + pad(Math.floor(left % 3600 / 60)) + ':' + pad(left % 60);
@@ -177,7 +177,7 @@
   }
   function banner() {
     return '<section class="swiper" id="hallBanner">' +
-      '<div class="slide s1 on"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.2"><circle cx="160" cy="76" r="52"/><circle cx="160" cy="76" r="34"/><path d="M40 140c30-25 57-26 85-8s45 12 65-9"/><path d="M118 38l7 18 18 7-18 7-7 18-7-18-18-7 18-7 7-18z"/><circle cx="56" cy="56" r="2.5" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="194" cy="136" r="2" fill="rgba(255,255,255,.55)" stroke="none"/></g></svg><small>THREE GAMES · 真实数据</small><h2>今晚，好运开场</h2><p>新港 / 新澳 / 香港 · 开奖与倒计时实时查看</p><a class="slide-btn" href="#/history">查看开奖 →</a></div>' +
+      '<div class="slide s1 on"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.2"><circle cx="160" cy="76" r="52"/><circle cx="160" cy="76" r="34"/><path d="M40 140c30-25 57-26 85-8s45 12 65-9"/><path d="M118 38l7 18 18 7-18 7-7 18-7-18-18-7 18-7 7-18z"/><circle cx="56" cy="56" r="2.5" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="194" cy="136" r="2" fill="rgba(255,255,255,.55)" stroke="none"/></g></svg><small>THREE GAMES · 真实数据</small><h2>今晚，好运开场</h2><p>新港 / 新澳 / 香港 · 开奖与倒计时实时查看</p><a class="slide-btn slide-cta" href="#/bet/newhk">立即投注 →</a></div>' +
       '<div class="slide s2"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.2"><path d="M36 138l28-38 25 17 30-47 26 22 28-39"/><path d="M36 148h148M36 116h148" opacity=".35"/><circle cx="64" cy="100" r="3" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="119" cy="70" r="3" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="173" cy="53" r="3" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="160" cy="84" r="36" opacity=".35"/></g></svg><small>TREND · 近 12 期</small><h2>看懂每一条走势</h2><p>波色、生肖、号码分布，一眼看清</p><a class="slide-btn" href="#/trend">去看走势 →</a></div>' +
       '<div class="slide s3"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.2"><path d="M110 36l10 22 24 3-18 17 5 24-21-12-21 12 5-24-18-17 24-3 10-22z"/><path d="M62 52c-15 8-23 21-23 37M158 52c15 8 23 21 23 37"/><circle cx="110" cy="94" r="58" opacity=".25"/><path d="M38 145h144" opacity=".35"/><circle cx="54" cy="127" r="2" fill="rgba(255,255,255,.6)" stroke="none"/><circle cx="168" cy="127" r="2" fill="rgba(255,255,255,.6)" stroke="none"/></g></svg><small>LEADERBOARD · 演示榜单</small><h2>高手，都在这里</h2><p>连中纪录与命中率，示例展示</p><a class="slide-btn" href="#/rank">查看排行 →</a></div>' +
       '<div class="dots">' + [0,1,2].map(function (i) { return '<button type="button" data-slide="' + i + '" class="' + (i === 0 ? 'on' : '') + '" aria-label="第 ' + (i + 1) + ' 张"></button>'; }).join('') + '</div></section>';
@@ -201,13 +201,41 @@
     return '<a class="game-cell placeholder" href="#/game/' + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + x.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + x.name + '</span><span class="game-issue">' + esc(note) + '</span></a>';
   }
   function hotGrid() {
-    return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">热门彩种</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid">' + ORDER.map(realCell).join('') + '</div><a class="pending-strip" href="#/game/oldmo"><span class="pending-dot"></span><b>老澳</b><em>· 数据待接入</em><strong>了解 ›</strong></a></section>';
+    var cells = CONFIG.filter(function (g) { return g.enabled; }).concat(CONFIG.filter(function (g) { return !g.enabled; }));
+    return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">热门彩种</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid">' + cells.map(function (g) { return gameCell(g.id); }).join('') + '</div></section>';
   }
   function hallPage() {
     return banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
       '<div class="mini-note">数据来自主站只读接口 · 每 30 秒自动刷新 · 仅作演示</div>';
   }
-  function gameStats(g) {
+  function mockGame(id) {
+    var def = DEFS[id]; if (!def || !def.mock) return null;
+    var sec = def.periodSeconds || 60, now = Date.now();
+    var idx = Math.floor(now / 1000 / sec), issue = 100000 + (idx % 900000);
+    var nextIssue = issue + 1;
+    function makeNums(n) {
+      var nums = [], used = {};
+      for (var k = 0; k < 7; k++) {
+        var v = ((n * 37 + k * 53 + 7) % 49) + 1;
+        while (used[v]) v = (v % 49) + 1;
+        used[v] = 1; nums.push(attrFor(v).z ? { c:pad(v), z:attrFor(v).z, color:attrFor(v).color } : { c:pad(v), z:'', color:colorOf(v) });
+      }
+      return nums;
+    }
+    var history = [];
+    for (var h = 0; h < 12; h++) history.push({ issue: issue - h, nums: makeNums(idx - h) });
+    return { last:{ issue:issue, nums:history[0].nums }, nextIssue:nextIssue, history:history, mockNext:(idx + 1) * sec * 1000, timeCfg:{ time:def.period || '1分钟', hour:0, minute:0, days:[0,1,2,3,4,5,6] } };
+  }
+  function gameCell(id) {
+    var def = DEFS[id];
+    if (!def) return '';
+    if (def.enabled === false) return '<a class="game-cell placeholder" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">' + esc(def.note || '数据待接入') + '</span></a>';
+    if (def.mock) return '<a class="game-cell" href="#/bet/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">' + esc(def.period) + '/期</span></a>';
+    var g = state.games[id];
+    if (!g) return '<div class="game-cell skeleton"><span class="sk sk-badge"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span></div>';
+    return '<a class="game-cell" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">' + esc(def.period || '每日') + ' · 第 ' + shortIssue(g.last.issue) + ' 期</span></a>';
+  }
+    function gameStats(g) {
     var counts = { '红': 0, '蓝': 0, '绿': 0 }, zc = {};
     (g.history || []).slice(0, 10).forEach(function (h) { h.nums.forEach(function (b) { counts[colorOf(b.c)]++; if (b.z) zc[b.z] = (zc[b.z] || 0) + 1; }); });
     var total = Math.max(1, counts['红'] + counts['蓝'] + counts['绿']);
@@ -261,10 +289,13 @@
       '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="榜单为演示内容，关注功能暂未开放">关注榜单</button></div><div class="mini-note">排名、连中与命中率均为虚构样例，不构成任何建议。</div>';
   }
   function mePage() {
-    return catTabs('') + '<div class="page-head"><div><div class="page-kicker">PROFILE</div><h1 class="page-title">我的</h1><div class="page-sub">游客模式 · 演示账号</div></div></div>' +
-      '<section class="profile"><span class="avatar">游</span><div class="profile-main"><b>游客</b><span>当前为演示游客，无需登录</span><span class="tag">DEMO ACCOUNT</span></div></section>' +
-      '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务。</span></div>' +
-      '<div class="menu"><button class="menu-row" type="button" data-demo="安全中心为演示入口"><span class="menu-ico">⌁</span><span class="txt">安全中心</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="消息中心为演示入口"><span class="menu-ico">◌</span><span class="txt">消息中心</span><em>0 条</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="客服为演示入口"><span class="menu-ico">?</span><span class="txt">帮助与客服</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="关于页面：演示站点，数据来自主站只读接口"><span class="menu-ico">i</span><span class="txt">关于本站</span><em>v0.3</em><span class="arrow">›</span></button></div>' +
+    var u = currentUser();
+    var name = u ? u.username : '游客';
+    var intro = u ? '已登录 · 演示积分与注单保存在本机' : '登录后可查看演示积分并体验模拟投注';
+    return catTabs('') + '<div class="page-head"><div><div class="page-kicker">PROFILE</div><h1 class="page-title">我的</h1><div class="page-sub">' + (u ? '已登录 · 演示账号' : '游客模式 · 演示账号') + '</div></div></div>' +
+      '<section class="profile"><span class="avatar">' + (u ? esc(u.username.slice(0,1)) : '游') + '</span><div class="profile-main"><b>' + esc(name) + '</b><span>' + esc(intro) + '</span><span class="tag">DEMO ACCOUNT</span></div>' + (u ? '<button class="btn btn-ghost" type="button" data-logout>退出</button>' : '<a class="btn btn-primary" href="#/login">登录</a>') + '</section>' +
+      '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务；演示积分仅保存在本机。</span></div>' +
+      '<div class="menu"><button class="menu-row" type="button" data-demo="安全中心为演示入口"><span class="menu-ico">⌁</span><span class="txt">安全中心</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="消息中心为演示入口"><span class="menu-ico">◌</span><span class="txt">消息中心</span><em>0 条</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="客服为演示入口"><span class="menu-ico">?</span><span class="txt">帮助与客服</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="关于页面：演示站点，数据来自主站只读接口"><span class="menu-ico">i</span><span class="txt">关于本站</span><em>v0.4</em><span class="arrow">›</span></button></div>' +
       '<div class="mini-note">这是纯展示空壳站，不提供真实账号、交易或下注服务。</div>';
   }
   var ZODIACS = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
@@ -297,7 +328,33 @@
   function saveBets() { try { localStorage.setItem(BETS_KEY, JSON.stringify(bets)); } catch (e) {} }
   var points = loadPoints();
   var bets = loadBets();
-  function pointsBar() { return '<div class="points-bar"><span>演示积分</span><b data-points-value>' + points + '</b><a class="points-help" href="#/howto">玩法说明</a><button type="button" data-reset-points>重置积分</button></div>'; }
+  var SESSION_KEY = 'lh-demo-session', ACCOUNTS_KEY = 'lh-demo-accounts', AUTH_NEXT = '#/lotteryhall', authMode = 'login';
+  function currentUser() { try { var u = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); return u && u.username ? u : null; } catch (e) { return null; } }
+  function accounts() { try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function saveAccounts(a) { try { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(a)); } catch (e) {} }
+  function doAuth(name, pass, mode) {
+    name = String(name || '').trim(); pass = String(pass || '');
+    if (name.length < 2) return '用户名至少 2 个字符';
+    if (pass.length < 4) return '密码至少 4 个字符';
+    var a = accounts();
+    if (mode === 'register') {
+      if (a[name]) return '这个演示用户名已存在';
+      a[name] = { pass: btoa(pass), created: Date.now() }; saveAccounts(a);
+    } else {
+      if (!a[name]) return '账号不存在，请先注册';
+      if (a[name].pass !== btoa(pass)) return '密码不正确';
+    }
+    var token = 'mock_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ username:name, token:token, loggedAt:Date.now() }));
+    return '';
+  }
+  function logout() { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} }
+  function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? (u.username.length > 5 ? u.username.slice(0,5) + '…' : u.username) : '登录'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
+  function pointsBar() {
+    var u = currentUser();
+    if (!u) return '<div class="points-bar"><span>演示积分</span><b class="points-guest">登录后查看</b><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/howto">玩法说明</a></div>';
+    return '<div class="points-bar"><span>演示积分</span><b data-points-value>' + points + '</b><a class="points-help" href="#/howto">玩法说明</a><button type="button" data-reset-points>重置积分</button></div>';
+  }
   function updatePointsUI() { $$('[data-points-value]').forEach(function (el) { el.textContent = points; }); }
   function attrFor(n) { return state.attrs[parseInt(n,10)] || { z:'', color:colorOf(n) }; }
   function isSel(k) { return !!betState.sel[k]; }
@@ -346,11 +403,11 @@
     return { html:out, sum:sum };
   }
   function betPage(id) {
-    var def = DEFS[id] || DEFS.newhk, g = state.games[id];
+    var def = DEFS[id] || DEFS.newhk, g = state.games[id] || mockGame(id);
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
     if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState('正在读取 ' + def.name + ' 数据…');
     var open = betBalls(g.last.nums);
-    var title = def.name + '六合彩';
+    var title = def.name + (def.mock ? '' : '六合彩');
     var credit = betState.tab === 'credit';
     var cat = betState.cat || 'special';
     var qty = parseInt(betState.qty, 10) || 1;
@@ -359,7 +416,7 @@
       var st = b.status === 'pending' ? '<em class="pending">待开奖</em>' : (b.payout > 0 ? '<em class="win">已结算 +' + b.payout + ' 积分</em>' : '<em class="lost">已结算 · 未中</em>');
       return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span>' + st + '</div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
     }).join('') : '<div class="my-bet-empty">还没有模拟注单，选号后可记录一张本地注单</div>') + '</div>';
-    return '<a class="back-link" href="#/game/' + id + '">‹ 返回 ' + def.name + '详情</a>' + pointsBar() +
+    return '<a class="back-link" href="' + (def.mock ? '#/lotteryhall' : '#/game/' + id) + '">‹ 返回 ' + (def.mock ? '大厅' : def.name + '详情') + '</a>' + pointsBar() +
       '<div class="bet-head"><div><span class="bet-kicker">模拟投注 · 仅演示</span><h1>' + title + '</h1><div class="bet-period">第 <b>' + shortIssue(g.last.issue) + '</b> 期 · 下期 ' + shortIssue(g.nextIssue) + '</div></div><div class="bet-clock">投注中<br><b data-cd="' + id + '">' + countdownText(g) + '</b></div></div>' +
       '<div class="bet-open"><div class="bet-open-label">上期开奖 <span>第 ' + shortIssue(g.last.issue) + ' 期</span></div><div class="bet-open-balls">' + open.html + '<span class="bet-sum">总和 <b>' + open.sum + '</b></span></div></div>' +
       '<div class="bet-tabs"><button type="button" class="' + (credit ? 'on' : '') + '" data-bet-tab="credit">信用</button><button type="button" class="' + (!credit ? 'on' : '') + '" data-bet-tab="path">路子图</button></div>' +
@@ -375,13 +432,21 @@
     }).join('');
     return '<div class="page-head"><div><div class="page-kicker">PLAY GUIDE</div><h1 class="page-title">玩法说明</h1><div class="page-sub">纯演示 · 赔率非真实</div></div><span class="demo-pill">DEMO</span></div><nav class="howto-nav">' + nav + '</nav><div class="howto-points"><b>演示积分怎么玩</b><p>初始 10000 演示积分，每注固定消耗 2 积分；选号后选择注数，记录模拟注单。开奖后按演示赔率在本地自动结算，中奖增加积分。不涉及真实支付、账户或提现。</p></div><div class="howto-list">' + blocks + '</div><div class="mini-note">所有玩法均为模拟演示，不构成任何投注建议。</div>';
   }
+  function loginPage() {
+    var register = authMode === 'register';
+    return '<div class="auth-page"><div class="auth-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></div><div class="page-kicker">LUCKY HALL ACCOUNT</div><h1 class="auth-title">' + (register ? '注册演示账号' : '登录幸运大厅') + '</h1><p class="auth-sub">本地 mock 账号，仅用于体验投注演示，不连接真实账户。</p>' +
+      '<div class="auth-tabs"><button type="button" class="' + (!register ? 'on' : '') + '" data-auth-mode="login">登录</button><button type="button" class="' + (register ? 'on' : '') + '" data-auth-mode="register">注册</button></div>' +
+      '<form id="authForm" class="auth-form"><label>用户名<input id="authUser" autocomplete="username" maxlength="20" placeholder="例如：幸运玩家"></label><label>密码<input id="authPass" type="password" autocomplete="current-password" maxlength="30" placeholder="至少 4 位"></label><div id="authError" class="auth-error"></div><button class="auth-submit" type="submit">' + (register ? '注册并登录' : '登录') + '</button></form>' +
+      '<div class="auth-tip">演示账号保存在本机 localStorage，不会发送到服务器。<br>登录后可查看演示积分并体验模拟投注。</div><a class="auth-back" href="#/lotteryhall">先逛逛大厅 →</a></div>';
+  }
   var ROUTES = { lotteryhall: hallPage, history: historyPage, trend: trendPage, rank: rankPage, me: mePage };
-  var TITLES = { lotteryhall: '彩票大厅', history: '开奖记录', trend: '号码走势', rank: '高手排行', me: '我的', howto: '玩法说明' };
+  var TITLES = { lotteryhall: '彩票大厅', history: '开奖记录', trend: '号码走势', rank: '高手排行', me: '我的', howto: '玩法说明', login: '登录' };
   function currentRoute() {
     var h = String(location.hash || '').replace(/^#\/?/, ''), parts = h.split('/');
     if (parts[0] === 'game' && DEFS[parts[1]]) return { name: 'game', id: parts[1] };
     if (parts[0] === 'bet' && DEFS[parts[1]]) return { name: 'bet', id: parts[1] };
     if (parts[0] === 'howto') return { name: 'howto', anchor: parts[1] || '' };
+    if (parts[0] === 'login') return { name: 'login', id: null };
     return { name: ROUTES[parts[0]] ? parts[0] : 'lotteryhall', id: null };
   }
   function setBottomTab(name) { var tab = name === 'game' ? 'lotteryhall' : name; $$('.bottomtab a').forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-tab') === tab); }); }
@@ -400,20 +465,23 @@
   function render(keepScroll) {
     settleBets();
     var r = currentRoute(), view = $('#view'); if (!view) return;
+    if (r.name === 'bet' && !currentUser()) { AUTH_NEXT = '#/bet/' + r.id; location.hash = '#/login'; return; }
     if (r.name === 'bet') betState.game = r.id;
     document.body.classList.toggle('bet-mode', r.name === 'bet');
     if (r.name === 'game') view.innerHTML = gamePage(r.id);
     else if (r.name === 'bet') view.innerHTML = betPage(r.id);
     else if (r.name === 'howto') view.innerHTML = howtoPage(r.anchor);
+    else if (r.name === 'login') view.innerHTML = loginPage();
     else view.innerHTML = ROUTES[r.name] ? ROUTES[r.name]() : hallPage();
     setBottomTab(r.name);
-    var ttl = r.name === 'game' ? DEFS[r.id].name + '开奖' : (r.name === 'bet' ? (DEFS[r.id].name + '模拟投注') : (r.name === 'howto' ? '玩法说明' : TITLES[r.name]));
+    var ttl = r.name === 'game' ? DEFS[r.id].name + '开奖' : (r.name === 'bet' ? (DEFS[r.id].name + '模拟投注') : (r.name === 'howto' ? '玩法说明' : (r.name === 'login' ? '登录 / 注册' : TITLES[r.name])));
     document.title = ttl + ' · 彩票大厅（演示）';
     if (!keepScroll) {
       if (r.name === 'howto' && r.anchor) setTimeout(function () { var el = document.getElementById('howto-' + r.anchor); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); else window.scrollTo(0, 0); }, 30);
       else window.scrollTo(0, 0);
     }
     clearInterval(countdownTimer); updateCountdowns(); countdownTimer = setInterval(updateCountdowns, 1000);
+    updateUserChip();
     startBanner();
   }
   function showToast(msg) { var el = $('#toast'); if (!el) return; el.textContent = msg || '演示功能，敬请期待'; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2200); }
@@ -471,6 +539,13 @@
   document.addEventListener('click', function (e) {
     var demo = e.target.closest('[data-demo]'); if (demo) { e.preventDefault(); showModal(demo.getAttribute('data-demo')); return; }
     if (e.target.closest('[data-close-modal]')) { closeModal(); return; }
+    var betLink = e.target.closest('a[href^="#/bet/"]');
+    if (betLink && !currentUser()) { e.preventDefault(); AUTH_NEXT = betLink.getAttribute('href'); location.hash = '#/login'; showToast('请先登录后投注'); return; }
+    var chip = e.target.closest('#userChip');
+    if (chip) { location.hash = currentUser() ? '#/me' : '#/login'; return; }
+    var modeBtn = e.target.closest('[data-auth-mode]');
+    if (modeBtn) { authMode = modeBtn.getAttribute('data-auth-mode'); render(true); return; }
+    if (e.target.closest('[data-logout]')) { logout(); updateUserChip(); location.hash = '#/lotteryhall'; showToast('已退出演示账号'); return; }
     var hg = e.target.closest('[data-history-game]'); if (hg) { historyGame = hg.getAttribute('data-history-game'); render(); return; }
     var dot = e.target.closest('[data-slide]'); if (dot) { var i = parseInt(dot.getAttribute('data-slide'), 10); var slides = $$('#hallBanner .slide'), dots = $$('#hallBanner .dots button'); slides.forEach(function (s, j) { s.classList.toggle('on', j === i); }); dots.forEach(function (d, j) { d.classList.toggle('on', j === i); }); bannerIndex = i; return; }
     var bc = e.target.closest('[data-bet-cat]');
@@ -503,6 +578,14 @@
       showModal('模拟投注已记录，演示积分已扣减 ' + cost + ' 分。演示站点 · 不构成任何投注建议。全部为本地模拟，不涉及真实交易。'); return;
     }
     if (e.target.closest('#refreshDataBtn')) { loadData(false); return; }
+  });
+  document.addEventListener('submit', function (e) {
+    if (!e.target || e.target.id !== 'authForm') return;
+    e.preventDefault();
+    var err = doAuth($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value, authMode);
+    if (err) { var box = $('#authError'); if (box) box.textContent = err; return; }
+    var next = AUTH_NEXT || '#/lotteryhall'; AUTH_NEXT = '#/lotteryhall';
+    location.hash = next; updateUserChip(); showToast('登录成功，已加载演示积分');
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
   window.addEventListener('hashchange', function () { render(); });
