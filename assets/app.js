@@ -427,8 +427,12 @@
     if (!awUser) { updateRTStatus('关'); return; }
     stopRealtime(); updateRTStatus('轮询');
     rtPoll = setInterval(async function () {
-      if (document.hidden) return;
-      await refreshPoints();
+      window.__lhPoll = window.__lhPoll || { tick: 0, err: '' };
+      window.__lhPoll.tick++;
+      try {
+        await refreshPoints();
+        window.__lhPoll.err = '';
+      } catch (e) { window.__lhPoll.err = String((e && e.message) || e); }
       try { var next = await loadUserBets(); if (JSON.stringify(next) !== JSON.stringify(bets)) { bets = next; updateBetsOnly(); } } catch (e) {}
     }, 30000);
   }
