@@ -542,10 +542,10 @@
     var betLink = e.target.closest('a[href^="#/bet/"]');
     if (betLink && !currentUser()) { e.preventDefault(); AUTH_NEXT = betLink.getAttribute('href'); location.hash = '#/login'; showToast('请先登录后投注'); return; }
     var chip = e.target.closest('#userChip');
-    if (chip) { location.hash = currentUser() ? '#/me' : '#/login'; return; }
+    if (chip) { if (currentUser()) location.hash = '#/me'; else { AUTH_NEXT = '#/lotteryhall'; location.hash = '#/login'; } return; }
     var modeBtn = e.target.closest('[data-auth-mode]');
     if (modeBtn) { authMode = modeBtn.getAttribute('data-auth-mode'); render(true); return; }
-    if (e.target.closest('[data-logout]')) { logout(); updateUserChip(); location.hash = '#/lotteryhall'; showToast('已退出演示账号'); return; }
+    if (e.target.closest('[data-logout]')) { logout(); AUTH_NEXT = '#/lotteryhall'; updateUserChip(); location.hash = '#/lotteryhall'; showToast('已退出演示账号'); return; }
     var hg = e.target.closest('[data-history-game]'); if (hg) { historyGame = hg.getAttribute('data-history-game'); render(); return; }
     var dot = e.target.closest('[data-slide]'); if (dot) { var i = parseInt(dot.getAttribute('data-slide'), 10); var slides = $$('#hallBanner .slide'), dots = $$('#hallBanner .dots button'); slides.forEach(function (s, j) { s.classList.toggle('on', j === i); }); dots.forEach(function (d, j) { d.classList.toggle('on', j === i); }); bannerIndex = i; return; }
     var bc = e.target.closest('[data-bet-cat]');
