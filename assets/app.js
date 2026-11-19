@@ -830,7 +830,6 @@
       return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span><em class="pending">待开奖</em></div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
     }).join('') : '<div class="my-bet-empty">暂无待开奖注单；结算功能暂未开放</div>') + '</div>';
   }
-  }
   function focusSafe() { var a = document.activeElement; return a && /INPUT|TEXTAREA|SELECT/.test(a.tagName); }
   function updateBetsOnly() {
     var box = document.querySelector('.my-bets'); if (!box || focusSafe()) return;
