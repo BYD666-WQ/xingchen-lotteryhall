@@ -291,10 +291,10 @@
   function mePage() {
     var u = currentUser();
     var name = u ? u.username : '游客';
-    var intro = u ? '已登录 · 演示积分与注单保存在本机' : '登录后可查看演示积分并体验模拟投注';
+    var intro = u ? '已登录 · 账户积分与注单同步云端' : '登录后可查看账户积分并体验模拟投注';
     return catTabs('') + '<div class="page-head"><div><div class="page-kicker">PROFILE</div><h1 class="page-title">我的</h1><div class="page-sub">' + (u ? '已登录 · 演示账号' : '游客模式 · 演示账号') + '</div></div></div>' +
       '<section class="profile"><span class="avatar">' + (u ? esc(u.username.slice(0,1)) : '游') + '</span><div class="profile-main"><b>' + esc(name) + '</b><span>' + esc(intro) + '</span><span class="tag">DEMO ACCOUNT</span></div>' + (u ? '<button class="btn btn-ghost" type="button" data-logout>退出</button>' : '<a class="btn btn-primary" href="#/login">登录</a>') + '</section>' +
-      '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务；演示积分仅保存在本机。</span></div>' +
+      '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务；账户积分与注单存储在云端。</span></div>' +
       '<div class="menu"><button class="menu-row" type="button" data-demo="安全中心为演示入口"><span class="menu-ico">⌁</span><span class="txt">安全中心</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="消息中心为演示入口"><span class="menu-ico">◌</span><span class="txt">消息中心</span><em>0 条</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="客服为演示入口"><span class="menu-ico">?</span><span class="txt">帮助与客服</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="关于页面：演示站点，数据来自主站只读接口"><span class="menu-ico">i</span><span class="txt">关于本站</span><em>v0.4</em><span class="arrow">›</span></button></div>' +
       '<div class="mini-note">这是纯展示空壳站，不提供真实账号、交易或下注服务。</div>';
   }
@@ -321,13 +321,10 @@
     { id:'combo', name:'连肖', short:'连' }
   ];
   var betState = { game:'newhk', cat:'special', tab:'credit', qty:'1', sel:{} };
-  var POINTS_KEY = 'lh-demo-points', BETS_KEY = 'lh-demo-bets';
-  function loadPoints() { var n = parseInt(localStorage.getItem(POINTS_KEY), 10); return isFinite(n) ? n : 10000; }
-  function savePoints(n) { try { localStorage.setItem(POINTS_KEY, String(n)); } catch (e) {} }
-  function loadBets() { try { var b = JSON.parse(localStorage.getItem(BETS_KEY) || '[]'); return Array.isArray(b) ? b : []; } catch (e) { return []; } }
-  function saveBets() { try { localStorage.setItem(BETS_KEY, JSON.stringify(bets)); } catch (e) {} }
-  var points = loadPoints();
-  var bets = loadBets();
+  var betSubmitting = false;
+  try { ['lh-demo-points','lh-demo-bets','lh-demo-session','lh-demo-accounts'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
+  var points = 0;
+  var bets = [];
   var APPWRITE = { endpoint:'https://sgp.cloud.appwrite.io/v1', project:'6aff4c2f0016ee43abad', db:'lottery', users:'6aff4ea1000cecd6c798', bets:'bets', config:'config' };
   var awClient = null, awAccount = null, awTables = null;
   if (window.Appwrite) {
@@ -402,7 +399,7 @@
     var events = (resp && resp.events ? resp.events.join(' ') : '');
     var payload = (resp && resp.payload) || {};
     if (events.indexOf('tables.' + APPWRITE.users) >= 0) {
-      if (payload.$id === (awRow && awRow.$id) && payload.points != null) { points = parseInt(payload.points, 10) || 0; if (awRow) awRow.points = points; updatePointsUI(); }
+      if (payload.$id === (awRow && awRow.$id) && payload.points != null) { points = parseInt(payload.points, 10) || 0; if (awRow) awRow.points = points; updatePointsUI(); updateBetBar(); }
       else { refreshPoints(); }
     }
     if (events.indexOf('tables.' + APPWRITE.bets) >= 0) {
@@ -436,7 +433,7 @@
   }
   async function refreshPoints() {
     if (!awRow) return;
-    try { var r = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id }); awRow = r; points = parseInt(r.points,10) || 0; updatePointsUI(); } catch (e) {}
+    try { var r = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id }); awRow = r; points = parseInt(r.points,10) || 0; updatePointsUI(); updateBetBar(); } catch (e) {}
   }
   async function afterAuth(user, username) {
     awUser = user;
@@ -740,10 +737,10 @@
   function mePage() {
     var u = currentUser();
     var name = u ? u.username : '游客';
-    var intro = u ? '已登录 · 演示积分与注单保存在本机' : '登录后可查看演示积分并体验模拟投注';
+    var intro = u ? '已登录 · 账户积分与注单同步云端' : '登录后可查看账户积分并体验模拟投注';
     return catTabs('') + '<div class="page-head"><div><div class="page-kicker">PROFILE</div><h1 class="page-title">我的</h1><div class="page-sub">' + (u ? '已登录 · 演示账号' : '游客模式 · 演示账号') + '</div></div></div>' +
       '<section class="profile"><span class="avatar">' + (u ? esc(u.username.slice(0,1)) : '游') + '</span><div class="profile-main"><b>' + esc(name) + '</b><span>' + esc(intro) + '</span><span class="tag">DEMO ACCOUNT</span></div>' + (u ? '<button class="btn btn-ghost" type="button" data-logout>退出</button>' : '<a class="btn btn-primary" href="#/login">登录</a>') + '</section>' +
-      '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务；演示积分仅保存在本机。</span></div>' +
+      '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务；账户积分与注单存储在云端。</span></div>' +
       '<div class="menu"><button class="menu-row" type="button" data-demo="安全中心为演示入口"><span class="menu-ico">⌁</span><span class="txt">安全中心</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="消息中心为演示入口"><span class="menu-ico">◌</span><span class="txt">消息中心</span><em>0 条</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="客服为演示入口"><span class="menu-ico">?</span><span class="txt">帮助与客服</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="关于页面：演示站点，数据来自主站只读接口"><span class="menu-ico">i</span><span class="txt">关于本站</span><em>v0.4</em><span class="arrow">›</span></button></div>' +
       '<div class="mini-note">这是纯展示空壳站，不提供真实账号、交易或下注服务。</div>';
   }
@@ -770,17 +767,12 @@
     { id:'combo', name:'连肖', short:'连' }
   ];
   var betState = { game:'newhk', cat:'special', tab:'credit', qty:'1', sel:{} };
-  var POINTS_KEY = 'lh-demo-points', BETS_KEY = 'lh-demo-bets';
-  function loadPoints() { var n = parseInt(localStorage.getItem(POINTS_KEY), 10); return isFinite(n) ? n : 10000; }
-  function savePoints(n) { try { localStorage.setItem(POINTS_KEY, String(n)); } catch (e) {} }
-  function loadBets() { try { var b = JSON.parse(localStorage.getItem(BETS_KEY) || '[]'); return Array.isArray(b) ? b : []; } catch (e) { return []; } }
-  function saveBets() { try { localStorage.setItem(BETS_KEY, JSON.stringify(bets)); } catch (e) {} }
-  var points = loadPoints();
-  var bets = loadBets();
+  var points = 0;
+  var bets = [];
   function pointsBar() {
     var u = currentUser();
-    if (!u) return '<div class="points-bar"><span>演示积分</span><b class="points-guest">登录后查看</b><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/howto">玩法说明</a></div>';
-    return '<div class="points-bar"><span>演示积分</span><b data-points-value>' + points + '</b><span class="rt-status' + (rtState.degraded ? ' degraded' : '') + '" data-rt-status>实时:' + rtState.s + '</span><a class="points-help" href="#/howto">玩法说明</a><button type="button" data-reset-points>重置积分</button></div>';
+    if (!u) return '<div class="points-bar guest"><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/howto">玩法说明</a></div>';
+    return '<div class="points-bar"><span>账户积分</span><b data-points-value>' + points + '</b><span class="rt-status' + (rtState.degraded ? ' degraded' : '') + '" data-rt-status>实时:' + rtState.s + '</span><a class="points-help" href="#/howto">玩法说明</a><button type="button" data-reset-points>重置积分</button></div>';
   }
   function updatePointsUI() { $$('[data-points-value]').forEach(function (el) { el.textContent = points; }); }
   function attrFor(n) { return state.attrs[parseInt(n,10)] || { z:'', color:colorOf(n) }; }
@@ -830,7 +822,7 @@
     return { html:out, sum:sum };
   }
   function myBetsHtml() {
-    return '<div class="my-bets"><div class="my-bets-head"><h2>模拟注单</h2><span>本地记录 · 演示积分</span></div>' + (bets.length ? bets.slice(0, 4).map(function (b) {
+    return '<div class="my-bets"><div class="my-bets-head"><h2>模拟注单</h2><span>云端记录 · 账户积分</span></div>' + (bets.length ? bets.slice(0, 4).map(function (b) {
       var st = b.status === 'pending' ? '<em class="pending">待开奖</em>' : (b.payout > 0 ? '<em class="win">已结算 +' + b.payout + ' 积分</em>' : '<em class="lost">已结算 · 未中</em>');
       return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span>' + st + '</div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
     }).join('') : '<div class="my-bet-empty">还没有模拟注单，选号后可记录一张本地注单</div>') + '</div>';
@@ -858,8 +850,8 @@
       '<div class="bet-open"><div class="bet-open-label">上期开奖 <span>第 ' + shortIssue(g.last.issue) + ' 期</span></div><div class="bet-open-balls">' + open.html + '<span class="bet-sum">总和 <b>' + open.sum + '</b></span></div></div></div>' +
       '<div class="bet-tabs"><button type="button" class="' + (credit ? 'on' : '') + '" data-bet-tab="credit">信用</button><button type="button" class="' + (!credit ? 'on' : '') + '" data-bet-tab="path">路子图</button></div>' +
       (credit ? '<div class="bet-layout"><div class="bet-cats">' + BET_CATS.map(function (c) { return '<button type="button" class="' + (cat === c.id ? 'on' : '') + '" data-bet-cat="' + c.id + '"><span>' + c.short + '</span>' + c.name + '</button>'; }).join('') + '</div><div class="bet-center">' + betContent(cat) + '</div></div>' : '<div class="bet-path">' + emptyState('路子图演示占位，暂未开放') + '</div>') +
-      '<div class="odds-note">演示赔率，非真实 · 每注固定 2 演示积分 · 不构成任何投注建议</div>' + cfgNote + my +
-      '<div class="bet-bar"><div class="bet-bar-row"><span class="bet-label">注数</span>' + [10,20,50,100].map(function (n) { return '<button type="button" class="amount-chip ' + (String(qty) === String(n) ? 'on' : '') + '" data-qty="' + n + '">' + n + '</button>'; }).join('') + '<input id="betQty" type="text" inputmode="numeric" placeholder="自定义" value="' + esc(qty) + '"></div><div class="bet-bar-row"><span class="bet-selected">已选 <b data-bet-count>' + totalNotes() + '</b> 注 · 需 <b data-bet-cost>' + cost + '</b> 积分</span><button type="button" class="bet-clear" data-bet-clear>清空</button><button type="button" class="bet-submit" data-bet-submit>立即投注</button></div></div>';
+      '<div class="odds-note">演示赔率，非真实 · 每注固定 2 积分 · 不构成任何投注建议</div>' + cfgNote + my +
+      '<div class="bet-bar"><div class="bet-bar-row"><span class="bet-label">注数</span>' + [10,20,50,100].map(function (n) { return '<button type="button" class="amount-chip ' + (String(qty) === String(n) ? 'on' : '') + '" data-qty="' + n + '">' + n + '</button>'; }).join('') + '<input id="betQty" type="text" inputmode="numeric" placeholder="自定义" value="' + esc(qty) + '"></div><div class="bet-bar-row"><span class="bet-selected">已选 <b data-bet-count>' + totalNotes() + '</b> 注 · 需 <b data-bet-cost>' + cost + '</b> 积分</span><button type="button" class="bet-clear" data-bet-clear>清空</button><button type="button" class="bet-submit" data-bet-submit>立即投注</button></div><div class="bet-hint" data-bet-hint></div></div>';
   }
   function howtoPage(anchor) {
     var active = anchor || 'special';
@@ -867,7 +859,7 @@
     var blocks = HOWTO.map(function (h) {
       return '<section class="howto-block" id="howto-' + h.id + '"><div class="howto-head"><h2>' + h.name + '</h2><span>演示赔率 ' + h.odds + '</span></div><p><b>规则：</b>' + h.rule + '</p><p><b>举例：</b>' + h.example + '</p><a class="howto-back" href="#/bet/newhk">去模拟投注 →</a></section>';
     }).join('');
-    return '<div class="page-head"><div><div class="page-kicker">PLAY GUIDE</div><h1 class="page-title">玩法说明</h1><div class="page-sub">纯演示 · 赔率非真实</div></div><span class="demo-pill">DEMO</span></div><nav class="howto-nav">' + nav + '</nav><div class="howto-points"><b>演示积分怎么玩</b><p>初始 10000 演示积分，每注固定消耗 2 积分；选号后选择注数，记录模拟注单。开奖后按演示赔率在本地自动结算，中奖增加积分。不涉及真实支付、账户或提现。</p></div><div class="howto-list">' + blocks + '</div><div class="mini-note">所有玩法均为模拟演示，不构成任何投注建议。</div>';
+    return '<div class="page-head"><div><div class="page-kicker">PLAY GUIDE</div><h1 class="page-title">玩法说明</h1><div class="page-sub">纯演示 · 赔率非真实</div></div><span class="demo-pill">DEMO</span></div><nav class="howto-nav">' + nav + '</nav><div class="howto-points"><b>账户积分怎么玩</b><p>注册后账户积分由 Appwrite 云端账户提供，初始 10000；每注固定消耗 2 积分，选号后选择注数并记录模拟注单。开奖与结算暂未开放，积分以云端账户为准。</p></div><div class="howto-list">' + blocks + '</div><div class="mini-note">所有玩法均为模拟演示，不构成任何投注建议。</div>';
   }
   function loginPage() {
     var register = authMode === 'register';
@@ -908,6 +900,7 @@
     document.body.classList.toggle('bet-mode', r.name === 'bet');
     if (r.name === 'game') view.innerHTML = gamePage(r.id);
     else if (r.name === 'bet') view.innerHTML = betPage(r.id);
+    if (r.name === 'bet') updateBetBar();
     else if (r.name === 'howto') view.innerHTML = howtoPage(r.anchor);
     else if (r.name === 'login') view.innerHTML = loginPage();
     else view.innerHTML = ROUTES[r.name] ? ROUTES[r.name]() : hallPage();
@@ -945,27 +938,16 @@
     if (key.indexOf('combo-') === 0) { var zs = String(s.zodiacs || '').split(','); return zs.indexOf(z) >= 0; }
     return false;
   }
-  function settleBets() {
-    if (awUser) return;
-    var changed = false;
-    bets.forEach(function (b) {
-      if (b.status !== 'pending') return;
-      var g = state.games[b.game]; if (!g) return;
-      var draw = (g.history || []).filter(function (x) { return x.issue === b.targetIssue; })[0];
-      if (!draw) return;
-      var payout = 0, wins = 0;
-      (b.selections || []).forEach(function (s) { if (selectionWins(s, draw)) { payout += Math.round((s.odds || 0) * 2 * b.qty); wins++; } });
-      b.status = 'settled'; b.payout = payout; b.won = wins; b.settledAt = Date.now();
-      points += payout; changed = true;
-    });
-    if (changed) { savePoints(points); saveBets(); }
-  }
+  function settleBets() { /* 云端结算未开放，注单保持 pending；不再本地结算 */ }
   function updateBetBar() {
     var notes = totalNotes(), cost = notes * 2;
     $$('[data-bet-count]').forEach(function (el) { el.textContent = notes; });
     $$('[data-bet-cost]').forEach(function (el) { el.textContent = cost; });
     var input = $('#betQty'); if (input && String(input.value) !== String(betState.qty)) input.value = betState.qty;
     $$('.amount-chip').forEach(function (b) { b.classList.toggle('on', String(b.getAttribute('data-qty')) === String(betState.qty)); });
+    var insuff = notes > 0 && cost > points;
+    var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = insuff ? '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）' : ''; hint.classList.toggle('show', insuff); }
+    var submit = $('[data-bet-submit]'); if (submit) { submit.disabled = insuff || betSubmitting; submit.textContent = betSubmitting ? '投注中…' : '立即投注'; }
     updatePointsUI();
   }
   document.addEventListener('input', function (e) {
@@ -1003,12 +985,12 @@
     if (e.target.closest('[data-bet-clear]')) { betState.sel = {}; betState.qty = '1'; render(true); return; }
     if (e.target.closest('[data-reset-points]')) {
       if (!currentUser()) { location.hash = '#/login'; return; }
-      (async function () { try { await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:10000 } }); awRow.points = 10000; points = 10000; updatePointsUI(); showToast('演示积分已重置为 10000'); } catch (err) { showToast('重置失败：' + apiError(err)); } })();
+      (async function () { try { await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:10000 } }); awRow.points = 10000; points = 10000; updatePointsUI(); showToast('账户积分已重置为 10000'); } catch (err) { showToast('重置失败：' + apiError(err)); } })();
       return;
     }
     if (e.target.closest('[data-bet-submit]')) {
+      if (betSubmitting) return;
       if (!currentUser()) { AUTH_NEXT = '#/bet/' + (betState.game || 'newhk'); location.hash = '#/login'; return; }
-      if (authBusy) return;
       var nodes = $$('.bet-center [data-bet].on');
       var qty = parseInt(betState.qty, 10);
       if (!nodes.length) { showToast('请先选择玩法'); return; }
@@ -1016,26 +998,44 @@
       var notes = nodes.length * qty, cost = notes * 2;
       var g = state.games[betState.game] || mockGame(betState.game);
       if (!g) { showToast('彩种数据未就绪'); return; }
+      if (cost > points) { updateBetBar(); showModal('积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）'); return; }
       var selections = nodes.map(function (el) { var key = el.getAttribute('data-bet'); return { key:key, label:el.getAttribute('data-label') || key, odds:parseFloat(el.getAttribute('data-odds')) || 0, zodiacs:el.getAttribute('data-zodiacs') || '' }; });
-      authBusy = true;
+      betSubmitting = true; updateBetBar();
       (async function () {
+        var tx = null, wrote = false, oldPoints = points;
         try {
           var fresh = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id });
           var current = parseInt(fresh.points, 10) || 0;
-          if (current < cost) { showModal('演示积分不足。当前为模拟投注，不涉及真实交易。'); authBusy = false; return; }
+          if (current < cost) { points = current; awRow.points = current; updatePointsUI(); updateBetBar(); showModal('积分不足，无法投注（当前 ' + current + '，需要 ' + cost + '）'); return; }
           var newPoints = current - cost;
-          await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:newPoints } });
           var picks = { selections:selections, qty:qty, notes:notes };
-          var betRow = await awTables.createRow({ databaseId:APPWRITE.db, tableId:APPWRITE.bets, rowId:window.Appwrite.ID.unique(), data:{ username:awRow.username, gameId:betState.game, picks:JSON.stringify(picks), status:'pending', issue:g.nextIssue, stake:cost, payout:0 }, permissions:[
+          var perms = [
             window.Appwrite.Permission.read(window.Appwrite.Role.user(awUser.$id)),
             window.Appwrite.Permission.update(window.Appwrite.Role.user(awUser.$id))
-          ] });
+          ];
+          var betRow = null;
+          try { tx = await awTables.createTransaction({ ttl:60 }); } catch (te) { tx = null; }
+          if (tx) {
+            try {
+              await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:newPoints }, transactionId:tx.$id });
+              betRow = await awTables.createRow({ databaseId:APPWRITE.db, tableId:APPWRITE.bets, rowId:window.Appwrite.ID.unique(), data:{ username:awRow.username, gameId:betState.game, picks:JSON.stringify(picks), status:'pending', issue:g.nextIssue, stake:cost, payout:0 }, permissions:perms, transactionId:tx.$id });
+              await awTables.updateTransaction({ transactionId:tx.$id, commit:true }); tx = null; wrote = true;
+            } catch (e) {
+              try { await awTables.updateTransaction({ transactionId:tx.$id, rollback:true }); } catch (re) {}
+              throw e;
+            }
+          } else {
+            await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:newPoints } });
+            try { betRow = await awTables.createRow({ databaseId:APPWRITE.db, tableId:APPWRITE.bets, rowId:window.Appwrite.ID.unique(), data:{ username:awRow.username, gameId:betState.game, picks:JSON.stringify(picks), status:'pending', issue:g.nextIssue, stake:cost, payout:0 }, permissions:perms }); }
+            catch (be) { try { await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:current } }); } catch (re) {} throw be; }
+            wrote = true;
+          }
           awRow.points = newPoints; points = newPoints;
           bets.unshift({ id:betRow.$id, game:betState.game, targetIssue:g.nextIssue, placedIssue:g.last.issue, qty:qty, cost:cost, notes:notes, selections:selections, labels:selections.map(function (s) { return s.label; }).join('、'), status:'pending', payout:0, created:Date.now() });
           betState.sel = {}; betState.qty = '1'; render(true);
-          showModal('投注已记录到 Appwrite，演示积分已扣减 ' + cost + ' 分。演示站点 · 不构成任何投注建议。');
+          showModal('投注已记录到 Appwrite，账户积分已扣减 ' + cost + ' 分。演示站点 · 不构成任何投注建议。');
         } catch (err) { showModal('投注失败：' + apiError(err)); }
-        finally { authBusy = false; }
+        finally { betSubmitting = false; updateBetBar(); }
       })();
       return;
     }
@@ -1048,7 +1048,7 @@
     var err = authMode === 'register' ? await registerUser($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value) : await loginUser($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value);
     if (err) { if (box) box.innerHTML = err; return; }
     var next = AUTH_NEXT || '#/lotteryhall'; AUTH_NEXT = '#/lotteryhall';
-    location.hash = next; updateUserChip(); showToast('登录成功，已加载真实演示积分');
+    location.hash = next; updateUserChip(); showToast('登录成功，已加载账户积分');
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
   window.addEventListener('hashchange', function () { render(); });
