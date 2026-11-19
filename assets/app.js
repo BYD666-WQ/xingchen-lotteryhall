@@ -825,10 +825,11 @@
     return { html:out, sum:sum };
   }
   function myBetsHtml() {
-    return '<div class="my-bets"><div class="my-bets-head"><h2>模拟注单</h2><span>云端记录 · 账户积分</span></div>' + (bets.length ? bets.slice(0, 4).map(function (b) {
-      var st = b.status === 'pending' ? '<em class="pending">待开奖</em>' : (b.payout > 0 ? '<em class="win">已结算 +' + b.payout + ' 积分</em>' : '<em class="lost">已结算 · 未中</em>');
-      return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span>' + st + '</div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
-    }).join('') : '<div class="my-bet-empty">还没有模拟注单，选号后可记录一张本地注单</div>') + '</div>';
+    var list = bets.filter(function (b) { return b.status === 'pending'; });
+    return '<div class="my-bets"><div class="my-bets-head"><h2>待开奖注单</h2><span>云端记录 · 账户积分</span></div>' + (list.length ? list.slice(0, 4).map(function (b) {
+      return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span><em class="pending">待开奖</em></div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
+    }).join('') : '<div class="my-bet-empty">暂无待开奖注单；结算功能暂未开放</div>') + '</div>';
+  }
   }
   function focusSafe() { var a = document.activeElement; return a && /INPUT|TEXTAREA|SELECT/.test(a.tagName); }
   function updateBetsOnly() {
