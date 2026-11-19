@@ -453,3 +453,38 @@ table.hist{width:100%;min-width:0;border-collapse:collapse;font-size:12px;table-
 @media(max-width:360px){.hot-grid .game-cell{min-height:128px}.user-chip{max-width:54px;font-size:9px;padding:0 5px}}
 
 .bet-cfg{margin:7px 10px 0;padding:6px 9px;background:#fff8ee;border:1px solid #f3dfc3;border-radius:4px;font-size:10px;color:#a06a2a}
+
+/* solid readable lottery balls + larger detail/bet hero balls */
+.ball{width:19px;height:19px;background-image:none!important;background-color:#1F6FEB;color:#fff;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.45);box-shadow:inset 0 -2px 4px rgba(0,0,0,.18),inset 0 2px 3px rgba(255,255,255,.22),0 1px 2px rgba(0,0,0,.12);border:0}
+.ball.r{background-color:#E23A3A!important;background-image:none!important}
+.ball.b{background-color:#1F6FEB!important;background-image:none!important}
+.ball.g{background-color:#1FA85C!important;background-image:none!important}
+.ball.plus{background:transparent!important;box-shadow:none!important;text-shadow:none;color:#999!important}
+.detail-balls{margin:10px 0 8px;gap:4px;min-height:48px;display:flex;align-items:center;flex-wrap:nowrap;overflow:visible}
+.detail-balls .ball{width:39px;height:39px;font-size:12px;margin:0;border:1px solid rgba(0,0,0,.06)}
+.detail-balls .ball.plus{width:9px;height:39px;font-size:12px;color:#999}
+.wave-legend i,.wave-dot{width:8px;height:8px}
+/* bet page red hero */
+.bet-hero{background:radial-gradient(120% 160% at 100% 0,rgba(255,255,255,.13),transparent 50%),linear-gradient(120deg,#d32f3c,#dc3c41 55%,#e35b48);padding:10px 12px 12px;position:relative;overflow:hidden}
+.bet-hero:after{content:"";position:absolute;right:-30px;top:-45px;width:170px;height:170px;border-radius:50%;border:14px solid rgba(255,255,255,.055);pointer-events:none}
+.bet-head{padding:0;background:transparent;position:relative;z-index:1}
+.bet-kicker{color:rgba(255,255,255,.74)}
+.bet-head h1{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.12)}
+.bet-period{color:rgba(255,255,255,.72)}.bet-period b{color:#fff}
+.bet-clock{color:rgba(255,255,255,.72)}.bet-clock b{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.bet-open{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:6px;margin-top:9px;padding:8px 3px 2px 10px;position:relative;z-index:1}
+.bet-open-label{color:rgba(255,255,255,.78)}.bet-open-label span{color:#fff}
+.bet-open-balls{display:flex;align-items:center;gap:4px;margin:6px 0 7px;flex-wrap:nowrap;min-height:38px;overflow:visible}
+.bet-ball{width:35px;height:35px;flex:0 0 35px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #fff;background:#1F6FEB;box-shadow:0 2px 5px rgba(0,0,0,.25),inset 0 -2px 4px rgba(0,0,0,.2);overflow:hidden;position:relative}
+.bet-ball.r{background:#E23A3A}.bet-ball.b{background:#1F6FEB}.bet-ball.g{background:#1FA85C}
+.bet-ball b{font:900 12px/1 Arial;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.48);position:relative;z-index:1;margin-top:2px}
+.bet-ball small{font-size:7px;line-height:1.1;color:rgba(255,255,255,.9);text-shadow:0 1px 1px rgba(0,0,0,.35);margin-top:1px;position:relative;z-index:1}
+.bet-ball:before{display:none}
+.bet-plus{font-style:normal;color:#fff;font-weight:800;font-size:13px;flex:none;margin:0 1px;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.bet-sum{color:#fff;font-size:10px;white-space:nowrap;margin-left:4px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+.bet-sum b{font-size:12px}
+
+.rt-status{font-size:9px;color:#1FA85C;font-weight:700;white-space:nowrap;margin-left:2px}
+.rt-status.degraded{color:#d58125}
+.rt-status:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:currentColor;margin-right:3px;vertical-align:1px}
+.err-code{display:block;font-size:9px;color:#aaa;font-weight:400;margin-top:3px}

@@ -337,11 +337,27 @@
   }
   var AUTH_NEXT = '#/lotteryhall', authMode = 'login', authReady = false, authBusy = false;
   var awUser = null, awRow = null, gameConfigs = {};
+  var rtUnsub = null, rtRetry = 0, rtRetryTimer = null, rtHeartbeat = null, rtPoll = null, rtLive = false, rtState = { s:'–', degraded:false };
   function emailFor(name) { var s = String(name || '').toLowerCase().replace(/[^a-z0-9._-]/g, ''); if (!s) s = 'u' + Array.from(String(name || 'user')).map(function (c) { return c.codePointAt(0).toString(36); }).join('').slice(0, 20); return s + '@lottery-demo.com'; }
   function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.name || '玩家', id:awUser.$id, email:awUser.email } : null; }
   function saveAccounts() {}
   function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? (u.username.length > 8 ? u.username.slice(0,8) + '…' : u.username) : '登录'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
-  function apiError(e) { return (e && (e.message || e.type || e.code)) || '网络请求失败'; }
+  function friendlyError(e) {
+    var raw = (e && (e.message || e.type || '')) || '';
+    var code = (e && (e.code || e.type)) || '';
+    var table = [
+      [/password.*(at least|minimum|8|short|length)/i, '密码至少 8 位'],
+      [/password.*(weak|strength|common|easy)/i, '密码强度不足，请包含字母和数字'],
+      [/(already exists|already_exists|user_already_exists|email_already_exists|409)/i, '账号已存在，请直接登录'],
+      [/(invalid email|email.*invalid|invalid.*email)/i, '邮箱格式不正确'],
+      [/(network|failed to fetch|timeout|timed out|websocket|connection)/i, '网络连接失败，请稍后重试'],
+      [/(invalid credentials|user_invalid_credentials|invalid password|401)/i, '账号或密码不正确'],
+      [/(rate limit|too many|429)/i, '操作太频繁，请稍后重试']
+    ];
+    for (var i = 0; i < table.length; i++) if (table[i][0].test(raw + ' ' + code)) return table[i][1];
+    return '操作失败，请重试' + (code ? '<small class="err-code">' + String(code) + '</small>' : '');
+  }
+  function apiError(e) { return friendlyError(e); }
   async function ensureUserRow(user, username) {
     if (!awTables) throw new Error('Appwrite SDK 未加载');
     try { return await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:user.$id }); }
@@ -369,6 +385,55 @@
     if (!awTables) return;
     try { var res = await awTables.listRows({ databaseId:APPWRITE.db, tableId:APPWRITE.config }); gameConfigs = {}; (res.rows || []).forEach(function (r) { gameConfigs[r.gameId] = r; }); } catch (e) {}
   }
+  function updateRTStatus(s, degraded) {
+    rtState.s = s; rtState.degraded = !!degraded;
+    $$('[data-rt-status]').forEach(function (el) { el.textContent = '实时:' + s; el.classList.toggle('degraded', !!degraded); });
+  }
+  function stopPoll() { if (rtPoll) { clearInterval(rtPoll); rtPoll = null; } }
+  function startPoll() {
+    if (rtPoll) return;
+    rtPoll = setInterval(async function () {
+      if (!awUser || document.hidden) return;
+      try { await refreshPoints(); bets = await loadUserBets(); updateBetsOnly(); } catch (e) {}
+    }, 5000);
+  }
+  async function onRealtime(resp) {
+    if (!awUser) return;
+    var events = (resp && resp.events ? resp.events.join(' ') : '');
+    var payload = (resp && resp.payload) || {};
+    if (events.indexOf('tables.' + APPWRITE.users) >= 0) {
+      if (payload.$id === (awRow && awRow.$id) && payload.points != null) { points = parseInt(payload.points, 10) || 0; if (awRow) awRow.points = points; updatePointsUI(); }
+      else { refreshPoints(); }
+    }
+    if (events.indexOf('tables.' + APPWRITE.bets) >= 0) {
+      try { bets = await loadUserBets(); updateBetsOnly(); } catch (e) {}
+    }
+  }
+  function stopRealtime() {
+    if (rtUnsub) { try { rtUnsub(); } catch (e) {} rtUnsub = null; }
+    if (rtHeartbeat) { clearInterval(rtHeartbeat); rtHeartbeat = null; }
+    if (rtRetryTimer) { clearTimeout(rtRetryTimer); rtRetryTimer = null; }
+    rtLive = false;
+  }
+  function realtimeDown() {
+    stopRealtime(); updateRTStatus('降级', true); startPoll();
+    var delay = Math.min(30000, 1000 * Math.pow(2, Math.min(rtRetry, 5))); rtRetry++;
+    rtRetryTimer = setTimeout(startRealtime, delay);
+  }
+  function startRealtime() {
+    if (!awClient || !awUser) { updateRTStatus('关'); return; }
+    stopRealtime(); updateRTStatus('…');
+    try {
+      rtUnsub = awClient.subscribe([
+        'tablesdb.' + APPWRITE.db + '.tables.' + APPWRITE.users + '.rows',
+        'tablesdb.' + APPWRITE.db + '.tables.' + APPWRITE.bets + '.rows'
+      ], onRealtime);
+      rtLive = true; rtRetry = 0; stopPoll(); updateRTStatus('开');
+      rtHeartbeat = setInterval(async function () {
+        try { await awClient.ping(); } catch (e) { if (rtLive) realtimeDown(); }
+      }, 15000);
+    } catch (e) { realtimeDown(); }
+  }
   async function refreshPoints() {
     if (!awRow) return;
     try { var r = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id }); awRow = r; points = parseInt(r.points,10) || 0; updatePointsUI(); } catch (e) {}
@@ -379,18 +444,18 @@
     points = parseInt(awRow.points, 10) || 0;
     bets = await loadUserBets();
     await loadGameConfigs();
-    authReady = true; updateUserChip(); render(true);
+    authReady = true; updateUserChip(); render(true); startRealtime();
   }
   async function initAuth() {
     if (!awAccount) { authReady = true; render(); return; }
     try { var u = await awAccount.get(); await afterAuth(u, u.name || (u.email || '').split('@')[0]); }
-    catch (e) { awUser = null; awRow = null; points = 10000; bets = []; authReady = true; updateUserChip(); render(true); }
+    catch (e) { stopRealtime(); stopPoll(); awUser = null; awRow = null; points = 10000; bets = []; authReady = true; updateRTStatus('关'); updateUserChip(); render(true); }
   }
   async function loginUser(name, pass) {
     if (authBusy) return '';
     name = String(name || '').trim(); pass = String(pass || '');
     if (name.length < 2) return '用户名至少 2 个字符';
-    if (pass.length < 4) return '密码至少 4 个字符';
+    if (pass.length < 8) return '密码至少 8 位';
     if (!awAccount) return 'Appwrite SDK 未加载';
     authBusy = true;
     try {
@@ -404,7 +469,7 @@
     if (authBusy) return '';
     name = String(name || '').trim(); pass = String(pass || '');
     if (name.length < 2) return '用户名至少 2 个字符';
-    if (pass.length < 4) return '密码至少 4 个字符';
+    if (pass.length < 8) return '密码至少 8 位';
     if (!awAccount) return 'Appwrite SDK 未加载';
     authBusy = true;
     try {
@@ -715,7 +780,7 @@
   function pointsBar() {
     var u = currentUser();
     if (!u) return '<div class="points-bar"><span>演示积分</span><b class="points-guest">登录后查看</b><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/howto">玩法说明</a></div>';
-    return '<div class="points-bar"><span>演示积分</span><b data-points-value>' + points + '</b><a class="points-help" href="#/howto">玩法说明</a><button type="button" data-reset-points>重置积分</button></div>';
+    return '<div class="points-bar"><span>演示积分</span><b data-points-value>' + points + '</b><span class="rt-status' + (rtState.degraded ? ' degraded' : '') + '" data-rt-status>实时:' + rtState.s + '</span><a class="points-help" href="#/howto">玩法说明</a><button type="button" data-reset-points>重置积分</button></div>';
   }
   function updatePointsUI() { $$('[data-points-value]').forEach(function (el) { el.textContent = points; }); }
   function attrFor(n) { return state.attrs[parseInt(n,10)] || { z:'', color:colorOf(n) }; }
@@ -764,6 +829,17 @@
     });
     return { html:out, sum:sum };
   }
+  function myBetsHtml() {
+    return '<div class="my-bets"><div class="my-bets-head"><h2>模拟注单</h2><span>本地记录 · 演示积分</span></div>' + (bets.length ? bets.slice(0, 4).map(function (b) {
+      var st = b.status === 'pending' ? '<em class="pending">待开奖</em>' : (b.payout > 0 ? '<em class="win">已结算 +' + b.payout + ' 积分</em>' : '<em class="lost">已结算 · 未中</em>');
+      return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span>' + st + '</div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
+    }).join('') : '<div class="my-bet-empty">还没有模拟注单，选号后可记录一张本地注单</div>') + '</div>';
+  }
+  function focusSafe() { var a = document.activeElement; return a && /INPUT|TEXTAREA|SELECT/.test(a.tagName); }
+  function updateBetsOnly() {
+    var box = document.querySelector('.my-bets'); if (!box || focusSafe()) return;
+    box.outerHTML = myBetsHtml();
+  }
   function betPage(id) {
     var def = DEFS[id] || DEFS.newhk, g = state.games[id] || mockGame(id);
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
@@ -776,13 +852,10 @@
     var cost = totalNotes() * 2;
     var gc = gameConfigs[id];
     var cfgNote = gc ? '<div class="bet-cfg">开奖配置：' + (gc.mode === 'manual' ? '手动 ' + (gc.forcedResult || '') : '随机') + ' · 难度 ' + (gc.difficulty === 'easy' ? '易' : gc.difficulty === 'hard' ? '难' : '中') + '</div>' : '';
-    var my = '<div class="my-bets"><div class="my-bets-head"><h2>模拟注单</h2><span>本地记录 · 演示积分</span></div>' + (bets.length ? bets.slice(0, 4).map(function (b) {
-      var st = b.status === 'pending' ? '<em class="pending">待开奖</em>' : (b.payout > 0 ? '<em class="win">已结算 +' + b.payout + ' 积分</em>' : '<em class="lost">已结算 · 未中</em>');
-      return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span>' + st + '</div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
-    }).join('') : '<div class="my-bet-empty">还没有模拟注单，选号后可记录一张本地注单</div>') + '</div>';
+    var my = myBetsHtml();
     return '<a class="back-link" href="' + (def.mock ? '#/lotteryhall' : '#/game/' + id) + '">‹ 返回 ' + (def.mock ? '大厅' : def.name + '详情') + '</a>' + pointsBar() +
-      '<div class="bet-head"><div><span class="bet-kicker">模拟投注 · 仅演示</span><h1>' + title + '</h1><div class="bet-period">第 <b>' + shortIssue(g.last.issue) + '</b> 期 · 下期 ' + shortIssue(g.nextIssue) + '</div></div><div class="bet-clock">投注中<br><b data-cd="' + id + '">' + countdownText(g) + '</b></div></div>' +
-      '<div class="bet-open"><div class="bet-open-label">上期开奖 <span>第 ' + shortIssue(g.last.issue) + ' 期</span></div><div class="bet-open-balls">' + open.html + '<span class="bet-sum">总和 <b>' + open.sum + '</b></span></div></div>' +
+      '<div class="bet-hero"><div class="bet-head"><div><span class="bet-kicker">模拟投注 · 仅演示</span><h1>' + title + '</h1><div class="bet-period">第 <b>' + shortIssue(g.last.issue) + '</b> 期 · 下期 ' + shortIssue(g.nextIssue) + '</div></div><div class="bet-clock">投注中<br><b data-cd="' + id + '">' + countdownText(g) + '</b></div></div>' +
+      '<div class="bet-open"><div class="bet-open-label">上期开奖 <span>第 ' + shortIssue(g.last.issue) + ' 期</span></div><div class="bet-open-balls">' + open.html + '<span class="bet-sum">总和 <b>' + open.sum + '</b></span></div></div></div>' +
       '<div class="bet-tabs"><button type="button" class="' + (credit ? 'on' : '') + '" data-bet-tab="credit">信用</button><button type="button" class="' + (!credit ? 'on' : '') + '" data-bet-tab="path">路子图</button></div>' +
       (credit ? '<div class="bet-layout"><div class="bet-cats">' + BET_CATS.map(function (c) { return '<button type="button" class="' + (cat === c.id ? 'on' : '') + '" data-bet-cat="' + c.id + '"><span>' + c.short + '</span>' + c.name + '</button>'; }).join('') + '</div><div class="bet-center">' + betContent(cat) + '</div></div>' : '<div class="bet-path">' + emptyState('路子图演示占位，暂未开放') + '</div>') +
       '<div class="odds-note">演示赔率，非真实 · 每注固定 2 演示积分 · 不构成任何投注建议</div>' + cfgNote + my +
@@ -800,7 +873,7 @@
     var register = authMode === 'register';
     return '<div class="auth-page"><div class="auth-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></div><div class="page-kicker">LUCKY HALL ACCOUNT</div><h1 class="auth-title">' + (register ? '注册演示账号' : '登录幸运大厅') + '</h1><p class="auth-sub">Appwrite 真实演示账号；积分和注单写入 lottery 数据库，不涉及真实支付。</p>' +
       '<div class="auth-tabs"><button type="button" class="' + (!register ? 'on' : '') + '" data-auth-mode="login">登录</button><button type="button" class="' + (register ? 'on' : '') + '" data-auth-mode="register">注册</button></div>' +
-      '<form id="authForm" class="auth-form"><label>用户名<input id="authUser" autocomplete="username" maxlength="20" placeholder="例如：幸运玩家"></label><label>密码<input id="authPass" type="password" autocomplete="current-password" maxlength="30" placeholder="至少 4 位"></label><div id="authError" class="auth-error"></div><button class="auth-submit" type="submit">' + (register ? '注册并登录' : '登录') + '</button></form>' +
+      '<form id="authForm" class="auth-form"><label>用户名<input id="authUser" autocomplete="username" maxlength="20" placeholder="例如：幸运玩家"></label><label>密码<input id="authPass" type="password" autocomplete="current-password" maxlength="30" placeholder="至少 8 位"></label><div id="authError" class="auth-error"></div><button class="auth-submit" type="submit">' + (register ? '注册并登录' : '登录') + '</button></form>' +
       '<div class="auth-tip">账号由 Appwrite 管理，仅用于本演示站；请勿使用真实密码。<br>登录后可查看数据库积分并体验模拟投注。</div><a class="auth-back" href="#/lotteryhall">先逛逛大厅 →</a></div>';
   }
   var ROUTES = { lotteryhall: hallPage, history: historyPage, trend: trendPage, rank: rankPage, me: mePage };
@@ -973,12 +1046,12 @@
     e.preventDefault();
     var box = $('#authError'); if (box) box.textContent = '正在连接 Appwrite…';
     var err = authMode === 'register' ? await registerUser($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value) : await loginUser($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value);
-    if (err) { if (box) box.textContent = err; return; }
+    if (err) { if (box) box.innerHTML = err; return; }
     var next = AUTH_NEXT || '#/lotteryhall'; AUTH_NEXT = '#/lotteryhall';
     location.hash = next; updateUserChip(); showToast('登录成功，已加载真实演示积分');
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
   window.addEventListener('hashchange', function () { render(); });
   if (!location.hash) location.hash = '#/lotteryhall';
-  render(); loadData(true); initAuth(); setInterval(function () { if (!document.hidden) { loadData(true); if (awUser) refreshPoints(); } }, 30000);
+  render(); loadData(true); initAuth(); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
 })();
