@@ -183,7 +183,7 @@
       '<div class="dots">' + [0,1,2].map(function (i) { return '<button type="button" data-slide="' + i + '" class="' + (i === 0 ? 'on' : '') + '" aria-label="第 ' + (i + 1) + ' 张"></button>'; }).join('') + '</div></section>';
   }
   function notice() {
-    return '<div class="notice"><span class="notice-ico">◖</span><div class="notice-track"><span>演示站点 · 数据为样例 · 不构成任何投注建议 <em>｜ 新港 / 新澳 / 香港数据已接入</em></span></div><a class="notice-help" href="#/howto">玩法说明</a><button class="notice-more" type="button" data-demo="公告为演示内容">更多 ›</button></div>';
+    return '<div class="notice"><span class="notice-ico">◖</span><div class="notice-track"><span>演示站点 · 数据为样例 · 不构成任何投注建议 <em>｜ 新港 / 新澳 / 香港数据已接入</em></span></div><button class="notice-more" type="button" data-demo="公告为演示内容">更多 ›</button></div>';
   }
   function quickGrid() {
     return '<div class="quick-grid">' + QUICK.map(function (q) {
@@ -297,7 +297,7 @@
   function saveBets() { try { localStorage.setItem(BETS_KEY, JSON.stringify(bets)); } catch (e) {} }
   var points = loadPoints();
   var bets = loadBets();
-  function pointsBar() { return '<div class="points-bar"><span>演示积分</span><b data-points-value>' + points + '</b><button type="button" data-reset-points>重置积分</button></div>'; }
+  function pointsBar() { return '<div class="points-bar"><span>演示积分</span><b data-points-value>' + points + '</b><a class="points-help" href="#/howto">玩法说明</a><button type="button" data-reset-points>重置积分</button></div>'; }
   function updatePointsUI() { $$('[data-points-value]').forEach(function (el) { el.textContent = points; }); }
   function attrFor(n) { return state.attrs[parseInt(n,10)] || { z:'', color:colorOf(n) }; }
   function isSel(k) { return !!betState.sel[k]; }
