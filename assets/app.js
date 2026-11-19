@@ -328,28 +328,390 @@
   function saveBets() { try { localStorage.setItem(BETS_KEY, JSON.stringify(bets)); } catch (e) {} }
   var points = loadPoints();
   var bets = loadBets();
-  var SESSION_KEY = 'lh-demo-session', ACCOUNTS_KEY = 'lh-demo-accounts', AUTH_NEXT = '#/lotteryhall', authMode = 'login';
-  function currentUser() { try { var u = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); return u && u.username ? u : null; } catch (e) { return null; } }
-  function accounts() { try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}') || {}; } catch (e) { return {}; } }
-  function saveAccounts(a) { try { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(a)); } catch (e) {} }
-  function doAuth(name, pass, mode) {
+  var APPWRITE = { endpoint:'https://sgp.cloud.appwrite.io/v1', project:'6aff4c2f0016ee43abad', db:'lottery', users:'6aff4ea1000cecd6c798', bets:'bets', config:'config' };
+  var awClient = null, awAccount = null, awTables = null;
+  if (window.Appwrite) {
+    awClient = new window.Appwrite.Client().setEndpoint(APPWRITE.endpoint).setProject(APPWRITE.project);
+    awAccount = new window.Appwrite.Account(awClient);
+    awTables = new window.Appwrite.TablesDB(awClient);
+  }
+  var AUTH_NEXT = '#/lotteryhall', authMode = 'login', authReady = false, authBusy = false;
+  var awUser = null, awRow = null, gameConfigs = {};
+  function emailFor(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9._-]/g, '') + '@lottery-demo.com'; }
+  function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.name || '玩家', id:awUser.$id, email:awUser.email } : null; }
+  function saveAccounts() {}
+  function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? (u.username.length > 5 ? u.username.slice(0,5) + '…' : u.username) : '登录'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
+  function apiError(e) { return (e && (e.message || e.type || e.code)) || '网络请求失败'; }
+  async function ensureUserRow(user, username) {
+    if (!awTables) throw new Error('Appwrite SDK 未加载');
+    try { return await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:user.$id }); }
+    catch (e) {
+      if (String(e.code) !== '404' && String(e.code) !== '404') throw e;
+      return await awTables.createRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:user.$id, data:{ username:username, points:10000, role:'user' }, permissions:[
+        window.Appwrite.Permission.read(window.Appwrite.Role.user(user.$id)),
+        window.Appwrite.Permission.update(window.Appwrite.Role.user(user.$id)),
+        window.Appwrite.Permission.delete(window.Appwrite.Role.user(user.$id))
+      ] });
+    }
+  }
+  async function loadUserBets() {
+    if (!awTables || !awRow) return [];
+    var res = await awTables.listRows({ databaseId:APPWRITE.db, tableId:APPWRITE.bets, queries:[window.Appwrite.Query.equal('username', awRow.username)] });
+    return (res.rows || []).map(function (r) {
+      var parsed = null; try { parsed = JSON.parse(r.picks || '[]'); } catch (e) {}
+      var picks = Array.isArray(parsed) ? parsed : ((parsed && parsed.selections) || []);
+      var qty = (parsed && parsed.qty) || 1;
+      var notes = (parsed && parsed.notes) || (r.stake / 2);
+      return { id:r.$id, game:r.gameId, targetIssue:r.issue, placedIssue:r.issue, qty:qty, cost:r.stake, notes:notes, selections:picks, labels:(picks || []).map(function (p) { return p.label || p.key; }).join('、'), status:r.status, payout:r.payout || 0, created:r.$createdAt ? Date.parse(r.$createdAt) : Date.now() };
+    });
+  }
+  async function loadGameConfigs() {
+    if (!awTables) return;
+    try { var res = await awTables.listRows({ databaseId:APPWRITE.db, tableId:APPWRITE.config }); gameConfigs = {}; (res.rows || []).forEach(function (r) { gameConfigs[r.gameId] = r; }); } catch (e) {}
+  }
+  async function refreshPoints() {
+    if (!awRow) return;
+    try { var r = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id }); awRow = r; points = parseInt(r.points,10) || 0; updatePointsUI(); } catch (e) {}
+  }
+  async function afterAuth(user, username) {
+    awUser = user;
+    awRow = await ensureUserRow(user, username);
+    points = parseInt(awRow.points, 10) || 0;
+    bets = await loadUserBets();
+    await loadGameConfigs();
+    authReady = true; updateUserChip(); render(true);
+  }
+  async function initAuth() {
+    if (!awAccount) { authReady = true; render(); return; }
+    try { var u = await awAccount.get(); await afterAuth(u, u.name || (u.email || '').split('@')[0]); }
+    catch (e) { awUser = null; awRow = null; points = 10000; bets = []; authReady = true; updateUserChip(); render(true); }
+  }
+  async function loginUser(name, pass) {
+    if (authBusy) return '';
     name = String(name || '').trim(); pass = String(pass || '');
     if (name.length < 2) return '用户名至少 2 个字符';
     if (pass.length < 4) return '密码至少 4 个字符';
-    var a = accounts();
-    if (mode === 'register') {
-      if (a[name]) return '这个演示用户名已存在';
-      a[name] = { pass: btoa(pass), created: Date.now() }; saveAccounts(a);
-    } else {
-      if (!a[name]) return '账号不存在，请先注册';
-      if (a[name].pass !== btoa(pass)) return '密码不正确';
-    }
-    var token = 'mock_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ username:name, token:token, loggedAt:Date.now() }));
-    return '';
+    if (!awAccount) return 'Appwrite SDK 未加载';
+    authBusy = true;
+    try {
+      await awAccount.createEmailPasswordSession({ email:emailFor(name), password:pass });
+      var u = await awAccount.get();
+      await afterAuth(u, u.name || name);
+      return '';
+    } catch (e) { return apiError(e); } finally { authBusy = false; }
   }
-  function logout() { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} }
-  function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? (u.username.length > 5 ? u.username.slice(0,5) + '…' : u.username) : '登录'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
+  async function registerUser(name, pass) {
+    if (authBusy) return '';
+    name = String(name || '').trim(); pass = String(pass || '');
+    if (name.length < 2) return '用户名至少 2 个字符';
+    if (pass.length < 4) return '密码至少 4 个字符';
+    if (!awAccount) return 'Appwrite SDK 未加载';
+    authBusy = true;
+    try {
+      var u = await awAccount.create({ userId:window.Appwrite.ID.unique(), email:emailFor(name), password:pass, name:name });
+      await awAccount.createEmailPasswordSession({ email:emailFor(name), password:pass });
+      await afterAuth(u, name);
+      return '';
+    } catch (e) { return apiError(e); } finally { authBusy = false; }
+  }
+  async function logoutUser() {
+    try { if (awAccount) await awAccount.deleteSession({ sessionId:'current' }); } catch (e) {}
+    awUser = null; awRow = null; points = 10000; bets = []; authReady = true;
+  }
+  function logout() { logoutUser(); }
+    var QUICK = [
+    { t: '开奖', icon: 'award', i: '奖', c: 'linear-gradient(135deg,#ff9b47,#ed5b3e)', href: '#/history' },
+    { t: '走势', icon: 'trend', i: '势', c: '#4ca4e8', href: '#/trend' },
+    { t: '图谱', icon: 'chart', i: '谱', c: '#6e8ee8', action: '图谱为演示入口，暂未开放' },
+    { t: '排行榜', icon: 'rank', i: '榜', c: 'linear-gradient(135deg,#ff6a6e,#dc3c41)', href: '#/rank' },
+    { t: '资料', icon: 'book', i: '资', c: '#3e9fe0', action: '资料库为演示入口，暂未开放' },
+    { t: '玩法说明', icon: 'rules', i: '规', c: '#58b5a6', href: '#/howto' },
+    { t: '客服', icon: 'support', i: '服', c: '#4f8fe0', action: '客服为演示入口' },
+    { t: '活动', icon: 'activity', i: '活', c: 'linear-gradient(135deg,#ff686b,#dc3c41)', action: '活动为演示入口，不产生真实奖励' }
+  ];
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function shortIssue(v) { return String(v == null ? '' : v).slice(-3); }
+  function colorOf(n) { n = parseInt(n, 10); if (RED.indexOf(n) >= 0) return '红'; if (BLUE.indexOf(n) >= 0) return '蓝'; return '绿'; }
+  function waveClass(n) { var c = colorOf(n); return c === '红' ? 'r' : (c === '蓝' ? 'b' : 'g'); }
+  function normBall(x) {
+    if (x == null) return null;
+    var c = (typeof x === 'object') ? (x.c != null ? x.c : x.num) : x;
+    c = String(c == null ? '' : c).trim();
+    if (!/^\d+$/.test(c)) return null;
+    c = pad(parseInt(c, 10));
+    return { c: c, z: (x && x.z) || '', color: (x && x.color) || colorOf(c) };
+  }
+  function normNums(arr) { return (arr || []).map(normBall).filter(Boolean).slice(0, 7); }
+  function vfDec(enc) {
+    try {
+      var bin = atob(String(enc || '')), arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i) ^ KEY.charCodeAt(i % KEY.length);
+      return JSON.parse(new TextDecoder().decode(arr));
+    } catch (e) { return null; }
+  }
+  function issueNo(v) { var n = parseInt(v, 10); return isFinite(n) ? n : null; }
+  function parseManual(manual, now) {
+    if (!manual) return null;
+    var hist = (manual.history || []).map(function (h) { var n = normNums(h.nums); return n.length === 7 ? { issue: issueNo(h.issue), nums: n } : null; }).filter(Boolean).sort(function (a, b) { return b.issue - a.issue; });
+    var cur = manual.current || {}, curNums = normNums(cur.nums), visible = cur.visibleFrom ? Date.parse(cur.visibleFrom) : 0;
+    if (curNums.length < 7 && cur.numsEnc && (!visible || visible <= now)) { var d = vfDec(cur.numsEnc); if (d) curNums = normNums(d); }
+    var last, nextIssue;
+    if (curNums.length === 7) {
+      last = { issue: issueNo(cur.issue), nums: curNums }; nextIssue = last.issue + 1;
+      hist = [{ issue: last.issue, nums: last.nums }].concat(hist.filter(function (h) { return h.issue !== last.issue; }));
+    } else { last = hist[0] || null; nextIssue = cur.issue ? issueNo(cur.issue) : (last ? last.issue + 1 : null); }
+    var seen = {};
+    hist = hist.filter(function (h) { if (seen[h.issue]) return false; seen[h.issue] = 1; return true; }).slice(0, 20);
+    return { last: last, nextIssue: nextIssue, history: hist };
+  }
+  function parseDraw(draw, rule) {
+    if (!draw || !draw.games) return null;
+    var g = draw.games.filter(function (x) { return x.rule === rule; })[0]; if (!g) return null;
+    var nums = normNums(g.nums); if (nums.length < 7) return null;
+    var last = { issue: issueNo(g.issue), nums: nums };
+    var hist = [{ issue: last.issue, nums: nums }].concat((g.history || []).map(function (h) { var n = normNums(h.nums); return n.length === 7 ? { issue: issueNo(h.issue), nums: n } : null; }).filter(Boolean));
+    var seen = {};
+    hist = hist.filter(function (h) { if (seen[h.issue]) return false; seen[h.issue] = 1; return true; }).sort(function (a, b) { return b.issue - a.issue; }).slice(0, 20);
+    return { last: last, nextIssue: last.issue + 1, history: hist };
+  }
+  function timeCfg(cfg, key) {
+    var d = (cfg && cfg.drawTimes && cfg.drawTimes[key]) || {};
+    var def = key === 'hk' ? { time: '21:30', days: [0] } : (key === 'newmo' ? { time: '21:30', days: [0,1,2,3,4,5,6] } : { time: '21:34', days: [0,1,2,3,4,5,6] });
+    var parts = String(d.time || def.time).split(':');
+    return { time: String(d.time || def.time), hour: parseInt(parts[0], 10) || 0, minute: parseInt(parts[1], 10) || 0, days: (d.days && d.days.length ? d.days : def.days).map(Number) };
+  }
+  function nextDrawAt(game, now) {
+    now = now || new Date(); var cfg = game.timeCfg;
+    for (var i = 0; i < 15; i++) {
+      var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, cfg.hour, cfg.minute, 0, 0);
+      if (d.getTime() <= now.getTime()) continue;
+      if (cfg.days.indexOf(d.getDay()) < 0) continue;
+      return d;
+    }
+    return null;
+  }
+  function countdownText(game) {
+    var d = game.mockNext ? new Date(game.mockNext) : nextDrawAt(game); if (!d) return '--:--:--';
+    var left = Math.max(0, Math.floor((d.getTime() - Date.now()) / 1000));
+    var days = Math.floor(left / 86400), hours = Math.floor(left % 86400 / 3600);
+    return (days > 0 ? days + '天 ' : '') + pad(hours) + ':' + pad(Math.floor(left % 3600 / 60)) + ':' + pad(left % 60);
+  }
+  function fetchOne(path) {
+    var i = 0;
+    function go() {
+      if (i >= BASES.length) return Promise.reject(new Error('all sources failed: ' + path));
+      var url = BASES[i++] + path + '?t=' + Date.now();
+      var ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var timer = ac ? setTimeout(function () { try { ac.abort(); } catch (e) {} }, 7000) : 0;
+      return fetch(url, { cache: 'no-store', signal: ac ? ac.signal : undefined }).then(function (r) {
+        if (timer) clearTimeout(timer); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json();
+      }).catch(function () { if (timer) clearTimeout(timer); return go(); });
+    }
+    return go();
+  }
+  function setData(manual, draw, cfg, attrs) {
+    var now = Date.now(), games = {};
+    var m = parseManual(manual, now); if (m) games.newhk = Object.assign({}, DEFS.newhk, m);
+    var dm = parseDraw(draw, 'Macau'); if (dm) games.newmo = Object.assign({}, DEFS.newmo, dm);
+    var dh = parseDraw(draw, 'HongKong'); if (dh) games.hk = Object.assign({}, DEFS.hk, dh);
+    ORDER.forEach(function (id) { if (games[id]) games[id].timeCfg = timeCfg(cfg, DEFS[id].drawKey); });
+    ORDER.forEach(function (id) { if (!games[id] && state.games[id]) games[id] = state.games[id]; });
+    state.games = games; state.config = cfg || state.config || {};
+    var amap = {};(attrs && attrs.rows || []).forEach(function (r) { var n = parseInt(r.num, 10); if (n) amap[n] = { z: r.zodiac || '', color: r.color || colorOf(n) }; });
+    if (Object.keys(amap).length) state.attrs = amap; state.updated = Date.now(); state.error = '';
+  }
+  function loadData(silent) {
+    if (state.loading) return Promise.resolve();
+    state.loading = true; setRefreshBusy(true);
+    var jobs = [fetchOne('data/manual-draw.json'), fetchOne('data/draw.json'), fetchOne('data/site-config.json'), fetchOne('data/num-attrs.json')];
+    var all = Promise.allSettled ? Promise.allSettled(jobs) : Promise.all(jobs.map(function (p) { return p.then(function (v) { return { status: 'fulfilled', value: v }; }, function (e) { return { status: 'rejected', reason: e }; }); }));
+    return all.then(function (res) {
+      var manual = res[0] && res[0].status === 'fulfilled' ? res[0].value : null;
+      var draw = res[1] && res[1].status === 'fulfilled' ? res[1].value : null;
+      var cfg = res[2] && res[2].status === 'fulfilled' ? res[2].value : null;
+      var attrs = res[3] && res[3].status === 'fulfilled' ? res[3].value : null;
+      if (!manual && !draw && !cfg && !attrs) throw new Error('数据源不可达');
+      setData(manual, draw, cfg, attrs);
+      if (!silent) { showToast('数据已更新'); render(true); }
+      else render(true);
+    }).catch(function (e) {
+      state.error = String(e && e.message || e); if (!state.games.newhk && !state.games.newmo && !state.games.hk) render(true); if (!silent) showToast('刷新失败，稍后重试');
+    }).then(function () { state.loading = false; setRefreshBusy(false); });
+  }
+  function setRefreshBusy(on) { var b = $('#refreshDataBtn'); if (!b) return; b.classList.toggle('busy', on); b.disabled = on; b.setAttribute('aria-busy', on ? 'true' : 'false'); }
+  function balls(nums, compact) {
+    if (!nums || !nums.length) return '<span class="data-empty">暂无开奖数据</span>';
+    var out = '';
+    nums.forEach(function (x, i) {
+      if (i === 6) out += '<i class="ball plus">+</i>';
+      out += '<span class="ball ' + waveClass(x.c) + '" title="' + esc(x.z || '') + '">' + esc(x.c) + '</span>';
+    });
+    return '<span class="ball-row">' + out + '</span>';
+  }
+  function emptyState(text) {
+    return '<div class="empty-state"><svg viewBox="0 0 120 96" aria-hidden="true"><use href="#i-empty"></use></svg><span>' + esc(text || '暂无数据') + '</span></div>';
+  }
+  function catTabs(active) {
+    var items = [['lotteryhall','彩票','#/lotteryhall'],['trend','走势','#/trend'],['history','开奖记录','#/history'],['rank','排行榜','#/rank']];
+    return '<nav class="cat-tabs">' + items.map(function (x) { return '<a class="' + (active === x[0] ? 'on' : '') + '" href="' + x[2] + '">' + x[1] + '</a>'; }).join('') + '</nav>';
+  }
+  function banner() {
+    return '<section class="swiper" id="hallBanner">' +
+      '<div class="slide s1 on"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.2"><circle cx="160" cy="76" r="52"/><circle cx="160" cy="76" r="34"/><path d="M40 140c30-25 57-26 85-8s45 12 65-9"/><path d="M118 38l7 18 18 7-18 7-7 18-7-18-18-7 18-7 7-18z"/><circle cx="56" cy="56" r="2.5" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="194" cy="136" r="2" fill="rgba(255,255,255,.55)" stroke="none"/></g></svg><small>THREE GAMES · 真实数据</small><h2>今晚，好运开场</h2><p>新港 / 新澳 / 香港 · 开奖与倒计时实时查看</p><a class="slide-btn slide-cta" href="#/bet/newhk">立即投注 →</a></div>' +
+      '<div class="slide s2"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.2"><path d="M36 138l28-38 25 17 30-47 26 22 28-39"/><path d="M36 148h148M36 116h148" opacity=".35"/><circle cx="64" cy="100" r="3" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="119" cy="70" r="3" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="173" cy="53" r="3" fill="rgba(255,255,255,.7)" stroke="none"/><circle cx="160" cy="84" r="36" opacity=".35"/></g></svg><small>TREND · 近 12 期</small><h2>看懂每一条走势</h2><p>波色、生肖、号码分布，一眼看清</p><a class="slide-btn" href="#/trend">去看走势 →</a></div>' +
+      '<div class="slide s3"><svg class="slide-art" viewBox="0 0 220 180" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.2"><path d="M110 36l10 22 24 3-18 17 5 24-21-12-21 12 5-24-18-17 24-3 10-22z"/><path d="M62 52c-15 8-23 21-23 37M158 52c15 8 23 21 23 37"/><circle cx="110" cy="94" r="58" opacity=".25"/><path d="M38 145h144" opacity=".35"/><circle cx="54" cy="127" r="2" fill="rgba(255,255,255,.6)" stroke="none"/><circle cx="168" cy="127" r="2" fill="rgba(255,255,255,.6)" stroke="none"/></g></svg><small>LEADERBOARD · 演示榜单</small><h2>高手，都在这里</h2><p>连中纪录与命中率，示例展示</p><a class="slide-btn" href="#/rank">查看排行 →</a></div>' +
+      '<div class="dots">' + [0,1,2].map(function (i) { return '<button type="button" data-slide="' + i + '" class="' + (i === 0 ? 'on' : '') + '" aria-label="第 ' + (i + 1) + ' 张"></button>'; }).join('') + '</div></section>';
+  }
+  function notice() {
+    return '<div class="notice"><span class="notice-ico">◖</span><div class="notice-track"><span>演示站点 · 数据为样例 · 不构成任何投注建议 <em>｜ 新港 / 新澳 / 香港数据已接入</em></span></div><button class="notice-more" type="button" data-demo="公告为演示内容">更多 ›</button></div>';
+  }
+  function quickGrid() {
+    return '<div class="quick-grid">' + QUICK.map(function (q) {
+      var inner = '<span class="quick-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-' + q.icon + '"></use></svg></span>' + q.t;
+      return q.href ? '<a class="quick-item" style="--qc:' + q.c + '" href="' + q.href + '">' + inner + '</a>' : '<button class="quick-item" style="--qc:' + q.c + '" type="button" data-demo="' + esc(q.action) + '">' + inner + '</button>';
+    }).join('') + '</div>';
+  }
+  function realCell(id) {
+    var g = state.games[id], def = DEFS[id];
+    if (!g) return '<div class="game-cell skeleton"><span class="sk sk-badge"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span></div>';
+    return '<a class="game-cell" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">第 ' + shortIssue(g.last.issue) + ' 期</span></a>';
+  }
+  function placeholderCell(x) {
+    var note = x.note || (x.provider === '待接入' ? '数据待接入' : '演示彩种');
+    return '<a class="game-cell placeholder" href="#/game/' + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + x.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + x.name + '</span><span class="game-issue">' + esc(note) + '</span></a>';
+  }
+  function hotGrid() {
+    var cells = CONFIG.filter(function (g) { return g.enabled; }).concat(CONFIG.filter(function (g) { return !g.enabled; }));
+    return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">热门彩种</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid">' + cells.map(function (g) { return gameCell(g.id); }).join('') + '</div></section>';
+  }
+  function hallPage() {
+    return banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
+      '<div class="mini-note">数据来自主站只读接口 · 每 30 秒自动刷新 · 仅作演示</div>';
+  }
+  function mockGame(id) {
+    var def = DEFS[id]; if (!def || !def.mock) return null;
+    var sec = def.periodSeconds || 60, now = Date.now();
+    var idx = Math.floor(now / 1000 / sec), issue = 100000 + (idx % 900000);
+    var nextIssue = issue + 1;
+    function makeNums(n) {
+      var nums = [], used = {};
+      for (var k = 0; k < 7; k++) {
+        var v = ((n * 37 + k * 53 + 7) % 49) + 1;
+        while (used[v]) v = (v % 49) + 1;
+        used[v] = 1; nums.push(attrFor(v).z ? { c:pad(v), z:attrFor(v).z, color:attrFor(v).color } : { c:pad(v), z:'', color:colorOf(v) });
+      }
+      return nums;
+    }
+    var history = [];
+    for (var h = 0; h < 12; h++) history.push({ issue: issue - h, nums: makeNums(idx - h) });
+    return { last:{ issue:issue, nums:history[0].nums }, nextIssue:nextIssue, history:history, mockNext:(idx + 1) * sec * 1000, timeCfg:{ time:def.period || '1分钟', hour:0, minute:0, days:[0,1,2,3,4,5,6] } };
+  }
+  function gameCell(id) {
+    var def = DEFS[id];
+    if (!def) return '';
+    if (def.enabled === false) return '<a class="game-cell placeholder" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">' + esc(def.gridNote || '未接入') + '</span></a>';
+    if (def.mock) return '<a class="game-cell" href="#/bet/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">' + esc(def.period) + '/期</span></a>';
+    var g = state.games[id];
+    if (!g) return '<div class="game-cell skeleton"><span class="sk sk-badge"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span></div>';
+    return '<a class="game-cell" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">' + esc(def.period || '每日') + ' · 第 ' + shortIssue(g.last.issue) + ' 期</span></a>';
+  }
+    function gameStats(g) {
+    var counts = { '红': 0, '蓝': 0, '绿': 0 }, zc = {};
+    (g.history || []).slice(0, 10).forEach(function (h) { h.nums.forEach(function (b) { counts[colorOf(b.c)]++; if (b.z) zc[b.z] = (zc[b.z] || 0) + 1; }); });
+    var total = Math.max(1, counts['红'] + counts['蓝'] + counts['绿']);
+    var bars = ['红','蓝','绿'].map(function (c) { var n = counts[c]; return '<div class="wave-stat"><span class="wave-dot ' + (c === '红' ? 'r' : c === '蓝' ? 'b' : 'g') + '"></span><b>' + c + '波</b><div class="wave-bar"><i class="' + (c === '红' ? 'r' : c === '蓝' ? 'b' : 'g') + '" style="width:' + Math.round(n / total * 100) + '%"></i></div><em>' + n + '</em></div>'; }).join('');
+    var zs = Object.keys(zc).sort(function (a, b) { return zc[b] - zc[a]; }).slice(0, 8).map(function (z) { return '<span class="zodiac-chip">' + esc(z) + ' <b>' + zc[z] + '</b></span>'; }).join('') || '<span class="data-empty">暂无可统计生肖</span>';
+    return '<div class="wave-stats">' + bars + '</div><div class="zodiac-row">' + zs + '</div>';
+  }
+  function gamePage(id) {
+    var def = DEFS[id]; if (!def) return hallPage();
+    if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
+    var g = state.games[id];
+    if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-last card"><div class="data-empty">正在读取 ' + def.name + ' 数据…</div></div>';
+    var last = g.last, hist = (g.history || []).slice(0, 10);
+    var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
+    return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
+      '<section class="detail-head"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><div><div class="page-kicker">' + def.name + ' · 实时数据</div><h1 class="page-title">' + def.name + '开奖</h1><div class="page-sub">' + esc(def.desc) + '</div></div></section>' +
+      '<div class="detail-actions"><a class="action-btn action-primary" href="#/bet/' + id + '">立即投注</a><a class="action-btn action-ghost" href="#/howto">玩法说明</a></div>' +
+      '<section class="detail-last"><div class="detail-label">上期开奖 <span>第 ' + shortIssue(last.issue) + ' 期</span></div><div class="detail-balls">' + balls(last.nums) + '</div><div class="wave-legend"><span><i class="r"></i>红波</span><span><i class="b"></i>蓝波</span><span><i class="g"></i>绿波</span><span class="special-legend">+ 后为特码</span></div></section>' +
+      '<section class="next-card"><div><span>下期开奖</span><b>第 ' + shortIssue(g.nextIssue) + ' 期</b><em>' + g.timeCfg.time + (id === 'hk' ? ' · 周日' : ' · 每日') + '</em></div><strong data-cd="' + id + '">' + countdownText(g) + '</strong></section>' +
+      '<div class="section"><div class="section-head"><h2 class="section-title">波色 / 生肖统计</h2><span class="section-link">近 10 期</span></div><div class="trend-panel">' + gameStats(g) + '</div></div>' +
+      '<div class="section"><div class="section-head"><h2 class="section-title">近 10 期开奖</h2><a class="section-link" href="#/history">全部记录 ›</a></div><div class="detail-history">' + rows + '</div></div>' +
+      '<div class="mini-note">数据来自主站只读接口；号码、特码与开奖时间以主站为准。</div>';
+  }
+  function historyPage() {
+    var chips = ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('');
+    var g = state.games[historyGame];
+    var rows = (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
+    if (!rows) rows = '<tr><td colspan="4">' + emptyState('正在读取主站数据…') + '</td></tr>';
+    return catTabs('history') + '<div class="page-head"><div><div class="page-kicker">RESULTS</div><h1 class="page-title">开奖记录</h1><div class="page-sub">主站真实数据 · 当前可获取 ' + ((g && g.history.length) || 0) + ' 期</div></div><span class="demo-pill">REAL</span></div>' +
+      '<div class="chips">' + chips + '</div><div style="padding:0 10px"><div class="table-scroll"><table class="hist"><thead><tr><th>期号</th><th>彩种</th><th>开奖号码</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
+      '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="更多记录为演示入口">加载更多</button></div><div class="mini-note">主站当前可获取近 ' + ((g && g.history.length) || 0) + ' 期；开奖号码与主站一致。</div>';
+  }
+  function trendPage() {
+    var g = state.games[historyGame] || state.games.newhk;
+    var counts = { '红':0,'蓝':0,'绿':0 }, total = 0;
+    (g && g.history || []).slice(0, 12).forEach(function (h) { h.nums.forEach(function (b) { counts[colorOf(b.c)]++; total++; }); });
+    total = Math.max(1, total);
+    var bars = ['红','蓝','绿'].map(function (c) { return '<div class="bar-item"><div class="bar" style="height:' + Math.max(8, Math.round(counts[c] / total * 100)) + '%"></div><i>' + c + '波</i></div>'; }).join('');
+    var cells = '';
+    for (var n = 1; n <= 49; n++) { var hit = (g && g.history || []).slice(0,12).some(function (h) { return h.nums.some(function (b) { return parseInt(b.c,10) === n; }); }); cells += '<span class="num-cell ' + (hit ? 'hot' : '') + '">' + pad(n) + '</span>'; }
+    return catTabs('trend') + '<div class="page-head"><div><div class="page-kicker">TREND</div><h1 class="page-title">号码走势</h1><div class="page-sub">' + esc(DEFS[historyGame].name) + ' · 近 12 期</div></div><span class="demo-pill">REAL</span></div>' +
+      '<div class="chips">' + ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('') + '</div>' +
+      '<div class="trend-panel"><div class="trend-head"><b>近 12 期波色分布</b><span>共 ' + total + ' 个号码</span></div><div class="bars">' + bars + '</div><div class="num-grid">' + cells + '</div><div class="legend"><span><i style="background:#DC3C41"></i>近 12 期出现</span><span><i style="background:#eee"></i>未出现</span></div></div>' +
+      '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="完整走势为演示入口">查看完整走势</button></div><div class="mini-note">走势基于主站近 12 期真实开奖号码计算。</div>';
+  }
+  function rankPage() {
+    var top = RANKS.slice(0, 3);
+    var podium = [top[1], top[0], top[2]].map(function (r) { return '<div class="podium-item ' + (r.name === top[0].name ? 'first' : '') + '">' + (r.name === top[0].name ? '<span class="crown">♛</span>' : '') + '<span class="avatar ' + esc(r.cls) + '">' + esc(r.avatar) + '</span><b>' + esc(r.name) + '</b><span>' + esc(r.tag.split(' · ')[0]) + '</span><strong>' + esc(r.value) + '</strong></div>'; }).join('');
+    return catTabs('rank') + '<div class="page-head"><div><div class="page-kicker">LEADERBOARD</div><h1 class="page-title">高手排行</h1><div class="page-sub">演示榜单 · 每日更新样例</div></div><span class="demo-pill">MOCK</span></div>' +
+      '<div class="podium">' + podium + '</div><div class="rank-list">' + RANKS.slice(3).map(function (r, i) { return '<div class="rank-row"><span class="rank-no">' + (i + 4) + '</span><span class="avatar ' + esc(r.cls) + '">' + esc(r.avatar) + '</span><div class="rank-info"><b>' + esc(r.name) + '</b><span>' + esc(r.tag) + '</span></div><div class="rank-val"><b>' + esc(r.value) + '</b><span>' + esc(r.label) + '</span></div></div>'; }).join('') + '</div>' +
+      '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="榜单为演示内容，关注功能暂未开放">关注榜单</button></div><div class="mini-note">排名、连中与命中率均为虚构样例，不构成任何建议。</div>';
+  }
+  function mePage() {
+    var u = currentUser();
+    var name = u ? u.username : '游客';
+    var intro = u ? '已登录 · 演示积分与注单保存在本机' : '登录后可查看演示积分并体验模拟投注';
+    return catTabs('') + '<div class="page-head"><div><div class="page-kicker">PROFILE</div><h1 class="page-title">我的</h1><div class="page-sub">' + (u ? '已登录 · 演示账号' : '游客模式 · 演示账号') + '</div></div></div>' +
+      '<section class="profile"><span class="avatar">' + (u ? esc(u.username.slice(0,1)) : '游') + '</span><div class="profile-main"><b>' + esc(name) + '</b><span>' + esc(intro) + '</span><span class="tag">DEMO ACCOUNT</span></div>' + (u ? '<button class="btn btn-ghost" type="button" data-logout>退出</button>' : '<a class="btn btn-primary" href="#/login">登录</a>') + '</section>' +
+      '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务；演示积分仅保存在本机。</span></div>' +
+      '<div class="menu"><button class="menu-row" type="button" data-demo="安全中心为演示入口"><span class="menu-ico">⌁</span><span class="txt">安全中心</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="消息中心为演示入口"><span class="menu-ico">◌</span><span class="txt">消息中心</span><em>0 条</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="客服为演示入口"><span class="menu-ico">?</span><span class="txt">帮助与客服</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="关于页面：演示站点，数据来自主站只读接口"><span class="menu-ico">i</span><span class="txt">关于本站</span><em>v0.4</em><span class="arrow">›</span></button></div>' +
+      '<div class="mini-note">这是纯展示空壳站，不提供真实账号、交易或下注服务。</div>';
+  }
+  var ZODIACS = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+  var HOWTO = [
+    { id:'special', name:'特码', odds:'48.8', rule:'选 1 个号码，开奖特码（第 7 个号码）与你选的号码相同即中。', example:'选 01，开奖特码为 01 → 命中。' },
+    { id:'one-zodiac', name:'一肖', odds:'4.9', rule:'选 1 个生肖，开奖特码的生肖与你选的生肖相同即中。', example:'选「马」，特码为 13（马）→ 命中。' },
+    { id:'two-side', name:'两面', odds:'1.96', rule:'按特码的大小、单双、合数单双或尾数大小判断，选对即中。', example:'选「大」，特码 41（大）→ 命中。' },
+    { id:'color', name:'色波', odds:'2.8', rule:'按特码的波色判断，红波 / 蓝波 / 绿波三选一，选对即中。', example:'选「红波」，特码 34（红波）→ 命中。' },
+    { id:'special-zodiac', name:'特肖', odds:'4.9', rule:'专门判断特码生肖；与一肖的区别是只结算特码这一位。', example:'选「兔」，特码 16（兔）→ 命中。' },
+    { id:'regular', name:'正码 1-6', odds:'7.8', rule:'从正码 1 至正码 6 中选择一个位置；演示结算规则：该位置号码为单数即算命中。', example:'选「正码一」，第 1 个正码开出 16 → 命中。' },
+    { id:'miss', name:'自选不中', odds:'2.0', rule:'选 1 个号码，开奖的 7 个号码中都不包含它即中。', example:'选 49，开奖号码没有 49 → 命中。' },
+    { id:'combo', name:'连肖', odds:'3.2 起', rule:'选择 2–5 个生肖的组合，开奖特码生肖在组合内即中；组合越长赔率越高。', example:'选「马 + 兔」，特码为马 → 命中。' }
+  ];
+  var ODDS = { special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 };
+  var BET_CATS = [
+    { id:'special', name:'特码', short:'特' },
+    { id:'one-zodiac', name:'一肖', short:'肖' },
+    { id:'two-side', name:'两面', short:'两' },
+    { id:'color', name:'色波', short:'波' },
+    { id:'special-zodiac', name:'特肖', short:'特' },
+    { id:'regular', name:'正码1-6', short:'正' },
+    { id:'miss', name:'自选不中', short:'不' },
+    { id:'combo', name:'连肖', short:'连' }
+  ];
+  var betState = { game:'newhk', cat:'special', tab:'credit', qty:'1', sel:{} };
+  var POINTS_KEY = 'lh-demo-points', BETS_KEY = 'lh-demo-bets';
+  function loadPoints() { var n = parseInt(localStorage.getItem(POINTS_KEY), 10); return isFinite(n) ? n : 10000; }
+  function savePoints(n) { try { localStorage.setItem(POINTS_KEY, String(n)); } catch (e) {} }
+  function loadBets() { try { var b = JSON.parse(localStorage.getItem(BETS_KEY) || '[]'); return Array.isArray(b) ? b : []; } catch (e) { return []; } }
+  function saveBets() { try { localStorage.setItem(BETS_KEY, JSON.stringify(bets)); } catch (e) {} }
+  var points = loadPoints();
+  var bets = loadBets();
   function pointsBar() {
     var u = currentUser();
     if (!u) return '<div class="points-bar"><span>演示积分</span><b class="points-guest">登录后查看</b><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/howto">玩法说明</a></div>';
@@ -412,6 +774,8 @@
     var cat = betState.cat || 'special';
     var qty = parseInt(betState.qty, 10) || 1;
     var cost = totalNotes() * 2;
+    var gc = gameConfigs[id];
+    var cfgNote = gc ? '<div class="bet-cfg">开奖配置：' + (gc.mode === 'manual' ? '手动 ' + (gc.forcedResult || '') : '随机') + ' · 难度 ' + (gc.difficulty || '中') + '</div>' : '';
     var my = '<div class="my-bets"><div class="my-bets-head"><h2>模拟注单</h2><span>本地记录 · 演示积分</span></div>' + (bets.length ? bets.slice(0, 4).map(function (b) {
       var st = b.status === 'pending' ? '<em class="pending">待开奖</em>' : (b.payout > 0 ? '<em class="win">已结算 +' + b.payout + ' 积分</em>' : '<em class="lost">已结算 · 未中</em>');
       return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span>' + st + '</div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
@@ -421,7 +785,7 @@
       '<div class="bet-open"><div class="bet-open-label">上期开奖 <span>第 ' + shortIssue(g.last.issue) + ' 期</span></div><div class="bet-open-balls">' + open.html + '<span class="bet-sum">总和 <b>' + open.sum + '</b></span></div></div>' +
       '<div class="bet-tabs"><button type="button" class="' + (credit ? 'on' : '') + '" data-bet-tab="credit">信用</button><button type="button" class="' + (!credit ? 'on' : '') + '" data-bet-tab="path">路子图</button></div>' +
       (credit ? '<div class="bet-layout"><div class="bet-cats">' + BET_CATS.map(function (c) { return '<button type="button" class="' + (cat === c.id ? 'on' : '') + '" data-bet-cat="' + c.id + '"><span>' + c.short + '</span>' + c.name + '</button>'; }).join('') + '</div><div class="bet-center">' + betContent(cat) + '</div></div>' : '<div class="bet-path">' + emptyState('路子图演示占位，暂未开放') + '</div>') +
-      '<div class="odds-note">演示赔率，非真实 · 每注固定 2 演示积分 · 不构成任何投注建议</div>' + my +
+      '<div class="odds-note">演示赔率，非真实 · 每注固定 2 演示积分 · 不构成任何投注建议</div>' + cfgNote + my +
       '<div class="bet-bar"><div class="bet-bar-row"><span class="bet-label">注数</span>' + [10,20,50,100].map(function (n) { return '<button type="button" class="amount-chip ' + (String(qty) === String(n) ? 'on' : '') + '" data-qty="' + n + '">' + n + '</button>'; }).join('') + '<input id="betQty" type="text" inputmode="numeric" placeholder="自定义" value="' + esc(qty) + '"></div><div class="bet-bar-row"><span class="bet-selected">已选 <b data-bet-count>' + totalNotes() + '</b> 注 · 需 <b data-bet-cost>' + cost + '</b> 积分</span><button type="button" class="bet-clear" data-bet-clear>清空</button><button type="button" class="bet-submit" data-bet-submit>立即投注</button></div></div>';
   }
   function howtoPage(anchor) {
@@ -434,10 +798,10 @@
   }
   function loginPage() {
     var register = authMode === 'register';
-    return '<div class="auth-page"><div class="auth-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></div><div class="page-kicker">LUCKY HALL ACCOUNT</div><h1 class="auth-title">' + (register ? '注册演示账号' : '登录幸运大厅') + '</h1><p class="auth-sub">本地 mock 账号，仅用于体验投注演示，不连接真实账户。</p>' +
+    return '<div class="auth-page"><div class="auth-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></div><div class="page-kicker">LUCKY HALL ACCOUNT</div><h1 class="auth-title">' + (register ? '注册演示账号' : '登录幸运大厅') + '</h1><p class="auth-sub">Appwrite 真实演示账号；积分和注单写入 lottery 数据库，不涉及真实支付。</p>' +
       '<div class="auth-tabs"><button type="button" class="' + (!register ? 'on' : '') + '" data-auth-mode="login">登录</button><button type="button" class="' + (register ? 'on' : '') + '" data-auth-mode="register">注册</button></div>' +
       '<form id="authForm" class="auth-form"><label>用户名<input id="authUser" autocomplete="username" maxlength="20" placeholder="例如：幸运玩家"></label><label>密码<input id="authPass" type="password" autocomplete="current-password" maxlength="30" placeholder="至少 4 位"></label><div id="authError" class="auth-error"></div><button class="auth-submit" type="submit">' + (register ? '注册并登录' : '登录') + '</button></form>' +
-      '<div class="auth-tip">演示账号保存在本机 localStorage，不会发送到服务器。<br>登录后可查看演示积分并体验模拟投注。</div><a class="auth-back" href="#/lotteryhall">先逛逛大厅 →</a></div>';
+      '<div class="auth-tip">账号由 Appwrite 管理，仅用于本演示站；请勿使用真实密码。<br>登录后可查看数据库积分并体验模拟投注。</div><a class="auth-back" href="#/lotteryhall">先逛逛大厅 →</a></div>';
   }
   var ROUTES = { lotteryhall: hallPage, history: historyPage, trend: trendPage, rank: rankPage, me: mePage };
   var TITLES = { lotteryhall: '彩票大厅', history: '开奖记录', trend: '号码走势', rank: '高手排行', me: '我的', howto: '玩法说明', login: '登录' };
@@ -465,6 +829,7 @@
   function render(keepScroll) {
     settleBets();
     var r = currentRoute(), view = $('#view'); if (!view) return;
+    if (r.name === 'bet' && !currentUser() && !authReady) { view.innerHTML = '<div class="data-empty" style="padding:50px 20px">正在验证登录状态…</div>'; return; }
     if (r.name === 'bet' && !currentUser()) { AUTH_NEXT = '#/bet/' + r.id; location.hash = '#/login'; return; }
     if (r.name === 'bet') betState.game = r.id;
     document.body.classList.toggle('bet-mode', r.name === 'bet');
@@ -508,6 +873,7 @@
     return false;
   }
   function settleBets() {
+    if (awUser) return;
     var changed = false;
     bets.forEach(function (b) {
       if (b.status !== 'pending') return;
@@ -562,33 +928,57 @@
     var am = e.target.closest('[data-qty]');
     if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
     if (e.target.closest('[data-bet-clear]')) { betState.sel = {}; betState.qty = '1'; render(true); return; }
-    if (e.target.closest('[data-reset-points]')) { points = 10000; savePoints(points); updatePointsUI(); showToast('演示积分已重置为 10000'); return; }
+    if (e.target.closest('[data-reset-points]')) {
+      if (!currentUser()) { location.hash = '#/login'; return; }
+      (async function () { try { await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:10000 } }); awRow.points = 10000; points = 10000; updatePointsUI(); showToast('演示积分已重置为 10000'); } catch (err) { showToast('重置失败：' + apiError(err)); } })();
+      return;
+    }
     if (e.target.closest('[data-bet-submit]')) {
+      if (!currentUser()) { AUTH_NEXT = '#/bet/' + (betState.game || 'newhk'); location.hash = '#/login'; return; }
+      if (authBusy) return;
       var nodes = $$('.bet-center [data-bet].on');
       var qty = parseInt(betState.qty, 10);
       if (!nodes.length) { showToast('请先选择玩法'); return; }
       if (!qty || qty < 1) { showToast('请输入注数'); return; }
       var notes = nodes.length * qty, cost = notes * 2;
-      if (points < cost) { showModal('演示积分不足。当前为模拟投注，不涉及真实交易。'); return; }
-      var g = state.games[betState.game];
+      var g = state.games[betState.game] || mockGame(betState.game);
+      if (!g) { showToast('彩种数据未就绪'); return; }
       var selections = nodes.map(function (el) { var key = el.getAttribute('data-bet'); return { key:key, label:el.getAttribute('data-label') || key, odds:parseFloat(el.getAttribute('data-odds')) || 0, zodiacs:el.getAttribute('data-zodiacs') || '' }; });
-      points -= cost; savePoints(points);
-      bets.unshift({ id:Date.now() + '' + Math.floor(Math.random() * 999), game:betState.game, targetIssue:g.nextIssue, placedIssue:g.last.issue, qty:qty, cost:cost, notes:notes, selections:selections, labels:selections.map(function (s) { return s.label; }).join('、'), status:'pending', payout:0, created:Date.now() });
-      saveBets(); betState.sel = {}; betState.qty = '1'; render(true);
-      showModal('模拟投注已记录，演示积分已扣减 ' + cost + ' 分。演示站点 · 不构成任何投注建议。全部为本地模拟，不涉及真实交易。'); return;
+      authBusy = true;
+      (async function () {
+        try {
+          var fresh = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id });
+          var current = parseInt(fresh.points, 10) || 0;
+          if (current < cost) { showModal('演示积分不足。当前为模拟投注，不涉及真实交易。'); authBusy = false; return; }
+          var newPoints = current - cost;
+          await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:newPoints } });
+          var picks = { selections:selections, qty:qty, notes:notes };
+          var betRow = await awTables.createRow({ databaseId:APPWRITE.db, tableId:APPWRITE.bets, rowId:window.Appwrite.ID.unique(), data:{ username:awRow.username, gameId:betState.game, picks:JSON.stringify(picks), status:'pending', issue:g.nextIssue, stake:cost, payout:0 }, permissions:[
+            window.Appwrite.Permission.read(window.Appwrite.Role.user(awUser.$id)),
+            window.Appwrite.Permission.update(window.Appwrite.Role.user(awUser.$id))
+          ] });
+          awRow.points = newPoints; points = newPoints;
+          bets.unshift({ id:betRow.$id, game:betState.game, targetIssue:g.nextIssue, placedIssue:g.last.issue, qty:qty, cost:cost, notes:notes, selections:selections, labels:selections.map(function (s) { return s.label; }).join('、'), status:'pending', payout:0, created:Date.now() });
+          betState.sel = {}; betState.qty = '1'; render(true);
+          showModal('投注已记录到 Appwrite，演示积分已扣减 ' + cost + ' 分。演示站点 · 不构成任何投注建议。');
+        } catch (err) { showModal('投注失败：' + apiError(err)); }
+        finally { authBusy = false; }
+      })();
+      return;
     }
     if (e.target.closest('#refreshDataBtn')) { loadData(false); return; }
   });
-  document.addEventListener('submit', function (e) {
+  document.addEventListener('submit', async function (e) {
     if (!e.target || e.target.id !== 'authForm') return;
     e.preventDefault();
-    var err = doAuth($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value, authMode);
-    if (err) { var box = $('#authError'); if (box) box.textContent = err; return; }
+    var box = $('#authError'); if (box) box.textContent = '正在连接 Appwrite…';
+    var err = authMode === 'register' ? await registerUser($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value) : await loginUser($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value);
+    if (err) { if (box) box.textContent = err; return; }
     var next = AUTH_NEXT || '#/lotteryhall'; AUTH_NEXT = '#/lotteryhall';
-    location.hash = next; updateUserChip(); showToast('登录成功，已加载演示积分');
+    location.hash = next; updateUserChip(); showToast('登录成功，已加载真实演示积分');
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
   window.addEventListener('hashchange', function () { render(); });
   if (!location.hash) location.hash = '#/lotteryhall';
-  render(); loadData(true); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
+  render(); loadData(true); initAuth(); setInterval(function () { if (!document.hidden) { loadData(true); if (awUser) refreshPoints(); } }, 30000);
 })();

@@ -451,3 +451,5 @@ table.hist{width:100%;min-width:0;border-collapse:collapse;font-size:12px;table-
 /* 12 game grid: 3 columns, full-width scroll */
 .hot-grid .game-cell{min-height:137px}
 @media(max-width:360px){.hot-grid .game-cell{min-height:128px}.user-chip{max-width:54px;font-size:9px;padding:0 5px}}
+
+.bet-cfg{margin:7px 10px 0;padding:6px 9px;background:#fff8ee;border:1px solid #f3dfc3;border-radius:4px;font-size:10px;color:#a06a2a}
