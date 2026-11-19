@@ -229,7 +229,7 @@
   function gameCell(id) {
     var def = DEFS[id];
     if (!def) return '';
-    if (def.enabled === false) return '<a class="game-cell placeholder" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">' + esc(def.note || '数据待接入') + '</span></a>';
+    if (def.enabled === false) return '<a class="game-cell placeholder" href="#/game/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">' + esc(def.gridNote || '未接入') + '</span></a>';
     if (def.mock) return '<a class="game-cell" href="#/bet/' + id + '"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + def.name + '</span><span class="game-issue">' + esc(def.period) + '/期</span></a>';
     var g = state.games[id];
     if (!g) return '<div class="game-cell skeleton"><span class="sk sk-badge"></span><span class="sk sk-line"></span><span class="sk sk-line short"></span></div>';
