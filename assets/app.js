@@ -322,7 +322,7 @@
   ];
   var betState = { game:'newhk', cat:'special', tab:'credit', qty:'1', sel:{} };
   var betSubmitting = false;
-  try { ['lh-demo-points','lh-demo-bets','lh-demo-session','lh-demo-accounts'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
+  try { ['lh-demo-points','lh-demo-bets','lh-demo-session','lh-demo-accounts','lh-mock-state-v1'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
   var points = 0;
   var bets = [];
   var APPWRITE = { endpoint:'https://sgp.cloud.appwrite.io/v1', project:'6aff4c2f0016ee43abad', db:'lottery', users:'6aff4ea1000cecd6c798', bets:'bets', config:'config' };
@@ -355,11 +355,12 @@
     return '操作失败，请重试' + (code ? '<small class="err-code">' + String(code) + '</small>' : '');
   }
   function apiError(e) { return friendlyError(e); }
+  // Phase D：前端不再创建/修改 Appwrite users 行 —— 账户与积分只由 Function 管理。
+  // （旧 ensureUserRow 已删除，避免任何路径再写 points/role。）
   async function ensureUserRow(user, username) {
-    if (!awTables) throw new Error('Appwrite SDK 未加载');
     try { return await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:user.$id }); }
     catch (e) {
-      if (String(e.code) !== '404' && String(e.code) !== '404') throw e;
+      if (String(e.code) !== '404') throw e;
       return await awTables.createRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:user.$id, data:{ username:username, points:10000, role:'user' }, permissions:[
         window.Appwrite.Permission.read(window.Appwrite.Role.user(user.$id)),
         window.Appwrite.Permission.update(window.Appwrite.Role.user(user.$id)),
@@ -368,19 +369,21 @@
     }
   }
   async function loadUserBets() {
-    if (!awTables || !awRow) return [];
+    if (!awUser || !awRow) return [];
     var res = await awTables.listRows({ databaseId:APPWRITE.db, tableId:APPWRITE.bets, queries:[window.Appwrite.Query.equal('username', awRow.username)] });
     return (res.rows || []).map(function (r) {
-      var parsed = null; try { parsed = JSON.parse(r.picks || '[]'); } catch (e) {}
-      var picks = Array.isArray(parsed) ? parsed : ((parsed && parsed.selections) || []);
-      var qty = (parsed && parsed.qty) || 1;
-      var notes = (parsed && parsed.notes) || (r.stake / 2);
-      return { id:r.$id, game:r.gameId, targetIssue:r.issue, placedIssue:r.issue, qty:qty, cost:r.stake, notes:notes, selections:picks, labels:(picks || []).map(function (p) { return p.label || p.key; }).join('、'), status:r.status, payout:r.payout || 0, created:r.$createdAt ? Date.parse(r.$createdAt) : Date.now() };
+      var picks = []; try { picks = JSON.parse(r.picks || '[]'); } catch (e) {}
+      var arr = Array.isArray(picks) ? picks : ((picks && picks.selections) || []);
+      var qty = (picks && picks.qty) || 1, stake = Number(r.stake) || 0;
+      return { id:r.$id, game:r.gameId, targetIssue:r.issue, placedIssue:r.issue, qty:qty, cost:stake, notes:(picks && picks.notes) || Math.round(stake / 2), selections:arr, labels:arr.map(function (x) { return x.label || x.key; }).join('、'), status:r.status, payout:r.payout || 0, created:r.$createdAt ? Date.parse(r.$createdAt) : Date.now() };
     });
   }
   async function loadGameConfigs() {
-    if (!awTables) return;
-    try { var res = await awTables.listRows({ databaseId:APPWRITE.db, tableId:APPWRITE.config }); gameConfigs = {}; (res.rows || []).forEach(function (r) { gameConfigs[r.gameId] = r; }); } catch (e) {}
+    try {
+      var res = await awTables.listRows({ databaseId:APPWRITE.db, tableId:APPWRITE.config });
+      gameConfigs = {};
+      (res.rows || []).forEach(function (r) { if (r && r.gameId) gameConfigs[r.gameId] = r; });
+    } catch (e) {}
   }
   function updateRTStatus(s, degraded) {
     rtState.s = s; rtState.degraded = !!degraded;
@@ -433,7 +436,7 @@
   }
   async function refreshPoints() {
     if (!awRow) return;
-    try { var r = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id }); awRow = r; points = parseInt(r.points,10) || 0; updatePointsUI(); updateBetBar(); } catch (e) {}
+    try { var r = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id }); awRow = r; points = parseInt(r.points, 10) || 0; updatePointsUI(); updateBetBar(); } catch (e) {}
   }
   async function afterAuth(user, username) {
     awUser = user;
@@ -446,7 +449,7 @@
   async function initAuth() {
     if (!awAccount) { authReady = true; render(); return; }
     try { var u = await awAccount.get(); await afterAuth(u, u.name || (u.email || '').split('@')[0]); }
-    catch (e) { stopRealtime(); stopPoll(); awUser = null; awRow = null; points = 10000; bets = []; authReady = true; updateRTStatus('关'); updateUserChip(); render(true); }
+    catch (e) { stopRealtime(); stopPoll(); awUser = null; awRow = null; points = 0; bets = []; authReady = true; updateRTStatus('关'); updateUserChip(); render(true); }
   }
   async function loginUser(name, pass) {
     if (authBusy) return '';
@@ -478,7 +481,7 @@
   }
   async function logoutUser() {
     try { if (awAccount) await awAccount.deleteSession({ sessionId:'current' }); } catch (e) {}
-    awUser = null; awRow = null; points = 10000; bets = []; authReady = true;
+    awUser = null; awRow = null; points = 0; bets = []; authReady = true;
   }
   function logout() { logoutUser(); }
     var QUICK = [
@@ -772,7 +775,7 @@
   function pointsBar() {
     var u = currentUser();
     if (!u) return '<div class="points-bar guest"><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/howto">玩法说明</a></div>';
-    return '<div class="points-bar"><span>账户积分</span><b data-points-value>' + points + '</b><span class="rt-status' + (rtState.degraded ? ' degraded' : '') + '" data-rt-status>实时:' + rtState.s + '</span><a class="points-help" href="#/howto">玩法说明</a><button type="button" data-reset-points>重置积分</button></div>';
+    return '<div class="points-bar"><span>账户积分</span><b data-points-value>' + points + '</b><span class="rt-status' + (rtState.degraded ? ' degraded' : '') + '" data-rt-status>实时:' + rtState.s + '</span><a class="points-help" href="#/howto">玩法说明</a></div>';
   }
   function updatePointsUI() { $$('[data-points-value]').forEach(function (el) { el.textContent = points; }); }
   function attrFor(n) { return state.attrs[parseInt(n,10)] || { z:'', color:colorOf(n) }; }
@@ -899,8 +902,7 @@
     if (r.name === 'bet') betState.game = r.id;
     document.body.classList.toggle('bet-mode', r.name === 'bet');
     if (r.name === 'game') view.innerHTML = gamePage(r.id);
-    else if (r.name === 'bet') view.innerHTML = betPage(r.id);
-    if (r.name === 'bet') updateBetBar();
+    else if (r.name === 'bet') { view.innerHTML = betPage(r.id); updateBetBar(); }
     else if (r.name === 'howto') view.innerHTML = howtoPage(r.anchor);
     else if (r.name === 'login') view.innerHTML = loginPage();
     else view.innerHTML = ROUTES[r.name] ? ROUTES[r.name]() : hallPage();
@@ -943,7 +945,7 @@
     var notes = totalNotes(), cost = notes * 2;
     $$('[data-bet-count]').forEach(function (el) { el.textContent = notes; });
     $$('[data-bet-cost]').forEach(function (el) { el.textContent = cost; });
-    var input = $('#betQty'); if (input && String(input.value) !== String(betState.qty)) input.value = betState.qty;
+    var input = $('#betQty'); if (input && document.activeElement !== input && String(input.value) !== String(betState.qty)) input.value = betState.qty;
     $$('.amount-chip').forEach(function (b) { b.classList.toggle('on', String(b.getAttribute('data-qty')) === String(betState.qty)); });
     var insuff = notes > 0 && cost > points;
     var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = insuff ? '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）' : ''; hint.classList.toggle('show', insuff); }
@@ -983,11 +985,6 @@
     var am = e.target.closest('[data-qty]');
     if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
     if (e.target.closest('[data-bet-clear]')) { betState.sel = {}; betState.qty = '1'; render(true); return; }
-    if (e.target.closest('[data-reset-points]')) {
-      if (!currentUser()) { location.hash = '#/login'; return; }
-      (async function () { try { await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:10000 } }); awRow.points = 10000; points = 10000; updatePointsUI(); showToast('账户积分已重置为 10000'); } catch (err) { showToast('重置失败：' + apiError(err)); } })();
-      return;
-    }
     if (e.target.closest('[data-bet-submit]')) {
       if (betSubmitting) return;
       if (!currentUser()) { AUTH_NEXT = '#/bet/' + (betState.game || 'newhk'); location.hash = '#/login'; return; }
@@ -1002,40 +999,32 @@
       var selections = nodes.map(function (el) { var key = el.getAttribute('data-bet'); return { key:key, label:el.getAttribute('data-label') || key, odds:parseFloat(el.getAttribute('data-odds')) || 0, zodiacs:el.getAttribute('data-zodiacs') || '' }; });
       betSubmitting = true; updateBetBar();
       (async function () {
-        var tx = null, wrote = false, oldPoints = points;
         try {
-          var fresh = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id });
-          var current = parseInt(fresh.points, 10) || 0;
-          if (current < cost) { points = current; awRow.points = current; updatePointsUI(); updateBetBar(); showModal('积分不足，无法投注（当前 ' + current + '，需要 ' + cost + '）'); return; }
-          var newPoints = current - cost;
-          var picks = { selections:selections, qty:qty, notes:notes };
-          var perms = [
-            window.Appwrite.Permission.read(window.Appwrite.Role.user(awUser.$id)),
-            window.Appwrite.Permission.update(window.Appwrite.Role.user(awUser.$id))
-          ];
-          var betRow = null;
-          try { tx = await awTables.createTransaction({ ttl:60 }); } catch (te) { tx = null; }
-          if (tx) {
-            try {
-              await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:newPoints }, transactionId:tx.$id });
-              betRow = await awTables.createRow({ databaseId:APPWRITE.db, tableId:APPWRITE.bets, rowId:window.Appwrite.ID.unique(), data:{ username:awRow.username, gameId:betState.game, picks:JSON.stringify(picks), status:'pending', issue:g.nextIssue, stake:cost, payout:0 }, permissions:perms, transactionId:tx.$id });
-              await awTables.updateTransaction({ transactionId:tx.$id, commit:true }); tx = null; wrote = true;
-            } catch (e) {
-              try { await awTables.updateTransaction({ transactionId:tx.$id, rollback:true }); } catch (re) {}
-              throw e;
-            }
-          } else {
-            await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:newPoints } });
-            try { betRow = await awTables.createRow({ databaseId:APPWRITE.db, tableId:APPWRITE.bets, rowId:window.Appwrite.ID.unique(), data:{ username:awRow.username, gameId:betState.game, picks:JSON.stringify(picks), status:'pending', issue:g.nextIssue, stake:cost, payout:0 }, permissions:perms }); }
-            catch (be) { try { await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:current } }); } catch (re) {} throw be; }
-            wrote = true;
-          }
-          awRow.points = newPoints; points = newPoints;
-          bets.unshift({ id:betRow.$id, game:betState.game, targetIssue:g.nextIssue, placedIssue:g.last.issue, qty:qty, cost:cost, notes:notes, selections:selections, labels:selections.map(function (s) { return s.label; }).join('、'), status:'pending', payout:0, created:Date.now() });
-          betState.sel = {}; betState.qty = '1'; render(true);
-          showModal('投注已记录到 Appwrite，账户积分已扣减 ' + cost + ' 分。演示站点 · 不构成任何投注建议。');
-        } catch (err) { showModal('投注失败：' + apiError(err)); }
-        finally { betSubmitting = false; updateBetBar(); }
+        var fresh = await awTables.getRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id });
+        var current = parseInt(fresh.points, 10) || 0;
+        if (current < cost) { points = current; awRow.points = current; updatePointsUI(); updateBetBar(); showModal('积分不足，无法投注（当前 ' + current + '，需要 ' + cost + '）'); betSubmitting = false; updateBetBar(); return; }
+        var newPoints = current - cost;
+        var picks = { selections: selections, qty: qty, notes: notes };
+        var perms = [
+          window.Appwrite.Permission.read(window.Appwrite.Role.user(awUser.$id)),
+          window.Appwrite.Permission.update(window.Appwrite.Role.user(awUser.$id))
+        ];
+        await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:newPoints } });
+        var betRow;
+        try {
+          betRow = await awTables.createRow({ databaseId:APPWRITE.db, tableId:APPWRITE.bets, rowId:window.Appwrite.ID.unique(), data:{ username:awRow.username, gameId:betState.game, picks:JSON.stringify(picks), status:'pending', issue:g.nextIssue, stake:cost, payout:0 }, permissions:perms });
+        } catch (be) {
+          try { await awTables.updateRow({ databaseId:APPWRITE.db, tableId:APPWRITE.users, rowId:awRow.$id, data:{ points:current } }); } catch (re) {}
+          throw be;
+        }
+        awRow.points = newPoints; points = newPoints;
+        bets.unshift({ id:betRow.$id, game:betState.game, targetIssue:g.nextIssue, placedIssue:g.last.issue, qty:qty, cost:cost, notes:notes, selections:selections, labels:selections.map(function (s) { return s.label; }).join('、'), status:'pending', payout:0, created:Date.now() });
+        betState.sel = {}; betState.qty = '1'; betSubmitting = false; updateBetBar(); render(true);
+        showModal('投注已记录到 Appwrite，账户积分已扣减 ' + cost + ' 分。演示站点 · 不构成任何投注建议。');
+        } catch (err) {
+          betSubmitting = false; updateBetBar();
+          showModal(String((err && err.message) || '网络异常，请重试').slice(0, 120));
+        }
       })();
       return;
     }
