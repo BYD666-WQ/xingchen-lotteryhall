@@ -527,3 +527,25 @@ body{background:#F6F6F6;}
 .fast-meta{margin:8px 0 0;padding:8px 10px;background:#fff;border:1px solid #eee;border-radius:0;font-size:13px;color:#333;display:flex;gap:10px;align-items:center;}
 .fast-meta b{color:#EC2829;}
 .bet-clock b,.bet-kicker{color:#EC2829;}
+
+
+/* ===== Phase F：已选回显 / 赛车 01–10 / 生肖分组 ===== */
+.picked-bar{margin:8px 0;padding:10px 12px;background:#fff;border:1px solid #eee;border-radius:0;font-size:13px;color:#333;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.picked-bar b{color:#EC2829;font-weight:800;}
+.picked-bar [data-picked-list]{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom;}
+.racing-grid{display:flex;flex-wrap:wrap;gap:10px;padding:10px 0;}
+.racing-grid .bet-num{width:44px;height:44px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:0;color:#fff;font-weight:800;}
+.racing-grid .bet-num b{font-size:16px;}
+.racing-grid .bet-num em{color:#fff;font-size:10px;opacity:.9;}
+.racing-grid .bet-num.on{outline:3px solid #EC2829;outline-offset:2px;box-shadow:none;}
+.zgroups{display:flex;flex-direction:column;gap:6px;padding:6px 0;}
+.zgroup{background:#fff;border:1px solid #f0f0f0;}
+.zgroup-h{background:#fff;color:#EC2829;font-weight:800;font-size:13px;padding:6px 10px;border-bottom:1px solid #f4f4f4;}
+.zgroup-nums{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:#f2f2f2;}
+.zgroup-nums .znum{border-radius:0;background:#fff;color:#333;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0;border:0;}
+.zgroup-nums .znum b{font-size:14px;font-weight:800;}
+.zgroup-nums .znum em{font-size:9px;color:#EC2829;}
+.zgroup-nums .znum.on{background:#EC2829;color:#fff;}
+.zgroup-nums .znum.on em{color:#fff;}
+.zgroup-nums .znum.on::after{content:"✓";position:absolute;font-size:10px;transform:translate(14px,-10px);}
+.zgroup-nums .znum{position:relative;}
