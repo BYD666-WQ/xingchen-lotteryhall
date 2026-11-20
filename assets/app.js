@@ -311,16 +311,26 @@
   ];
   var ODDS = Object.assign({ special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 }, window.LH_ODDS || {});
   var BET_CATS = [
-    { id:'special', name:'特码', short:'特' },
-    { id:'one-zodiac', name:'一肖', short:'肖' },
-    { id:'two-side', name:'两面', short:'两' },
-    { id:'color', name:'色波', short:'波' },
-    { id:'special-zodiac', name:'特肖', short:'特' },
-    { id:'regular', name:'正码1-6', short:'正' },
-    { id:'miss', name:'自选不中', short:'不' },
-    { id:'combo', name:'连肖', short:'连' }
+    { id:'two-side', name:'两面', short:'' },
+    { id:'color', name:'色波', short:'' },
+    { id:'special-zodiac', name:'特肖', short:'' },
+    { id:'regular', name:'正码', short:'' },
+    { id:'special', name:'正特', short:'' },
+    { id:'regular6', name:'正码1-6', short:'' },
+    { id:'combo', name:'连码', short:'' },
+    { id:'one-zodiac', name:'平特一肖', short:'' },
+    { id:'tail', name:'尾数', short:'' },
+    { id:'combo-he', name:'合肖', short:'' }
+  ];
+  var RACING_CATS = [
+    { id:'two-side', name:'两面', short:'' },
+    { id:'champion', name:'冠军', short:'' },
+    { id:'runner', name:'亚军', short:'' }
   ];
   var betState = { game:'newhk', cat:'special', tab:'credit', qty:'1', sel:{} };
+  function selKey() { return 'lh-sel-' + (betState.game || 'newhk'); }
+  function saveSel() { try { localStorage.setItem(selKey(), JSON.stringify(betState.sel || {})); } catch (e) {} }
+  function loadSel(g) { try { return JSON.parse(localStorage.getItem('lh-sel-' + g) || '{}') || {}; } catch (e) { return {}; } }
   var betSubmitting = false;
   try { ['lh-demo-points','lh-demo-bets','lh-demo-session','lh-demo-accounts','lh-mock-state-v1'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
   var points = 0;
@@ -385,7 +395,7 @@
       if (res && res.odds && typeof res.odds === 'object') {
         Object.keys(res.odds).forEach(function (k) { gameConfigs[k] = gameConfigs[k] || { id: k }; gameConfigs[k].odds = res.odds[k]; });
       }
-      // 服务端权威玩法赔率（/games.oddsByPlay）→ 覆盖 LH_ODDS 兜底值
+      // 服务端权威玩法赔率（/games.oddsByPlay）为唯一来源；本地 config/games.js 只在接口失败时兜底
       var ob = (res && (res.oddsByPlay || (res.odds && res.odds.oddsByPlay))) || null;
       if (ob && typeof ob === 'object') {
         if (ob.oneZodiac != null) ODDS.oneZodiac = Number(ob.oneZodiac);
@@ -393,7 +403,22 @@
         if (ob.horse != null) ODDS.horse = Number(ob.horse);
         if (ob.specialNewMo != null) { DEFS.newmo = DEFS.newmo || {}; DEFS.newmo.specialOdds = Number(ob.specialNewMo); }
         if (ob.specialNewHk != null) { DEFS.newhk = DEFS.newhk || {}; DEFS.newhk.specialOdds = Number(ob.specialNewHk); }
+        if (ob.specialHk != null) { DEFS.hk = DEFS.hk || {}; DEFS.hk.specialOdds = Number(ob.specialHk); }
         if (ob.zodiacNewMo != null) { DEFS.newmo = DEFS.newmo || {}; DEFS.newmo.zodiacOdds = Number(ob.zodiacNewMo); }
+        var f = ob.fast;
+        if (f && typeof f === 'object') {
+          window.LH_RACING_ODDS = window.LH_RACING_ODDS || {};
+          if (f.twoSide) window.LH_RACING_ODDS.twoSide = f.twoSide;
+          if (f.champion) {
+            var ch = Object.assign({}, f.champion);
+            if (ch.dragon != null && ch.long == null) ch.long = ch.dragon; // 服务端用 dragon，前端键叫 long
+            window.LH_RACING_ODDS.champion = ch;
+          }
+          if (f.runnerUp) window.LH_RACING_ODDS.runner = f.runnerUp;
+        }
+        try { console.info('[odds] 使用服务端 /games.oddsByPlay:', JSON.stringify(ob).slice(0, 300)); } catch (e) {}
+      } else {
+        try { console.warn('[odds] /games 未返回 oddsByPlay，回退本地 config/games.js 赔率表'); } catch (e) {}
       }
       // 服务端规则（resetOnLogout 等）
       var rl = (res && res.rules) || null;
@@ -798,14 +823,16 @@
   ];
   var ODDS = Object.assign({ special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 }, window.LH_ODDS || {});
   var BET_CATS = [
-    { id:'special', name:'特码', short:'特' },
-    { id:'one-zodiac', name:'一肖', short:'肖' },
-    { id:'two-side', name:'两面', short:'两' },
-    { id:'color', name:'色波', short:'波' },
-    { id:'special-zodiac', name:'特肖', short:'特' },
-    { id:'regular', name:'正码1-6', short:'正' },
-    { id:'miss', name:'自选不中', short:'不' },
-    { id:'combo', name:'连肖', short:'连' }
+    { id:'two-side', name:'两面', short:'' },
+    { id:'color', name:'色波', short:'' },
+    { id:'special-zodiac', name:'特肖', short:'' },
+    { id:'regular', name:'正码', short:'' },
+    { id:'special', name:'正特', short:'' },
+    { id:'regular6', name:'正码1-6', short:'' },
+    { id:'combo', name:'连码', short:'' },
+    { id:'one-zodiac', name:'平特一肖', short:'' },
+    { id:'tail', name:'尾数', short:'' },
+    { id:'combo-he', name:'合肖', short:'' }
   ];
   var betState = { game:'newhk', cat:'special', tab:'credit', qty:'1', sel:{} };
   var points = 0;
@@ -845,16 +872,52 @@
       return '<button type="button" class="bet-option ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + esc(x.n) + '" data-odds="' + x.o + '"' + (x.z ? ' data-zodiacs="' + x.z + '"' : '') + '><span>' + esc(x.n) + '</span><em>' + x.o + '</em></button>';
     }).join('') + '</div>';
   }
+  function racingBalls() {
+    var out = '';
+    for (var i = 1; i <= 10; i++) {
+      var c = colorOf(i), w = c === '红' ? 'r' : c === '蓝' ? 'b' : 'g';
+      var key = 'race-' + pad(i);
+      out += '<button type="button" class="bet-num racing c-' + w + (isSel(key) ? ' on' : '') + '" data-bet="' + key + '" data-label="' + pad(i) + '" data-odds="1.99"><b>' + pad(i) + '</b><em>1.99</em></button>';
+    }
+    return '<div class="racing-grid">' + out + '</div>';
+  }
+  function racingContent(cat) {
+    var R = window.LH_RACING_ODDS || {};
+    if (cat === 'champion' || cat === 'runner') {
+      var o = (R[cat] || {});
+      var items = [{ k:'big', n:'大', o:o.big }, { k:'small', n:'小', o:o.small }, { k:'odd', n:'单', o:o.odd }, { k:'even', n:'双', o:o.even }];
+      if (cat === 'champion') { items.push({ k:'long', n:'1V10龙', o:o.long }); items.push({ k:'tiger', n:'1V10虎', o:o.tiger }); }
+      return '<div class="bet-content-head"><div><h2>' + (cat === 'champion' ? '冠军' : '亚军') + '</h2><p>号码 01–10 · 固定球色</p></div></div>' + racingBalls() + optionGrid(items, cat === 'champion' ? 'rch' : 'rru');
+    }
+    var t = (R.twoSide || {});
+    return '<div class="bet-content-head"><div><h2>两面</h2><p>大 2.19 / 小 1.79 · 单 1.79 / 双 2.19</p></div></div>' +
+      optionGrid([{ k:'big', n:'大', o:t.big }, { k:'small', n:'小', o:t.small }, { k:'odd', n:'单', o:t.odd }, { k:'even', n:'双', o:t.even }], 'rtwo');
+  }
+  function zodiacNumberGrid(odds, hideZodiac) {
+    var groups = {}, order = ZODIACS.slice();
+    for (var i = 1; i <= 49; i++) { var a = attrFor(i), z = a.z || '其它'; (groups[z] = groups[z] || []).push(i); }
+    return '<div class="zgroups">' + order.map(function (z) {
+      var ns = groups[z] || [];
+      return '<div class="zgroup"><div class="zgroup-h">' + z + '</div><div class="zgroup-nums">' + ns.map(function (n) {
+        var key = 'special-n-' + pad(n);
+        return '<button type="button" class="bet-num znum' + (isSel(key) ? ' on' : '') + '" data-bet="' + key + '" data-label="' + pad(n) + '" data-odds="' + odds + '"><b>' + pad(n) + '</b><em>' + odds + '</em></button>';
+      }).join('') + '</div></div>';
+    }).join('') + '</div>';
+  }
   function betContent(cat) {
     var def = DEFS[betState.game] || {};
+    if (def.racing) return racingContent(cat);
     var sp = Number(def.specialOdds || ODDS.special) || ODDS.special;
     var zo = Number(def.zodiacOdds || ODDS.oneZodiac) || ODDS.oneZodiac;
     var hideZ = !!def.hideZodiac;
-    if (cat === 'special') return '<div class="bet-content-head"><div><h2>特码</h2><p>' + (hideZ ? '只显示号码与赔率（新香港/新澳）' : '选一个号码，命中开奖特码即中') + '</p></div>' + betHelp('special') + '</div>' + numberGrid('special-n', sp, hideZ) + (hideZ ? '' : zodiacGrid('special-z', zo));
+    if (cat === 'special') return '<div class="bet-content-head"><div><h2>正特</h2><p>按生肖分组 · 每号赔率 ' + sp + '</p></div>' + betHelp('special') + '</div>' + zodiacNumberGrid(sp, hideZ);
     if (cat === 'one-zodiac') return '<div class="bet-content-head"><div><h2>一肖</h2><p>一肖 / 平特肖 ' + ODDS.oneZodiac + ' 倍 · 马 ' + (ODDS.horse || 1.8) + ' 倍</p></div>' + betHelp('one-zodiac') + '</div>' + zodiacGrid('one-z', ODDS.oneZodiac);
     if (cat === 'special-zodiac') return '<div class="bet-content-head"><div><h2>特肖</h2><p>只判断特码生肖，选一个生肖</p></div>' + betHelp('special-zodiac') + '</div>' + zodiacGrid('spz-z', zo);
     if (cat === 'two-side') return '<div class="bet-content-head"><div><h2>两面</h2><p>大小 / 单双 / 合单合双 / 尾数大小</p></div>' + betHelp('two-side') + '</div>' + optionGrid([{k:'big',n:'大',o:'1.96'},{k:'small',n:'小',o:'1.96'},{k:'odd',n:'单',o:'1.96'},{k:'even',n:'双',o:'1.96'},{k:'sum-odd',n:'合单',o:'1.96'},{k:'sum-even',n:'合双',o:'1.96'},{k:'tail-big',n:'尾大',o:'1.96'},{k:'tail-small',n:'尾小',o:'1.96'}], 'two');
     if (cat === 'color') return '<div class="bet-content-head"><div><h2>色波</h2><p>特码波色三选一</p></div>' + betHelp('color') + '</div>' + optionGrid([{k:'r',n:'红波',o:'2.8'},{k:'b',n:'蓝波',o:'2.8'},{k:'g',n:'绿波',o:'2.8'}], 'color');
+    if (cat === 'regular6') return '<div class="bet-content-head"><div><h2>正码 1-6</h2><p>按位置结算</p></div>' + betHelp('regular') + '</div>' + optionGrid([{k:'1',n:'正码一',o:'7.8'},{k:'2',n:'正码二',o:'7.8'},{k:'3',n:'正码三',o:'7.8'},{k:'4',n:'正码四',o:'7.8'},{k:'5',n:'正码五',o:'7.8'},{k:'6',n:'正码六',o:'7.8'}], 'reg6');
+    if (cat === 'tail') return '<div class="bet-content-head"><div><h2>尾数</h2><p>预测特码尾数 0–9</p></div></div>' + optionGrid([{k:'0',n:'尾0',o:'9.8'},{k:'1',n:'尾1',o:'9.8'},{k:'2',n:'尾2',o:'9.8'},{k:'3',n:'尾3',o:'9.8'},{k:'4',n:'尾4',o:'9.8'},{k:'5',n:'尾5',o:'9.8'},{k:'6',n:'尾6',o:'9.8'},{k:'7',n:'尾7',o:'9.8'},{k:'8',n:'尾8',o:'9.8'},{k:'9',n:'尾9',o:'9.8'}], 'tail');
+    if (cat === 'combo-he') return '<div class="bet-content-head"><div><h2>合肖</h2><p>组合生肖命中即中</p></div></div>' + optionGrid([{k:'a',n:'鼠+牛+虎',o:'3.2',z:'鼠,牛,虎'},{k:'b',n:'兔+龙+蛇',o:'3.2',z:'兔,龙,蛇'},{k:'c',n:'马+羊+猴',o:'3.2',z:'马,羊,猴'},{k:'d',n:'鸡+狗+猪',o:'3.2',z:'鸡,狗,猪'}], 'he');
     if (cat === 'regular') return '<div class="bet-content-head"><div><h2>正码 1-6</h2><p>选择正码位置，按该位置开奖号码结算</p></div>' + betHelp('regular') + '</div>' + optionGrid([{k:'1',n:'正码一',o:'7.8'},{k:'2',n:'正码二',o:'7.8'},{k:'3',n:'正码三',o:'7.8'},{k:'4',n:'正码四',o:'7.8'},{k:'5',n:'正码五',o:'7.8'},{k:'6',n:'正码六',o:'7.8'}], 'reg');
     if (cat === 'miss') return '<div class="bet-content-head"><div><h2>自选不中</h2><p>选一个号码，7 个开奖号码都不包含它即中</p></div>' + betHelp('miss') + '</div>' + numberGrid('miss-n', ODDS.miss);
     return '<div class="bet-content-head"><div><h2>连肖</h2><p>选一组生肖组合，特码生肖在组合内即中</p></div>' + betHelp('combo') + '</div>' + optionGrid([{k:'c1',n:'马 + 兔',o:'3.2',z:'马,兔'},{k:'c2',n:'龙 + 蛇 + 猴',o:'5.5',z:'龙,蛇,猴'},{k:'c3',n:'鼠 + 牛 + 虎 + 猪',o:'9.8',z:'鼠,牛,虎,猪'},{k:'c4',n:'马 + 兔 + 龙 + 蛇 + 猴',o:'18.0',z:'马,兔,龙,蛇,猴'}], 'combo');
@@ -881,13 +944,18 @@
     box.outerHTML = myBetsHtml();
   }
   function betPage(id) {
+    if (betState.game !== id) { betState.game = id; betState.sel = loadSel(id); }
     var def = DEFS[id] || DEFS.newhk, g = state.games[id] || mockGame(id);
+    if (def.racing && !(def.cats || []).length) { /* racing 用 RACING_CATS */ }
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
     if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState('正在读取 ' + def.name + ' 数据…');
     var open = betBalls(g.last.nums);
     var title = def.name + (def.mock ? '' : '六合彩');
     var credit = betState.tab === 'credit';
     var cat = betState.cat || 'special';
+    var validCats = (def.racing ? RACING_CATS : BET_CATS).map(function (c) { return c.id; });
+    if (validCats.indexOf(cat) < 0) cat = def.racing ? 'two-side' : 'special';
+    betState.cat = cat;
     var qty = parseInt(betState.qty, 10) || 1;
     var cost = totalNotes() * 2;
     var gc = gameConfigs[id];
@@ -898,9 +966,10 @@
       '<div class="bet-hero"><div class="bet-head"><div><span class="bet-kicker">模拟投注 · 仅演示</span><h1>' + title + '</h1><div class="bet-period">第 <b>' + shortIssue(g.last.issue) + '</b> 期 · 下期 ' + shortIssue(g.nextIssue) + '</div></div><div class="bet-clock">投注中<br><b data-cd="' + id + '">' + countdownText(g) + '</b></div></div>' +
       '<div class="bet-open"><div class="bet-open-label">上期开奖 <span>第 ' + shortIssue(g.last.issue) + ' 期</span></div><div class="bet-open-balls">' + open.html + '<span class="bet-sum">总和 <b>' + open.sum + '</b></span></div></div></div>' +
       '<div class="bet-tabs"><button type="button" class="' + (credit ? 'on' : '') + '" data-bet-tab="credit">信用</button><button type="button" class="' + (!credit ? 'on' : '') + '" data-bet-tab="path">路子图</button></div>' +
-      (credit ? '<div class="bet-layout"><div class="bet-cats">' + BET_CATS.map(function (c) { return '<button type="button" class="' + (cat === c.id ? 'on' : '') + '" data-bet-cat="' + c.id + '"><span>' + c.short + '</span>' + c.name + '</button>'; }).join('') + '</div><div class="bet-center">' + betContent(cat) + '</div></div>' : '<div class="bet-path">' + emptyState('路子图演示占位，暂未开放') + '</div>') +
+      (credit ? '<div class="bet-layout"><div class="bet-cats">' + (def.racing ? RACING_CATS : BET_CATS).map(function (c) { return '<button type="button" class="' + (cat === c.id ? 'on' : '') + '" data-bet-cat="' + c.id + '"><span>' + c.short + '</span>' + c.name + '</button>'; }).join('') + '</div><div class="bet-center">' + betContent(cat) + '</div></div>' : '<div class="bet-path">' + emptyState('路子图演示占位，暂未开放') + '</div>') +
+      '<div class="picked-bar">已选：<b data-picked-list>—</b> · <b data-bet-count>0</b> 注 · 共 <b data-bet-cost>0</b> 分</div>' +
       '<div class="odds-note">演示赔率，非真实 · 每注固定 2 积分 · 不构成任何投注建议</div>' + cfgNote + my +
-      '<div class="bet-bar"><div class="bet-bar-row"><span class="bet-label">注数</span>' + [10,20,50,100].map(function (n) { return '<button type="button" class="amount-chip ' + (String(qty) === String(n) ? 'on' : '') + '" data-qty="' + n + '">' + n + '</button>'; }).join('') + '<input id="betQty" type="text" inputmode="numeric" placeholder="自定义" value="' + esc(qty) + '"></div><div class="bet-bar-row"><span class="bet-selected">已选 <b data-bet-count>' + totalNotes() + '</b> 注 · 需 <b data-bet-cost>' + cost + '</b> 积分</span><button type="button" class="bet-clear" data-bet-clear>清空</button><button type="button" class="bet-submit" data-bet-submit>立即投注</button></div><div class="bet-hint" data-bet-hint></div></div>';
+      '<div class="bet-bar"><div class="bet-bar-row"><span class="bet-label">注数</span>' + [10,20,50,100,200,500,1000].map(function (n) { return '<button type="button" class="amount-chip ' + (String(qty) === String(n) ? 'on' : '') + '" data-qty="' + n + '">' + n + '</button>'; }).join('') + '<input id="betQty" type="text" inputmode="numeric" placeholder="自定义" value="' + esc(qty) + '"></div><div class="bet-bar-row"><span class="bet-selected">已选 <b data-bet-count>' + totalNotes() + '</b> 注 · 需 <b data-bet-cost>' + cost + '</b> 积分</span><button type="button" class="bet-clear" data-bet-clear>清空</button><button type="button" class="bet-submit" data-bet-submit>立即投注</button></div><div class="bet-hint" data-bet-hint></div></div>';
   }
   function howtoPage(anchor) {
     var active = anchor || 'special';
@@ -991,6 +1060,9 @@
     var notes = totalNotes(), cost = notes * 2;
     $$('[data-bet-count]').forEach(function (el) { el.textContent = notes; });
     $$('[data-bet-cost]').forEach(function (el) { el.textContent = cost; });
+    var picks = [];
+    Object.keys(betState.sel || {}).forEach(function (k) { picks.push(betState.sel[k] || k); });
+    $$('[data-picked-list]').forEach(function (el) { el.textContent = picks.length ? picks.join(' ') : '—'; });
     var input = $('#betQty'); if (input && document.activeElement !== input && String(input.value) !== String(betState.qty)) input.value = betState.qty;
     $$('.amount-chip').forEach(function (b) { b.classList.toggle('on', String(b.getAttribute('data-qty')) === String(betState.qty)); });
     var insuff = notes > 0 && cost > points;
@@ -1038,13 +1110,13 @@
     var bb = e.target.closest('[data-bet]');
     if (bb) {
       var key = bb.getAttribute('data-bet');
-      if (betState.sel[key]) delete betState.sel[key]; else betState.sel[key] = 1;
+      if (betState.sel[key]) delete betState.sel[key]; else betState.sel[key] = (bb.getAttribute('data-label') || key);
       bb.classList.toggle('on', !!betState.sel[key]);
-      updateBetBar(); return;
+      saveSel(); updateBetBar(); return;
     }
     var am = e.target.closest('[data-qty]');
     if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
-    if (e.target.closest('[data-bet-clear]')) { betState.sel = {}; betState.qty = '1'; render(true); return; }
+    if (e.target.closest('[data-bet-clear]')) { betState.sel = {}; betState.qty = '1'; saveSel(); render(true); return; }
     if (e.target.closest('[data-bet-submit]')) {
       if (betSubmitting) return;
       if (!currentUser()) { AUTH_NEXT = '#/bet/' + (betState.game || 'newhk'); location.hash = '#/login'; return; }
