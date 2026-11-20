@@ -87,7 +87,7 @@
         xpath: path,
         method: method,
         body: body == null ? undefined : JSON.stringify(body),
-        headers: headers,
+        headers: Object.assign({}, opts.headers || {}, headers || {}),
         async: false
       });
     })();
