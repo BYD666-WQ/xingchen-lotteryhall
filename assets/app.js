@@ -200,9 +200,35 @@
     var note = x.note || (x.provider === '待接入' ? '数据待接入' : '演示彩种');
     return '<a class="game-cell placeholder" href="#/game/' + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + x.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + x.name + '</span><span class="game-issue">' + esc(note) + '</span></a>';
   }
+  var HALL18 = [
+    { name:'极速赛车', id:'fast-race-1', color:'#4d8fd8', icon:'赛' },
+    { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' },
+    { name:'极速六合彩', id:'fast-mark6-1', color:'#e39b38', icon:'六' },
+    { name:'Choice真人', soon:true, color:'#c05a8a', icon:'真' },
+    { name:'开元棋牌', soon:true, color:'#8a6ad0', icon:'棋' },
+    { name:'PG电子', soon:true, color:'#d05a5a', icon:'电' },
+    { name:'捕鱼达人', soon:true, color:'#3fa3b8', icon:'捕' },
+    { name:'香港六合彩', id:'hk', color:'#d94b62', icon:'香' },
+    { name:'新澳门六合彩', id:'newmo', color:'#3d8ed0', icon:'澳' },
+    { name:'澳门六合彩', soon:true, color:'#4aa99d', icon:'门' },
+    { name:'极速快三', id:'fast-k3', color:'#d45f82', icon:'快' },
+    { name:'腾讯分分彩', soon:true, color:'#687bd0', icon:'分' },
+    { name:'极速28', soon:true, color:'#d08a3f', icon:'28' },
+    { name:'幸运28', soon:true, color:'#c9a23f', icon:'幸' },
+    { name:'极速飞艇', id:'fast-race-2', color:'#5a8fd4', icon:'艇' },
+    { name:'幸运飞艇', id:'fast-race-5', color:'#4aa99d', icon:'飞' },
+    { name:'北京赛车', id:'fast-race-10', color:'#7b68c8', icon:'北' },
+    { name:'幸运赛车', id:'newhk', color:'#e6a62f', icon:'运' }
+  ];
+  function hallGrid18() {
+    return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">游戏大厅</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid hall18">' + HALL18.map(function (x) {
+      if (x.soon) return '<button type="button" class="game-cell soon" data-soon="' + esc(x.name) + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">待接入</span></button>';
+      return '<a class="game-cell" href="#/bet/' + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">' + esc((DEFS[x.id] && DEFS[x.id].period) || '进入') + '</span></a>';
+    }).join('') + '</div></section>';
+  }
   function hotGrid() {
     var cells = CONFIG.filter(function (g) { return g.enabled; }).concat(CONFIG.filter(function (g) { return !g.enabled; }));
-    return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">热门彩种</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid">' + cells.map(function (g) { return gameCell(g.id); }).join('') + '</div></section>';
+    return hallGrid18();
   }
   function hallPage() {
     return banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
@@ -353,7 +379,7 @@
   function emailFor(name) { var s = String(name || '').toLowerCase().replace(/[^a-z0-9._-]/g, ''); if (!s) s = 'u' + Array.from(String(name || 'user')).map(function (c) { return c.codePointAt(0).toString(36); }).join('').slice(0, 20); return s + '@lottery-demo.com'; }
   function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.name || '玩家', id:awUser.$id, email:awUser.email } : null; }
   function saveAccounts() {}
-  function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? (u.username.length > 8 ? u.username.slice(0,8) + '…' : u.username) : '登录'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
+  function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? ('积分 ' + (parseInt(points, 10) || 0)) : '登录/注册'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
   function friendlyError(e) {
     var raw = (e && (e.message || e.type || '')) || '';
     var code = (e && (e.code || e.type)) || '';
@@ -712,9 +738,35 @@
     var note = x.note || (x.provider === '待接入' ? '数据待接入' : '演示彩种');
     return '<a class="game-cell placeholder" href="#/game/' + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + x.icon + '</span><i class="badge-shine"></i></span><span class="game-name">' + x.name + '</span><span class="game-issue">' + esc(note) + '</span></a>';
   }
+  var HALL18 = [
+    { name:'极速赛车', id:'fast-race-1', color:'#4d8fd8', icon:'赛' },
+    { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' },
+    { name:'极速六合彩', id:'fast-mark6-1', color:'#e39b38', icon:'六' },
+    { name:'Choice真人', soon:true, color:'#c05a8a', icon:'真' },
+    { name:'开元棋牌', soon:true, color:'#8a6ad0', icon:'棋' },
+    { name:'PG电子', soon:true, color:'#d05a5a', icon:'电' },
+    { name:'捕鱼达人', soon:true, color:'#3fa3b8', icon:'捕' },
+    { name:'香港六合彩', id:'hk', color:'#d94b62', icon:'香' },
+    { name:'新澳门六合彩', id:'newmo', color:'#3d8ed0', icon:'澳' },
+    { name:'澳门六合彩', soon:true, color:'#4aa99d', icon:'门' },
+    { name:'极速快三', id:'fast-k3', color:'#d45f82', icon:'快' },
+    { name:'腾讯分分彩', soon:true, color:'#687bd0', icon:'分' },
+    { name:'极速28', soon:true, color:'#d08a3f', icon:'28' },
+    { name:'幸运28', soon:true, color:'#c9a23f', icon:'幸' },
+    { name:'极速飞艇', id:'fast-race-2', color:'#5a8fd4', icon:'艇' },
+    { name:'幸运飞艇', id:'fast-race-5', color:'#4aa99d', icon:'飞' },
+    { name:'北京赛车', id:'fast-race-10', color:'#7b68c8', icon:'北' },
+    { name:'幸运赛车', id:'newhk', color:'#e6a62f', icon:'运' }
+  ];
+  function hallGrid18() {
+    return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">游戏大厅</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid hall18">' + HALL18.map(function (x) {
+      if (x.soon) return '<button type="button" class="game-cell soon" data-soon="' + esc(x.name) + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">待接入</span></button>';
+      return '<a class="game-cell" href="#/bet/' + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">' + esc((DEFS[x.id] && DEFS[x.id].period) || '进入') + '</span></a>';
+    }).join('') + '</div></section>';
+  }
   function hotGrid() {
     var cells = CONFIG.filter(function (g) { return g.enabled; }).concat(CONFIG.filter(function (g) { return !g.enabled; }));
-    return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">热门彩种</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid">' + cells.map(function (g) { return gameCell(g.id); }).join('') + '</div></section>';
+    return hallGrid18();
   }
   function hallPage() {
     return banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
@@ -986,8 +1038,11 @@
       '<form id="authForm" class="auth-form"><label>用户名<input id="authUser" autocomplete="username" maxlength="20" placeholder="例如：幸运玩家"></label><label>密码<input id="authPass" type="password" autocomplete="current-password" maxlength="30" placeholder="至少 8 位"></label><div id="authError" class="auth-error"></div><button class="auth-submit" type="submit">' + (register ? '注册并登录' : '登录') + '</button></form>' +
       '<div class="auth-tip">账号由 Appwrite 管理，仅用于本演示站；请勿使用真实密码。<br>登录后可查看数据库积分并体验模拟投注。</div><a class="auth-back" href="#/lotteryhall">先逛逛大厅 →</a></div>';
   }
-  var ROUTES = { lotteryhall: hallPage, history: historyPage, trend: trendPage, rank: rankPage, me: mePage };
-  var TITLES = { lotteryhall: '彩票大厅', history: '开奖记录', trend: '号码走势', rank: '高手排行', me: '我的', howto: '玩法说明', login: '登录' };
+  function soonPage(title, note) { return '<div class="page-head"><div><div class="page-kicker">COMING SOON</div><h1 class="page-title">' + title + '</h1><div class="page-sub">' + note + '</div></div></div><div class="data-empty" style="padding:40px 20px">该板块为演示占位，待接入后开放。</div>'; }
+  function galleryPage() { return soonPage('49 图库', 'Demo · 图库待接入'); }
+  function supportPage() { return soonPage('客服', 'Demo · 在线客服待接入'); }
+  var ROUTES = { lotteryhall: hallPage, history: historyPage, trend: trendPage, rank: rankPage, me: mePage, points: mePage, gallery: galleryPage, support: supportPage };
+  var TITLES = { lotteryhall: '彩票大厅', history: '开奖记录', trend: '号码走势', rank: '高手排行', me: '我的', points: '我的积分', gallery: '49图库', support: '客服', howto: '玩法说明', login: '登录' };
   function currentRoute() {
     var h = String(location.hash || '').replace(/^#\/?/, ''), parts = h.split('/');
     if (parts[0] === 'game' && DEFS[parts[1]]) return { name: 'game', id: parts[1] };
@@ -1078,6 +1133,7 @@
     }
   });
   document.addEventListener('click', function (e) {
+    var soon = e.target.closest('[data-soon]'); if (soon) { e.preventDefault(); showModal(soon.getAttribute('data-soon') + ' 暂未接入，敬请期待'); return; }
     var demo = e.target.closest('[data-demo]'); if (demo) { e.preventDefault(); showModal(demo.getAttribute('data-demo')); return; }
     if (e.target.closest('[data-close-modal]')) { closeModal(); return; }
     var betLink = e.target.closest('a[href^="#/bet/"]');
