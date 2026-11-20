@@ -549,3 +549,39 @@ body{background:#F6F6F6;}
 .zgroup-nums .znum.on em{color:#fff;}
 .zgroup-nums .znum.on::after{content:"✓";position:absolute;font-size:10px;transform:translate(14px,-10px);}
 .zgroup-nums .znum{position:relative;}
+
+
+/* ===== Phase G：白底投注页 / 18 宫格 / 5 tab ===== */
+.hot-grid.hall18{grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:1px !important;background:#ececec;}
+.hot-grid.hall18 .game-cell{min-height:104px;aspect-ratio:auto;border-radius:0 !important;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 2px;}
+.hot-grid.hall18 .game-cell .game-circle{width:44px;height:44px;border-radius:50% !important;background:var(--gc,#EC2829) !important;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;}
+.hot-grid.hall18 .game-cell .game-name{font-size:12px;color:#333;font-weight:600;line-height:1.2;text-align:center;}
+.hot-grid.hall18 .game-cell .game-issue{font-size:10px;color:#EC2829;}
+.hot-grid.hall18 .game-cell.soon .game-issue{color:#999;}
+.hot-grid.hall18 .game-cell.soon .game-circle{opacity:.55;}
+body.bet-mode{background:#F6F6F6 !important;}
+body.bet-mode .bet-hero{background:#fff !important;color:#222 !important;border-radius:0;box-shadow:none;}
+body.bet-mode .bet-head h1{color:#222 !important;}
+body.bet-mode .bet-kicker{color:#EC2829 !important;}
+body.bet-mode .bet-period,body.bet-mode .bet-clock{color:#666 !important;}
+body.bet-mode .bet-clock b{color:#EC2829 !important;}
+body.bet-mode .bet-open{background:#fff !important;border:1px solid #eee;border-radius:0;}
+body.bet-mode .bet-open-label{color:#666 !important;}
+body.bet-mode .bet-open-balls{color:#333;}
+body.bet-mode .bet-tabs{background:#fff;border-radius:0;}
+body.bet-mode .bet-tabs button{color:#666;}
+body.bet-mode .bet-tabs button.on{color:#EC2829;border-bottom:2px solid #EC2829;}
+body.bet-mode .bet-layout{background:#F6F6F6;}
+body.bet-mode .bet-cats{background:#fff;}
+body.bet-mode .bet-cats button{color:#333;background:#fff;border:0;border-bottom:1px solid #f2f2f2;}
+body.bet-mode .bet-cats button.on{background:#fff;color:#EC2829;border-left:3px solid #EC2829;font-weight:800;}
+body.bet-mode .bet-center{background:#fff;}
+body.bet-mode .odds-note,body.bet-mode .bet-cfg{color:#999;background:#fff;}
+body.bet-mode .picked-bar{background:#fff;border-color:#eee;}
+body.bet-mode .bet-bar{background:#fff;border-top:1px solid #eee;}
+body.bet-mode .bet-bar input,body.bet-mode #betQty{background:#fff;border:1px solid #ddd;border-radius:10.4px;}
+body.bet-mode .amount-chip{background:#F6F6F6;border:1px solid #eee;color:#333;border-radius:10.4px;}
+body.bet-mode .amount-chip.on{border-color:#EC2829;color:#EC2829;font-weight:800;}
+body.bet-mode .bet-submit{background:#000 !important;color:#fff;border-radius:10.4px;}
+body.bet-mode .zgroup{background:#fff;border-color:#f2f2f2;}
+body.bet-mode .zgroup-nums{background:#f2f2f2;}
