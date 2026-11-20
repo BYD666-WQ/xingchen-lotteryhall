@@ -309,7 +309,7 @@
     { id:'miss', name:'自选不中', odds:'2.0', rule:'选 1 个号码，开奖的 7 个号码中都不包含它即中。', example:'选 49，开奖号码没有 49 → 命中。' },
     { id:'combo', name:'连肖', odds:'3.2 起', rule:'选择 2–5 个生肖的组合，开奖特码生肖在组合内即中；组合越长赔率越高。', example:'选「马 + 兔」，特码为马 → 命中。' }
   ];
-  var ODDS = { special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 };
+  var ODDS = Object.assign({ special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 }, window.LH_ODDS || {});
   var BET_CATS = [
     { id:'special', name:'特码', short:'特' },
     { id:'one-zodiac', name:'一肖', short:'肖' },
@@ -384,6 +384,22 @@
       rows.forEach(function (r) { if (r && r.id) gameConfigs[r.id] = r; });
       if (res && res.odds && typeof res.odds === 'object') {
         Object.keys(res.odds).forEach(function (k) { gameConfigs[k] = gameConfigs[k] || { id: k }; gameConfigs[k].odds = res.odds[k]; });
+      }
+      // 服务端权威玩法赔率（/games.oddsByPlay）→ 覆盖 LH_ODDS 兜底值
+      var ob = (res && (res.oddsByPlay || (res.odds && res.odds.oddsByPlay))) || null;
+      if (ob && typeof ob === 'object') {
+        if (ob.oneZodiac != null) ODDS.oneZodiac = Number(ob.oneZodiac);
+        if (ob.flatZodiac != null) ODDS.specialZodiac = Number(ob.flatZodiac);
+        if (ob.horse != null) ODDS.horse = Number(ob.horse);
+        if (ob.specialNewMo != null) { DEFS.newmo = DEFS.newmo || {}; DEFS.newmo.specialOdds = Number(ob.specialNewMo); }
+        if (ob.specialNewHk != null) { DEFS.newhk = DEFS.newhk || {}; DEFS.newhk.specialOdds = Number(ob.specialNewHk); }
+        if (ob.zodiacNewMo != null) { DEFS.newmo = DEFS.newmo || {}; DEFS.newmo.zodiacOdds = Number(ob.zodiacNewMo); }
+      }
+      // 服务端规则（resetOnLogout 等）
+      var rl = (res && res.rules) || null;
+      if (rl && typeof rl === 'object') {
+        window.LH_RULES = window.LH_RULES || {};
+        if (rl.resetOnLogout != null) window.LH_RULES.resetOnLogout = !!rl.resetOnLogout;
       }
     } catch (e) { /* 失败保留 config/games.js 静态兜底 */ }
   }
@@ -780,7 +796,7 @@
     { id:'miss', name:'自选不中', odds:'2.0', rule:'选 1 个号码，开奖的 7 个号码中都不包含它即中。', example:'选 49，开奖号码没有 49 → 命中。' },
     { id:'combo', name:'连肖', odds:'3.2 起', rule:'选择 2–5 个生肖的组合，开奖特码生肖在组合内即中；组合越长赔率越高。', example:'选「马 + 兔」，特码为马 → 命中。' }
   ];
-  var ODDS = { special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 };
+  var ODDS = Object.assign({ special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 }, window.LH_ODDS || {});
   var BET_CATS = [
     { id:'special', name:'特码', short:'特' },
     { id:'one-zodiac', name:'一肖', short:'肖' },
@@ -809,14 +825,17 @@
   function zodiacGrid(prefix, odds) {
     return '<div class="zodiac-grid">' + ZODIACS.map(function (z) {
       var key = prefix + '-' + z;
-      return '<button type="button" class="bet-zodiac ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + z + '肖" data-odds="' + odds + '"><span class="zcircle">' + z + '</span><em>' + odds + '</em></button>';
+      var o = (z === '马' && ODDS.horse) ? ODDS.horse : odds;
+      return '<button type="button" class="bet-zodiac ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + z + '肖" data-odds="' + o + '"><span class="zcircle">' + z + '</span><em>' + o + '</em></button>';
     }).join('') + '</div>';
   }
-  function numberGrid(prefix, odds) {
+  function numberGrid(prefix, odds, hideZodiac) {
     var out = '';
     for (var i = 1; i <= 49; i++) {
       var c = pad(i), a = attrFor(i), key = prefix + '-' + c, w = a.color === '红' ? 'r' : a.color === '蓝' ? 'b' : 'g';
-      out += '<button type="button" class="bet-num c-' + w + (isSel(key) ? ' on' : '') + '" data-bet="' + key + '" data-label="' + c + ' ' + (a.z || '') + '" data-odds="' + odds + '"><b>' + c + '</b><i>' + esc(a.z || '') + '</i><em>' + odds + '</em></button>';
+      var z = hideZodiac ? '' : esc(a.z || '');
+      var lab = hideZodiac ? c : (c + ' ' + (a.z || ''));
+      out += '<button type="button" class="bet-num c-' + w + (isSel(key) ? ' on' : '') + '" data-bet="' + key + '" data-label="' + lab + '" data-odds="' + odds + '"><b>' + c + '</b>' + ( hideZodiac ? '' : '<i>' + z + '</i>' ) + '<em>' + odds + '</em></button>';
     }
     return '<div class="num-bet-grid">' + out + '</div>';
   }
@@ -827,9 +846,13 @@
     }).join('') + '</div>';
   }
   function betContent(cat) {
-    if (cat === 'special') return '<div class="bet-content-head"><div><h2>特码</h2><p>选一个号码，命中开奖特码即中</p></div>' + betHelp('special') + '</div>' + zodiacGrid('special-z', ODDS.oneZodiac) + numberGrid('special-n', ODDS.special);
-    if (cat === 'one-zodiac') return '<div class="bet-content-head"><div><h2>一肖</h2><p>选一个生肖，命中特码生肖即中</p></div>' + betHelp('one-zodiac') + '</div>' + zodiacGrid('one-z', ODDS.oneZodiac);
-    if (cat === 'special-zodiac') return '<div class="bet-content-head"><div><h2>特肖</h2><p>只判断特码生肖，选一个生肖</p></div>' + betHelp('special-zodiac') + '</div>' + zodiacGrid('spz-z', ODDS.specialZodiac);
+    var def = DEFS[betState.game] || {};
+    var sp = Number(def.specialOdds || ODDS.special) || ODDS.special;
+    var zo = Number(def.zodiacOdds || ODDS.oneZodiac) || ODDS.oneZodiac;
+    var hideZ = !!def.hideZodiac;
+    if (cat === 'special') return '<div class="bet-content-head"><div><h2>特码</h2><p>' + (hideZ ? '只显示号码与赔率（新香港/新澳）' : '选一个号码，命中开奖特码即中') + '</p></div>' + betHelp('special') + '</div>' + numberGrid('special-n', sp, hideZ) + (hideZ ? '' : zodiacGrid('special-z', zo));
+    if (cat === 'one-zodiac') return '<div class="bet-content-head"><div><h2>一肖</h2><p>一肖 / 平特肖 ' + ODDS.oneZodiac + ' 倍 · 马 ' + (ODDS.horse || 1.8) + ' 倍</p></div>' + betHelp('one-zodiac') + '</div>' + zodiacGrid('one-z', ODDS.oneZodiac);
+    if (cat === 'special-zodiac') return '<div class="bet-content-head"><div><h2>特肖</h2><p>只判断特码生肖，选一个生肖</p></div>' + betHelp('special-zodiac') + '</div>' + zodiacGrid('spz-z', zo);
     if (cat === 'two-side') return '<div class="bet-content-head"><div><h2>两面</h2><p>大小 / 单双 / 合单合双 / 尾数大小</p></div>' + betHelp('two-side') + '</div>' + optionGrid([{k:'big',n:'大',o:'1.96'},{k:'small',n:'小',o:'1.96'},{k:'odd',n:'单',o:'1.96'},{k:'even',n:'双',o:'1.96'},{k:'sum-odd',n:'合单',o:'1.96'},{k:'sum-even',n:'合双',o:'1.96'},{k:'tail-big',n:'尾大',o:'1.96'},{k:'tail-small',n:'尾小',o:'1.96'}], 'two');
     if (cat === 'color') return '<div class="bet-content-head"><div><h2>色波</h2><p>特码波色三选一</p></div>' + betHelp('color') + '</div>' + optionGrid([{k:'r',n:'红波',o:'2.8'},{k:'b',n:'蓝波',o:'2.8'},{k:'g',n:'绿波',o:'2.8'}], 'color');
     if (cat === 'regular') return '<div class="bet-content-head"><div><h2>正码 1-6</h2><p>选择正码位置，按该位置开奖号码结算</p></div>' + betHelp('regular') + '</div>' + optionGrid([{k:'1',n:'正码一',o:'7.8'},{k:'2',n:'正码二',o:'7.8'},{k:'3',n:'正码三',o:'7.8'},{k:'4',n:'正码四',o:'7.8'},{k:'5',n:'正码五',o:'7.8'},{k:'6',n:'正码六',o:'7.8'}], 'reg');
@@ -871,6 +894,7 @@
     var cfgNote = gc ? '<div class="bet-cfg">开奖配置：' + (gc.mode === 'manual' ? '手动 ' + (gc.forcedResult || '') : '随机') + ' · 难度 ' + (gc.difficulty === 'easy' ? '易' : gc.difficulty === 'hard' ? '难' : '中') + '</div>' : '';
     var my = myBetsHtml();
     return '<a class="back-link" href="' + (def.mock ? '#/lotteryhall' : '#/game/' + id) + '">‹ 返回 ' + (def.mock ? '大厅' : def.name + '详情') + '</a>' + pointsBar() +
+      (def.mock ? '<div class="fast-meta">周期 <b>' + esc(def.period || '1分钟') + '</b> · <b data-fast-issue="' + id + '">第 — 期</b> · <span data-fast-count="' + id + '">—</span></div>' : '') +
       '<div class="bet-hero"><div class="bet-head"><div><span class="bet-kicker">模拟投注 · 仅演示</span><h1>' + title + '</h1><div class="bet-period">第 <b>' + shortIssue(g.last.issue) + '</b> 期 · 下期 ' + shortIssue(g.nextIssue) + '</div></div><div class="bet-clock">投注中<br><b data-cd="' + id + '">' + countdownText(g) + '</b></div></div>' +
       '<div class="bet-open"><div class="bet-open-label">上期开奖 <span>第 ' + shortIssue(g.last.issue) + ' 期</span></div><div class="bet-open-balls">' + open.html + '<span class="bet-sum">总和 <b>' + open.sum + '</b></span></div></div></div>' +
       '<div class="bet-tabs"><button type="button" class="' + (credit ? 'on' : '') + '" data-bet-tab="credit">信用</button><button type="button" class="' + (!credit ? 'on' : '') + '" data-bet-tab="path">路子图</button></div>' +
@@ -970,7 +994,7 @@
     var input = $('#betQty'); if (input && document.activeElement !== input && String(input.value) !== String(betState.qty)) input.value = betState.qty;
     $$('.amount-chip').forEach(function (b) { b.classList.toggle('on', String(b.getAttribute('data-qty')) === String(betState.qty)); });
     var insuff = notes > 0 && cost > points;
-    var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = insuff ? '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）' : ''; hint.classList.toggle('show', insuff); }
+    var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = insuff ? (points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）') : ''; hint.classList.toggle('show', insuff); }
     var submit = $('[data-bet-submit]'); if (submit) { submit.disabled = insuff || betSubmitting; submit.textContent = betSubmitting ? '投注中…' : '立即投注'; }
     updatePointsUI();
   }
@@ -990,7 +1014,21 @@
     if (chip) { if (currentUser()) location.hash = '#/me'; else { AUTH_NEXT = '#/lotteryhall'; location.hash = '#/login'; } return; }
     var modeBtn = e.target.closest('[data-auth-mode]');
     if (modeBtn) { authMode = modeBtn.getAttribute('data-auth-mode'); render(true); return; }
-    if (e.target.closest('[data-logout]')) { logout(); AUTH_NEXT = '#/lotteryhall'; updateUserChip(); location.hash = '#/lotteryhall'; showToast('已退出演示账号'); return; }
+    if (e.target.closest('[data-logout]')) {
+      var resetOnLogout = !(window.LH_RULES && window.LH_RULES.resetOnLogout === false);
+      var uid = awUser && awUser.$id;
+      (async function () {
+        var ok = false;
+        if (resetOnLogout && uid) {
+          try { await window.LotteryAPI.call('/reset-points', { method: 'POST', body: {} }); ok = true; } catch (e) { ok = false; }
+        }
+        points = resetOnLogout ? 0 : points;
+        logoutUser(); AUTH_NEXT = '#/lotteryhall'; updateUserChip(); location.hash = '#/lotteryhall';
+        if (resetOnLogout) showModal('已退出登录' + (ok ? '，账号积分已清零' : '（积分清零接口未就绪，已本地清零）') + '。退出清分由后台 resetOnLogout 控制。');
+        else showToast('已退出登录（后台未开启退出清零，积分保留）');
+      })();
+      return;
+    }
     var hg = e.target.closest('[data-history-game]'); if (hg) { historyGame = hg.getAttribute('data-history-game'); render(); return; }
     var dot = e.target.closest('[data-slide]'); if (dot) { var i = parseInt(dot.getAttribute('data-slide'), 10); var slides = $$('#hallBanner .slide'), dots = $$('#hallBanner .dots button'); slides.forEach(function (s, j) { s.classList.toggle('on', j === i); }); dots.forEach(function (d, j) { d.classList.toggle('on', j === i); }); bannerIndex = i; return; }
     var bc = e.target.closest('[data-bet-cat]');
@@ -1017,7 +1055,8 @@
       var notes = nodes.length * qty, cost = notes * 2;
       var g = state.games[betState.game] || mockGame(betState.game);
       if (!g) { showToast('彩种数据未就绪'); return; }
-      if (cost > points) { updateBetBar(); showModal('积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）'); return; }
+      if (points <= 0) { updateBetBar(); showModal('积分不足，请联系管理员加分后再投注'); return; }
+      if (cost > points) { updateBetBar(); showModal('积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）。积分不足可联系管理员加分'); return; }
       var selections = nodes.map(function (el) { var key = el.getAttribute('data-bet'); return { key:key, label:el.getAttribute('data-label') || key, odds:parseFloat(el.getAttribute('data-odds')) || 0, zodiacs:el.getAttribute('data-zodiacs') || '' }; });
       betSubmitting = true; updateBetBar();
       (async function () {
@@ -1060,4 +1099,23 @@
   window.addEventListener('hashchange', function () { render(); });
   if (!location.hash) location.hash = '#/lotteryhall';
   render(); loadData(true); initAuth(); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
+  // 快开：每秒刷新期号/倒计时；到新周期调 /settle（带 cron 触发头，Function 允许）
+  var FAST_LAST = {};
+  setInterval(function () {
+    var els = document.querySelectorAll('[data-fast-count]');
+    Array.prototype.forEach.call(els, function (el) {
+      var id = el.getAttribute('data-fast-count'); var def = DEFS[id]; if (!def) return;
+      var sec = Number(def.periodSec || def.periodSeconds) || 60;
+      var now = Math.floor(Date.now() / 1000);
+      el.textContent = '剩 ' + (sec - (now % sec)) + ' 秒';
+      var issue = Math.floor(now / sec);
+      var issueEl = document.querySelector('[data-fast-issue="' + id + '"]');
+      if (issueEl) issueEl.textContent = '第 ' + (100000 + (issue % 900000)) + ' 期';
+      if (FAST_LAST[id] != null && FAST_LAST[id] !== issue) {
+        try { window.LotteryAPI.call('/settle', { method: 'POST', body: { gameId: id }, headers: { 'x-appwrite-trigger': 'schedule' } }).catch(function () {}); } catch (e) {}
+      }
+      FAST_LAST[id] = issue;
+    });
+  }, 1000);
+
 })();
