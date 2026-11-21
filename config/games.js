@@ -29,7 +29,7 @@ window.LH_GAMES = [
   { id:'fast-race-5', name:'5分钟赛车', provider:'快开', enabled:true, mock:true, period:'5分钟', periodSec:300, icon:'5', color:'#687bd0', drawKey:'mock' , racing:true },
   { id:'fast-race-10', name:'10分钟赛车', provider:'快开', enabled:true, mock:true, period:'10分钟', periodSec:600, icon:'10', color:'#7b68c8', drawKey:'mock' , racing:true },
   { id:'fast-mark6-1', name:'一分钟六合彩', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'六', color:'#e39b38', drawKey:'mock' },
-  { id:'fast-k3', name:'快三', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'快', color:'#d45f82', drawKey:'mock' }
+  { id:'fast-k3', name:'快三', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'快', color:'#d45f82', drawKey:'mock' },
   { id:'fast-mark6-5', name:'5分钟六合彩', provider:'快开', enabled:true, mock:true, period:'5分钟', periodSec:300, icon:'5', color:'#d36d55', drawKey:'mock' },
   { id:'fast-race-30', name:'30秒赛车', provider:'快开', enabled:true, mock:true, period:'30秒', periodSec:30, icon:'30', color:'#5a7bd4', drawKey:'mock', racing:true },
   { id:'fast-airship', name:'一分飞艇', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'艇', color:'#4aa99d', drawKey:'mock', racing:true }
