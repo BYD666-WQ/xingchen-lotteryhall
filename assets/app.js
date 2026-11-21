@@ -1124,7 +1124,9 @@
     var sum;
     if (SUM_SOURCE === 'total') { sum = vs.slice(0, 10).reduce(function (a, b) { return a + b; }, 0); }
     else { sum = (vs[0] || 0) + (vs[1] || 0); } // 冠亚和
-    return { sum: sum, big: sum >= 12 ? '大' : '小', odd: (sum % 2 === 1) ? '单' : '双' };
+    var dragon = [];
+    for (var k = 0; k < 5; k++) { var L = vs[k] || 0, R = vs[9 - k] || 0; dragon.push(L === R ? '和' : (L > R ? '龙' : '虎')); }
+    return { sum: sum, big: sum >= 12 ? '大' : '小', odd: (sum % 2 === 1) ? '单' : '双', dragon: dragon };
   }
   function racingHeaderHtml(def, g) {
     var balls = '';
@@ -1136,7 +1138,12 @@
     }
     var last = (g && g.last && g.last.issue) || 1000001, next = (g && g.nextIssue) || (last + 1);
     var sm = raceSummary(nums.length >= 7 ? nums : []);
-    var smHtml = '<div class="rr-sumline"><span class="lab">和值</span><b>' + (nums.length >= 7 ? sm.sum : '—') + '</b><em>·</em><b class="big">' + (nums.length >= 7 ? sm.big : '—') + '</b><em>·</em><b class="oe">' + (nums.length >= 7 ? sm.odd : '—') + '</b></div>';
+    var smHtml = '<div class="rr-tags">' +
+      '<span class="tag">和值 ' + (nums.length >= 7 ? sm.sum : '—') + '</span>' +
+      '<span class="tag">' + (nums.length >= 7 ? sm.big : '—') + '</span>' +
+      '<span class="tag">' + (nums.length >= 7 ? sm.odd : '—') + '</span>' +
+      (nums.length >= 7 ? sm.dragon.map(function (d) { return '<span class="tag">' + d + '</span>'; }).join('') : '<span class="tag">—</span>') +
+      '</div>';
     return '<div class="race-head">' +
       '<span class="race-title">' + esc(def.raceTitle || '极速赛车') + ' »</span>' +
       '<span class="race-mode">信用玩法 ▾</span>' +
