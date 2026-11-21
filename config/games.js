@@ -1,6 +1,7 @@
 // 彩种 + 赔率 + 规则（2231 风格 / 可乐 2026-11-20 需求）
 // 赔率表集中在这里；后台可通过 Function /admin/config 覆盖（前端以本表兜底）。
 window.LH_ODDS = {
+  rank: 9.98,          // 第1-10名 名次赔率（服务端 /games.oddsByPlay.fast.rank 为准）
   special: 47.3,        // 新澳/新香港「特码」号码
   macauSpecialZodiac: 48.8, // 澳门（新澳）生肖
   oneZodiac: 2.0,       // 一肖 / 平特肖
