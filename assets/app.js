@@ -1101,25 +1101,36 @@
       '<span class="rnum-sq" style="--rc:' + c + '">' + pad(num) + '</span><em class="rnum-odds">9.95</em></button>';
   }
   function rankSection(rank) {
-    var open = betState.raceOpen && betState.raceOpen.indexOf(rank) >= 0;
     var cells = ''; for (var i = 1; i <= 10; i++) cells += rankCell(rank, i);
-    return '<div class="rk-sec ' + (open ? 'open' : '') + '" data-rank-sec="' + rank + '"><button type="button" class="rk-hd" data-rank-toggle="' + rank + '"><b>第' + rank + '名</b><i class="rk-arrow">' + (open ? '▾' : '▸') + '</i></button><div class="rk-body">' + cells + '</div></div>';
+    return '<div class="rk-sec open" data-rank-sec="' + rank + '"><div class="rk-hd"><b>第' + rank + '名</b></div><div class="rk-body"><div class="rnum-grid">' + cells + '</div></div></div>';
   }
   function rankList() { var h = ''; for (var i = 1; i <= 10; i++) h += rankSection(i); return '<div class="rk-list">' + h + '</div>'; }
+  function raceSummary(nums) {
+    var vs = nums.map(function (x) { return parseInt(x && x.c, 10) || 0; });
+    var ten = []; for (var i = 0; i < 10; i++) ten.push(vs[i] || 0);
+    var sum = ten.reduce(function (a, b) { return a + b; }, 0);
+    var big = sum > 27 ? '大' : '小';
+    var odd = (sum % 2 === 1) ? '单' : '双';
+    var dragon = [];
+    for (var k = 0; k < 5; k++) { var L = ten[k], R = ten[9 - k]; dragon.push(L === R ? '和' : (L > R ? '龙' : '虎')); }
+    return { sum: sum, big: big, odd: odd, dragon: dragon.join('') };
+  }
   function racingHeaderHtml(def, g) {
-    var balls = '', zods = '';
+    var balls = '';
     var nums = (g && g.last && g.last.nums) || [];
     if (nums.length >= 7) {
-      for (var i = 0; i < nums.length && i < 10; i++) { var raw = parseInt(nums[i].c, 10); var c = (raw >= 1 && raw <= 10) ? raw : (i + 1); balls += raceBallHtml(c); zods += '<i>' + (nums[i].z || raceZod(c)) + '</i>'; }
+      for (var i = 0; i < nums.length && i < 10; i++) { var raw = parseInt(nums[i].c, 10); var c = (raw >= 1 && raw <= 10) ? raw : (i + 1); balls += raceBallHtml(c, 'sm'); }
     } else {
-      balls = '<span class="rr-wait">上期待开</span>'; zods = '';
+      balls = '<span class="rr-wait">上期待开</span>';
     }
     var last = (g && g.last && g.last.issue) || 1000001, next = (g && g.nextIssue) || (last + 1);
+    var sm = raceSummary(nums.length >= 7 ? nums : []);
+    var smHtml = '<div class="rr-sum"><div><i>和值</i><b>' + (nums.length >= 7 ? sm.sum : '—') + '</b></div><div><i>大小</i><b>' + (nums.length >= 7 ? sm.big : '—') + '</b></div><div><i>单双</i><b>' + (nums.length >= 7 ? sm.odd : '—') + '</b></div><div class="rr-dragon"><i>龙虎</i><b>' + (nums.length >= 7 ? sm.dragon : '—') + '</b></div></div>';
     return '<div class="race-head">' +
       '<span class="race-title">' + esc(def.raceTitle || '极速赛车') + ' »</span>' +
       '<span class="race-mode">信用玩法 ▾</span>' +
       '<span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
-      '<div class="race-result"><div class="rr-left"><div class="rr-issue">第 ' + last + ' 期开奖结果</div><div class="rr-balls">' + balls + '</div><div class="rr-zods">' + zods + '</div></div>' +
+      '<div class="race-result"><div class="rr-left"><div class="rr-issue">第 ' + last + ' 期开奖结果</div><div class="rr-balls">' + balls + '</div></div>' + smHtml +
       '<div class="rr-right"><div class="rr-next">' + next + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
       '<div class="race-balance"><span>余额：<b>' + (parseInt(points, 10) || 0) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
   }
@@ -1146,8 +1157,10 @@
         return '<button type="button" class="race-cat ' + (cat === c.id ? 'on' : '') + '" data-race-cat="' + c.id + '"><i></i>' + c.name + '</button>';
       }).join('') + '</div><div class="race-main">' + body + '</div></div>' +
       '<div class="race-picked">已选：<b data-picked-list>—</b></div>' +
+      '<div class="race-closed" data-closed hidden><div><b>已停止投注</b><span>下一期已开盘，投注时请注意期号</span></div><button type="button" data-race-next>知道了</button></div>' +
       '<div class="race-chips">' + chips + '</div>' +
       '<div class="race-amount"><label>金额：</label><input id="betQty" type="text" inputmode="numeric" value="' + esc(betState.qty) + '"><span class="race-unit">积分</span><button type="button" class="race-quick">快捷金额</button><button type="button" class="race-reset" data-race-reset>重置</button><button type="button" class="race-submit" data-bet-submit>下注</button></div>' +
+      '<div class="race-keypad" id="raceKeypad" hidden>' + [1,2,3,4,5,6,7,8,9].map(function (d) { return '<button type="button" data-kp="' + d + '">' + d + '</button>'; }).join('') + '<button type="button" data-kp="del">删除</button><button type="button" data-kp="0">0</button><button type="button" data-kp="ok">确定</button></div>' +
       '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
   }
   function betPage(id) {
@@ -1218,6 +1231,12 @@
         var d = DEFS[betState.game] || {}; var closeAt = Number(cdEl.getAttribute('data-close')) || 0;
         var sec = Number(d.periodSec || d.periodSeconds) || 60;
         var left = closeAt > Date.now() ? Math.round((closeAt - Date.now()) / 1000) : (sec - (Math.floor(Date.now() / 1000) % sec));
+        // 封盘窗口：显示遮罩 + 禁用下注
+        var closed = !!(closeAt && Date.now() >= closeAt);
+        var closedEl = document.querySelector('[data-closed]');
+        if (closedEl) closedEl.hidden = !closed;
+        var subBtn = document.querySelector('[data-bet-submit]');
+        if (subBtn) { subBtn.disabled = closed; subBtn.textContent = closed ? '已停止投注' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注'); }
         // 到期后每 5s 拉 /issues
         if (closeAt && Date.now() >= closeAt && Date.now() - (FAST[betState.game] && FAST[betState.game].lastTry || 0) > 5000) syncFastIssue(betState.game);
         var hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60), ss = left % 60;
@@ -1347,6 +1366,19 @@
     }
     var am = e.target.closest('[data-qty]');
     if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
+    if (e.target.closest('#betQty')) { var kp = document.getElementById('raceKeypad'); if (kp) kp.hidden = false; return; }
+    if (e.target.closest('[data-race-next]')) { var cl = document.querySelector('[data-closed]'); if (cl) cl.hidden = true; syncFastIssue(betState.game); return; }
+    var kb = e.target.closest('[data-kp]');
+    if (kb) {
+      var key = kb.getAttribute('data-kp'), inp = document.getElementById('betQty');
+      if (inp) {
+        if (key === 'del') inp.value = String(inp.value || '').slice(0, -1) || '1';
+        else if (key === 'ok') { var kp2 = document.getElementById('raceKeypad'); if (kp2) kp2.hidden = true; }
+        else inp.value = String(inp.value === '0' ? '' : (inp.value || '')) + key;
+        betState.qty = inp.value || '1'; updateBetBar();
+      }
+      return;
+    }
     var rt2 = e.target.closest('[data-rank-toggle]');
     if (rt2) {
       var rk = parseInt(rt2.getAttribute('data-rank-toggle'), 10);
