@@ -403,7 +403,7 @@
     { id:'miss', name:'自选不中', odds:'2.0', rule:'选 1 个号码，开奖的 7 个号码中都不包含它即中。', example:'选 49，开奖号码没有 49 → 命中。' },
     { id:'combo', name:'连肖', odds:'3.2 起', rule:'选择 2–5 个生肖的组合，开奖特码生肖在组合内即中；组合越长赔率越高。', example:'选「马 + 兔」，特码为马 → 命中。' }
   ];
-  var ODDS = Object.assign({ special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 }, window.LH_ODDS || {});
+  var ODDS = Object.assign({ rank:9.98, special:48.8, oneZodiac:4.9, twoSide:1.96, color:2.8, specialZodiac:4.9, regular:7.8, miss:2.0, combo2:3.2, combo3:5.5, combo4:9.8, combo5:18.0 }, window.LH_ODDS || {});
   var BET_CATS = [
     { id:'two-side', name:'两面', short:'' },
     { id:'color', name:'色波', short:'' },
@@ -511,6 +511,7 @@
             window.LH_RACING_ODDS.champion = ch;
           }
           if (f.runnerUp) window.LH_RACING_ODDS.runner = f.runnerUp;
+          if (f.rank != null) ODDS.rank = Number(f.rank);
         }
         try { console.info('[odds] 使用服务端 /games.oddsByPlay:', JSON.stringify(ob).slice(0, 300)); } catch (e) {}
       } else {
@@ -1098,21 +1099,25 @@
   var RACING_COLORS = { '01':'#FFD700','02':'#1E5FD8','03':'#111111','04':'#FF6B00','05':'#00D8D8','06':'#7B2FF7','07':'#9E9E9E','08':'#E23A3A','09':'#8B5A2B','10':'#1FA85C' };
   var RACING_CATS5 = [
     { id:'two-side', name:'两面' }, { id:'first10', name:'第1-10名' }, { id:'sum', name:'冠亚和值' },
-    { id:'combo', name:'冠亚组合' }
+    { id:'combo', name:'冠亚组合' }, { id:'long', name:'长龙' }
   ];
   function raceBallHtml(n, cls) { var c = RACING_COLORS[pad(n)] || '#999'; return '<span class="race-ball ' + (cls || '') + '" style="--rc:' + c + '">' + pad(n) + '</span>'; }
   function raceZod(n) { var a = attrFor(n); return a.z || ''; }
   function raceCell(n, group) {
     var c = RACING_COLORS[pad(n)] || '#999', key = group + '-' + pad(n);
-    return '<button type="button" class="rnum-cell ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + (group === 'r2' ? '亚军 ' : '') + pad(n) + ' " data-odds="9.95">' +
-      '<span class="rnum-sq" style="--rc:' + c + '">' + pad(n) + '</span><em class="rnum-odds">9.95</em></button>';
+    var ro = rankOdds();
+    return '<button type="button" class="rnum-cell ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + (group === 'r2' ? '亚军 ' : '') + pad(n) + ' " data-odds="' + ro + '">' +
+      '<span class="rnum-sq" style="--rc:' + c + '">' + pad(n) + '</span><em class="rnum-odds">' + ro + '</em></button>';
   }
   function raceGrid(group) { var h = ''; for (var i = 1; i <= 10; i++) h += raceCell(i, group); return '<div class="rnum-grid">' + h + '</div>'; }
+  function rankOdds() { var v = Number(ODDS.rank); return isFinite(v) && v > 0 ? v : 9.98; }
+  function fmtOdds(v) { return (Math.round(v * 100) / 100).toFixed(2); }
   function rankCell(rank, num) {
     var key = 'r' + rank + ':' + pad(num);
     var c = RACING_COLORS[pad(num)] || '#999';
-    return '<button type="button" class="rnum-cell rank-cell ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="第' + rank + '名 ' + pad(num) + '" data-odds="9.95">' +
-      '<span class="rnum-sq" style="--rc:' + c + '">' + pad(num) + '</span><em class="rnum-odds">9.95</em></button>';
+    var od = fmtOdds(rankOdds());
+    return '<button type="button" class="rnum-cell rank-cell ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="第' + rank + '名 ' + pad(num) + '" data-odds="' + od + '">' +
+      '<span class="rank-block" style="--rc:' + c + '">' + pad(num) + '</span><em class="rnum-odds">' + od + '</em></button>';
   }
   function rankSection(rank) {
     var cells = ''; for (var i = 1; i <= 10; i++) cells += rankCell(rank, i);
