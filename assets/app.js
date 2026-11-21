@@ -1094,6 +1094,18 @@
       '<span class="rnum-sq" style="--rc:' + c + '">' + pad(n) + '</span><em class="rnum-odds">9.95</em></button>';
   }
   function raceGrid(group) { var h = ''; for (var i = 1; i <= 10; i++) h += raceCell(i, group); return '<div class="rnum-grid">' + h + '</div>'; }
+  function rankCell(rank, num) {
+    var key = 'r' + rank + ':' + pad(num);
+    var c = RACING_COLORS[pad(num)] || '#999';
+    return '<button type="button" class="rnum-cell rank-cell ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="第' + rank + '名 ' + pad(num) + '" data-odds="9.95">' +
+      '<span class="rnum-sq" style="--rc:' + c + '">' + pad(num) + '</span><em class="rnum-odds">9.95</em></button>';
+  }
+  function rankSection(rank) {
+    var open = betState.raceOpen && betState.raceOpen.indexOf(rank) >= 0;
+    var cells = ''; for (var i = 1; i <= 10; i++) cells += rankCell(rank, i);
+    return '<div class="rk-sec ' + (open ? 'open' : '') + '" data-rank-sec="' + rank + '"><button type="button" class="rk-hd" data-rank-toggle="' + rank + '"><b>第' + rank + '名</b><i class="rk-arrow">' + (open ? '▾' : '▸') + '</i></button><div class="rk-body">' + cells + '</div></div>';
+  }
+  function rankList() { var h = ''; for (var i = 1; i <= 10; i++) h += rankSection(i); return '<div class="rk-list">' + h + '</div>'; }
   function racingHeaderHtml(def, g) {
     var balls = '', zods = '';
     var nums = (g && g.last && g.last.nums) || [];
@@ -1113,9 +1125,10 @@
   }
   function racingPage(id, def, g) {
     if (!betState.raceCat || RACING_CATS5.map(function (x) { return x.id; }).indexOf(betState.raceCat) < 0) betState.raceCat = 'first10';
+    if (!betState.raceOpen) betState.raceOpen = [1, 2];
     var cat = betState.raceCat;
     var body;
-    if (cat === 'first10') body = '<div class="race-sec-hd">冠军</div>' + raceGrid('r1') + '<div class="race-sec-hd">亚军</div>' + raceGrid('r2');
+    if (cat === 'first10') body = rankList();
     else if (cat === 'two-side') {
       var R = window.LH_RACING_ODDS || {}, t = R.twoSide || {};
       body = '<div class="race-opts">' + [['big','大',t.big],['small','小',t.small],['odd','单',t.odd],['even','双',t.even]].map(function (x) {
@@ -1334,6 +1347,14 @@
     }
     var am = e.target.closest('[data-qty]');
     if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
+    var rt2 = e.target.closest('[data-rank-toggle]');
+    if (rt2) {
+      var rk = parseInt(rt2.getAttribute('data-rank-toggle'), 10);
+      if (!betState.raceOpen) betState.raceOpen = [1, 2];
+      var idx = betState.raceOpen.indexOf(rk);
+      if (idx >= 0) betState.raceOpen.splice(idx, 1); else betState.raceOpen.push(rk);
+      render(true); return;
+    }
     var rc = e.target.closest('[data-race-cat]');
     if (rc) { betState.raceCat = rc.getAttribute('data-race-cat'); render(true); return; }
     if (e.target.closest('[data-race-reset]')) { betState.sel = {}; betState.qty = '1'; saveSel(); render(true); return; }
@@ -1357,7 +1378,10 @@
         try {
           // 只传号码（Function 结算按开奖号码匹配）；生肖/两面等取 label 文本
           var pickIds = selections.map(function (s) {
-            var m = String(s.key || '').match(/(\d{2})$/);
+            var key = String(s.key || '');
+            if (/^r\d{1,2}:\d{2}$/.test(key)) return key;              // 赛车名次：r3:07
+            if (key.indexOf('race-') === 0) return key.slice(5);        // 赛车冠军/亚军旧格式
+            var m = key.match(/(\d{2})$/);
             return m ? m[1] : String(s.label || s.key);
           });
           // 幂等键：连点/重试不会重复扣分（Function 按 idempotencyKey 去重）
