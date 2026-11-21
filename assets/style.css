@@ -649,3 +649,5 @@ body.race-mode .view,body.race-mode main{padding-top:0 !important;}
 body.race-mode .back-link{display:block;padding:8px 10px;background:#fff;color:#666;font-size:13px;}
 
 .race-unit{font-size:12px;color:#666;flex:0 0 auto;}
+
+.rr-wait{font-size:13px;color:#999;padding:6px 0;display:inline-block;}
