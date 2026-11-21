@@ -230,7 +230,7 @@
     return banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
       '<div class="mini-note">数据来自主站只读接口 · 每 30 秒自动刷新 · 仅作演示</div>';
   }
-  var FAST = {}, FAST_LAST = 0;
+  var FAST = {}, FAST_LAST = 0, KP_FRESH = true;
   function shapeFast(id, d) {
     var nums = (d && d.lastResult && d.lastResult.nums) || [];
     nums = nums.map(function (x) { return (typeof x === 'object') ? { c: String(x.c || ''), z: x.z || '' } : { c: String(x), z: '' }; });
@@ -1366,15 +1366,15 @@
     }
     var am = e.target.closest('[data-qty]');
     if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
-    if (e.target.closest('#betQty')) { var kp = document.getElementById('raceKeypad'); if (kp) kp.hidden = false; return; }
+    if (e.target.closest('#betQty')) { var kp = document.getElementById('raceKeypad'); if (kp) kp.hidden = false; KP_FRESH = true; return; }
     if (e.target.closest('[data-race-next]')) { var cl = document.querySelector('[data-closed]'); if (cl) cl.hidden = true; syncFastIssue(betState.game); return; }
     var kb = e.target.closest('[data-kp]');
     if (kb) {
       var key = kb.getAttribute('data-kp'), inp = document.getElementById('betQty');
       if (inp) {
-        if (key === 'del') inp.value = String(inp.value || '').slice(0, -1) || '1';
+        if (key === 'del') { inp.value = String(inp.value || '').slice(0, -1) || '1'; KP_FRESH = false; }
         else if (key === 'ok') { var kp2 = document.getElementById('raceKeypad'); if (kp2) kp2.hidden = true; }
-        else inp.value = String(inp.value === '0' ? '' : (inp.value || '')) + key;
+        else { inp.value = KP_FRESH ? key : (String(inp.value === '0' ? '' : (inp.value || '')) + key); KP_FRESH = false; }
         betState.qty = inp.value || '1'; updateBetBar();
       }
       return;
