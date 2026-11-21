@@ -585,3 +585,67 @@ body.bet-mode .amount-chip.on{border-color:#EC2829;color:#EC2829;font-weight:800
 body.bet-mode .bet-submit{background:#000 !important;color:#fff;border-radius:10.4px;}
 body.bet-mode .zgroup{background:#fff;border-color:#f2f2f2;}
 body.bet-mode .zgroup-nums{background:#f2f2f2;}
+
+
+/* ===== Phase H：极速赛车（参考图）===== */
+.race-head{display:flex;align-items:center;gap:10px;background:#E60012;color:#fff;padding:10px 12px;font-weight:800;}
+.race-title{font-size:17px;}
+.race-mode{font-size:14px;opacity:.95;}
+.race-help{margin-left:auto;font-size:13px;font-weight:600;}
+.race-menu{font-size:18px;line-height:1;}
+.race-result{display:flex;background:#f4f2ee;border-bottom:1px solid #e5e1d8;padding:8px 10px;gap:8px;}
+.rr-left{flex:1;min-width:0;}
+.rr-issue{font-size:12px;color:#b00016;font-weight:800;margin-bottom:4px;}
+.rr-balls{display:flex;gap:3px;flex-wrap:wrap;}
+.race-ball{width:30px;height:30px;border-radius:5px;background:var(--rc,#999);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -2px 3px rgba(0,0,0,.28),inset 0 2px 2px rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.18);text-shadow:0 1px 1px rgba(0,0,0,.25);}
+.rr-zods{display:flex;gap:3px;margin-top:3px;}
+.rr-zods i{width:30px;text-align:center;font-style:normal;font-size:11px;color:#666;}
+.rr-right{width:108px;border-left:1px solid #ddd;padding-left:8px;text-align:right;font-size:12px;color:#b00016;font-weight:700;}
+.rr-right .rr-next i{display:block;font-style:normal;color:#666;font-weight:600;font-size:11px;}
+.rr-cd{margin-top:4px;font-size:16px;font-weight:900;color:#e60012;letter-spacing:1px;}
+.race-balance{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid #eee;font-size:13px;color:#333;background:#fff;}
+.race-balance b{color:#e60012;}
+.rb-robot{margin-left:auto;color:#b00016;font-weight:700;}
+.rb-single{display:flex;align-items:center;gap:4px;color:#666;}
+.rb-single i{width:12px;height:12px;border-radius:50%;border:2px solid #e60012;display:inline-block;}
+.rb-single i.on{background:#e60012;}
+.race-layout{display:flex;background:#fff;}
+.race-cats{width:76px;border-right:1px solid #eee;background:#fff;}
+.race-cat{width:100%;display:flex;align-items:center;gap:5px;padding:14px 6px;font-size:13px;color:#222;background:#fff;border:0;border-bottom:1px solid #f2f2f2;}
+.race-cat i{width:7px;height:7px;border-radius:50%;background:#e60012;flex:0 0 auto;}
+.race-cat.on{background:#e60012;color:#fff;font-weight:800;}
+.race-cat.on i{background:#fff;}
+.race-main{flex:1;min-width:0;}
+.race-sec-hd{text-align:center;font-size:13px;color:#333;font-weight:700;padding:6px 0;background:#fff8f8;border-bottom:1px solid #f0e0e0;}
+.rnum-grid{display:grid;grid-template-columns:1fr 1fr;}
+.rnum-cell{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border-bottom:1px solid #eee;border-right:1px solid #f2f2f2;}
+.rnum-cell:nth-child(2n){border-right:0;}
+.rnum-sq{width:56px;height:40px;border-radius:4px;background:var(--rc,#999);color:#fff;font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -2px 4px rgba(0,0,0,.25),inset 0 2px 2px rgba(255,255,255,.3);}
+.rnum-odds{font-style:normal;font-size:17px;color:#222;font-weight:600;}
+.rnum-cell.on{background:#fff0f0;}
+.rnum-cell.on .rnum-odds{color:#e60012;font-weight:800;}
+.race-opts{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#eee;}
+.race-opt{background:#fff;display:flex;justify-content:space-between;padding:14px 12px;border:0;}
+.race-placeholder{padding:40px 12px;text-align:center;color:#999;font-size:13px;}
+.race-picked{padding:6px 10px;font-size:12px;color:#666;background:#fff;border-top:1px solid #eee;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.race-picked b{color:#e60012;}
+.race-chips{display:flex;gap:6px;overflow-x:auto;padding:8px 10px;background:#fff;border-top:1px solid #eee;}
+.race-chip{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:5px dashed var(--cc,#999);background:radial-gradient(circle,#fff 0 55%,#f7f7f7 56%);color:var(--cc,#333);font-size:12px;font-weight:800;box-shadow:inset 0 0 0 2px var(--cc,#999);}
+.race-chip.on{background:var(--cc,#999);color:#fff;border-color:#fff;box-shadow:inset 0 0 0 3px #fff;}
+.race-amount{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#fff;border-top:1px solid #eee;}
+.race-amount label{font-size:13px;color:#333;flex:0 0 auto;}
+.race-amount input{flex:1;min-width:0;height:36px;border:1px solid #ccc;border-radius:0;padding:0 8px;font-size:14px;}
+.race-quick{background:#FFD400;color:#111;font-weight:800;font-size:12px;padding:6px 8px;border:0;border-radius:4px;line-height:1.2;}
+.race-reset{background:#999;color:#fff;font-size:13px;font-weight:700;padding:10px 12px;border:0;border-radius:4px;}
+.race-submit{background:#e60012;color:#fff;font-size:15px;font-weight:800;padding:10px 16px;border:0;border-radius:4px;}
+.race-foot{background:#000;color:#fff;text-align:center;font-size:14px;padding:10px 0;}
+.race-foot b{color:#FFD400;font-weight:800;}
+
+
+/* Phase H：赛车页隐藏外层框架，只留赛车头部 */
+body.race-mode{background:#fff !important;}
+body.race-mode .appbar,body.race-mode .bottomtab,body.race-mode .demo-footer,body.race-mode .float-sign{display:none !important;}
+body.race-mode .view,body.race-mode main{padding-top:0 !important;}
+body.race-mode .back-link{display:block;padding:8px 10px;background:#fff;color:#666;font-size:13px;}
+
+.race-unit{font-size:12px;color:#666;flex:0 0 auto;}
