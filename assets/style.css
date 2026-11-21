@@ -767,3 +767,15 @@ body.race-mode .back-link{display:block;padding:8px 10px;background:#fff;color:#
 .rr-tags{display:flex;gap:4px;align-items:center;}
 .rr-tags .tag{flex:1;min-width:0;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #e3e3e3;border-radius:4px;background:#fff;color:#555;font-size:11px;line-height:1;white-space:nowrap;}
 .rr-tags .tag:first-child{color:#B00016;font-weight:700;}
+
+
+/* Phase L9：名次块 2 列×5 行大色块 + 赔率右侧 */
+.rk-body .rnum-grid{grid-template-columns:1fr 1fr;}
+.rank-cell{height:60px;flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;padding:5px 10px;border-right:1px solid #f2dcdc;border-bottom:1px solid #f2dcdc;background:#fff;}
+.rank-cell .rank-block{width:88px;height:56px;border-radius:4px;background:var(--rc,#999);color:#fff;font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-shadow:inset 0 -2px 3px rgba(0,0,0,.25),inset 0 2px 2px rgba(255,255,255,.3);}
+.rank-cell .rnum-odds{font-size:20px;font-weight:800;color:#111;margin:0;line-height:1;}
+.rank-cell.on{background:#d9d9d9;}
+.rank-cell.on .rank-block{opacity:.92;}
+/* 左栏选中：白底+红字+左红竖条 */
+.race-cat.on{background:#fff;color:#e60012;font-weight:800;border-left:3px solid #e60012;}
+.race-cat.on i{background:#e60012;}
