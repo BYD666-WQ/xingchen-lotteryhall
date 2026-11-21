@@ -204,10 +204,6 @@
     { name:'极速赛车', id:'fast-race-1', color:'#4d8fd8', icon:'赛' },
     { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' },
     { name:'极速六合彩', id:'fast-mark6-1', color:'#e39b38', icon:'六' },
-    { name:'Choice真人', soon:true, color:'#c05a8a', icon:'真' },
-    { name:'开元棋牌', soon:true, color:'#8a6ad0', icon:'棋' },
-    { name:'PG电子', soon:true, color:'#d05a5a', icon:'电' },
-    { name:'捕鱼达人', soon:true, color:'#3fa3b8', icon:'捕' },
     { name:'香港六合彩', id:'hk', color:'#d94b62', icon:'香' },
     { name:'新澳门六合彩', id:'newmo', color:'#3d8ed0', icon:'澳' },
     { name:'澳门六合彩', soon:true, color:'#4aa99d', icon:'门' },
@@ -377,7 +373,9 @@
   }
   var AUTH_NEXT = '#/lotteryhall', authMode = 'login', authReady = false, authBusy = false;
   var awUser = null, awRow = null, gameConfigs = {};
-  var rtUnsub = null, rtRetry = 0, rtRetryTimer = null, rtHeartbeat = null, rtPoll = null, rtLive = false, rtState = { s:'–', degraded:false }, rtConnTimer = null, rtGotEvent = false;
+  var rtUnsub = null, rtRetry = 0, rtRetryTimer = null, rtHeartbeat = null, rtPoll = null, rtLive = false, rtState = { s:'–', degraded:false }, rtConnTimer = null, rtGotEvent = false, rtProbeTimer = null;
+  var RT_CONNECT_TIMEOUT = 10000;   // 10s 内 ping 不通才降级
+  var RT_RETRY_MS = 60000;          // 降级后每 60s 重试 WS
   function safeUsername(n) {
     var s = String(n || '').trim().replace(/[^A-Za-z0-9_\u4e00-\u9fa5]/g, '');
     if (s.length < 2) s = '玩家' + String(Date.now()).slice(-6);
@@ -499,12 +497,14 @@
     if (rtHeartbeat) { clearInterval(rtHeartbeat); rtHeartbeat = null; }
     if (rtRetryTimer) { clearTimeout(rtRetryTimer); rtRetryTimer = null; }
     if (rtConnTimer) { clearTimeout(rtConnTimer); rtConnTimer = null; }
+    if (rtProbeTimer) { clearTimeout(rtProbeTimer); rtProbeTimer = null; }
     rtLive = false;
   }
-  function realtimeDown() {
+  function realtimeDown(reason) {
+    try { console.warn('[rt] 降级轮询（30s）：' + (reason || 'WS 不可用') + '，' + Math.round(RT_RETRY_MS / 1000) + 's 后重试 WS'); } catch (e) {}
     stopRealtime(); updateRTStatus('轮询（降级）', true); startPoll();
-    var delay = Math.min(30000, 1000 * Math.pow(2, Math.min(rtRetry, 5))); rtRetry++;
-    rtRetryTimer = setTimeout(startRealtime, delay);
+    rtRetry++;
+    rtRetryTimer = setTimeout(startRealtime, RT_RETRY_MS);
   }
   // Realtime（WebSocket）优先；5s 未连上/未收到事件 → 降级 30s 轮询；断开指数退避重连
   function startRealtime() {
@@ -517,17 +517,24 @@
     if (rid) chans.push('tablesdb.' + APPWRITE.db + '.tables.' + APPWRITE.users + '.rows.' + rid);
     chans.push('tablesdb.' + APPWRITE.db + '.tables.' + APPWRITE.bets + '.rows');
     try {
+      try { console.info('[rt] 尝试 WS 订阅：' + chans.join(' , ')); } catch (e) {}
       rtUnsub = awClient.subscribe(chans, onRealtime);
       rtLive = true;
-      updateRTStatus('WS');
-      // 5 秒内没有收到任何事件或连接失败 → 降级轮询
+      // 只有 ping 成功（WS 真连上）才置 WS；10s 都 ping 不通才降级
+      var pingOk = false;
+      var probe = async function () {
+        if (pingOk) return;
+        try { await awClient.ping(); pingOk = true; rtGotEvent = true; if (rtConnTimer) { clearTimeout(rtConnTimer); rtConnTimer = null; } stopPoll(); rtRetry = 0; updateRTStatus('WS'); try { console.info('[rt] subscribe + ping 成功，切到 实时:WS'); } catch (e) {} } catch (e) {}
+        if (!pingOk) rtProbeTimer = setTimeout(probe, 700);
+      };
+      probe();
       rtConnTimer = setTimeout(function () {
-        if (!rtGotEvent) { try { if (rtUnsub) rtUnsub(); } catch (e) {} rtUnsub = null; realtimeDown(); }
-      }, 5000);
+        if (!pingOk && !rtGotEvent) { try { console.warn('[rt] ' + (RT_CONNECT_TIMEOUT / 1000) + 's 内未连通 WS（可能被移动网络/防火墙拦截）'); } catch (e) {} try { if (rtUnsub) rtUnsub(); } catch (e) {} rtUnsub = null; realtimeDown('10s ping 不通'); }
+      }, RT_CONNECT_TIMEOUT);
       rtHeartbeat = setInterval(async function () {
-        try { await awClient.ping(); } catch (e) { if (rtLive) realtimeDown(); }
+        try { await awClient.ping(); } catch (e) { if (rtLive) realtimeDown('心跳 ping 失败'); }
       }, 15000);
-    } catch (e) { realtimeDown(); }
+    } catch (e) { try { console.warn('[rt] subscribe 抛错：' + (e && e.message || e)); } catch (x) {} realtimeDown('subscribe 抛错'); }
   }
   async function refreshPoints() {
     if (!awRow) return;
@@ -773,10 +780,6 @@
     { name:'极速赛车', id:'fast-race-1', color:'#4d8fd8', icon:'赛' },
     { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' },
     { name:'极速六合彩', id:'fast-mark6-1', color:'#e39b38', icon:'六' },
-    { name:'Choice真人', soon:true, color:'#c05a8a', icon:'真' },
-    { name:'开元棋牌', soon:true, color:'#8a6ad0', icon:'棋' },
-    { name:'PG电子', soon:true, color:'#d05a5a', icon:'电' },
-    { name:'捕鱼达人', soon:true, color:'#3fa3b8', icon:'捕' },
     { name:'香港六合彩', id:'hk', color:'#d94b62', icon:'香' },
     { name:'新澳门六合彩', id:'newmo', color:'#3d8ed0', icon:'澳' },
     { name:'澳门六合彩', soon:true, color:'#4aa99d', icon:'门' },
