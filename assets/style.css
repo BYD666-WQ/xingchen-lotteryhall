@@ -761,3 +761,9 @@ body.race-mode .back-link{display:block;padding:8px 10px;background:#fff;color:#
 .rr-sumline b{font-size:12px;color:#B00016;font-weight:800;}
 .rr-sumline em{font-style:normal;color:#ccc;font-size:10px;}
 .rr-right{width:78px;flex:0 0 auto;text-align:right;}
+
+
+/* Phase L8：球下标签行（小方框） */
+.rr-tags{display:flex;gap:4px;align-items:center;}
+.rr-tags .tag{flex:1;min-width:0;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #e3e3e3;border-radius:4px;background:#fff;color:#555;font-size:11px;line-height:1;white-space:nowrap;}
+.rr-tags .tag:first-child{color:#B00016;font-weight:700;}
