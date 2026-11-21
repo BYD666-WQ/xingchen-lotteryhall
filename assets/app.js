@@ -250,6 +250,13 @@
     }
     var history = [];
     for (var h = 0; h < 12; h++) history.push({ issue: issue - h, nums: makeNums(idx - h) });
+    if (def.racing) {
+      var raceNums = [], rn = 1;
+      for (var z = 0; z < 10; z++) { var n2 = ((idx * 7 + z * 3 + 1) % 10) + 1; while (raceNums.some(function (x) { return x.c === pad(n2); })) n2 = (n2 % 10) + 1; raceNums.push({ c: pad(n2), z: raceZod ? '' : '' }); }
+      raceNums = raceNums.map(function (x) { var v = parseInt(x.c, 10); return { c: pad(v), z: (attrFor(v) && attrFor(v).z) || '' }; });
+      history[0].nums = raceNums;
+      return { last:{ issue:issue, nums:raceNums }, nextIssue:nextIssue, history:history, mockNext:(idx + 1) * sec * 1000, timeCfg:{ time:def.period || '1分钟' } };
+    }
     return { last:{ issue:issue, nums:history[0].nums }, nextIssue:nextIssue, history:history, mockNext:(idx + 1) * sec * 1000, timeCfg:{ time:def.period || '1分钟', hour:0, minute:0, days:[0,1,2,3,4,5,6] } };
   }
   function gameCell(id) {
@@ -995,9 +1002,62 @@
     var box = document.querySelector('.my-bets'); if (!box || focusSafe()) return;
     box.outerHTML = myBetsHtml();
   }
+  var RACING_COLORS = { '01':'#FFD700','02':'#1E5FD8','03':'#111111','04':'#FF6B00','05':'#00D8D8','06':'#7B2FF7','07':'#9E9E9E','08':'#E23A3A','09':'#8B5A2B','10':'#1FA85C' };
+  var RACING_CATS5 = [
+    { id:'two-side', name:'两面' }, { id:'first10', name:'第1-10名' }, { id:'sum', name:'冠亚和值' },
+    { id:'combo', name:'冠亚组合' }, { id:'long', name:'长龙' }
+  ];
+  function raceBallHtml(n, cls) { var c = RACING_COLORS[pad(n)] || '#999'; return '<span class="race-ball ' + (cls || '') + '" style="--rc:' + c + '">' + pad(n) + '</span>'; }
+  function raceZod(n) { var a = attrFor(n); return a.z || ''; }
+  function raceCell(n, group) {
+    var c = RACING_COLORS[pad(n)] || '#999', key = group + '-' + pad(n);
+    return '<button type="button" class="rnum-cell ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + (group === 'r2' ? '亚军 ' : '') + pad(n) + ' " data-odds="9.95">' +
+      '<span class="rnum-sq" style="--rc:' + c + '">' + pad(n) + '</span><em class="rnum-odds">9.95</em></button>';
+  }
+  function raceGrid(group) { var h = ''; for (var i = 1; i <= 10; i++) h += raceCell(i, group); return '<div class="rnum-grid">' + h + '</div>'; }
+  function racingHeaderHtml(def, g) {
+    var balls = '', zods = '';
+    var nums = (g && g.last && g.last.nums) || [];
+    for (var i = 0; i < 10; i++) { var t = nums[i]; var raw = t ? parseInt(t.c, 10) : 0; var c = (raw >= 1 && raw <= 10) ? raw : (i + 1); balls += raceBallHtml(c); zods += '<i>' + (t && t.z && raw >= 1 && raw <= 10 ? t.z : raceZod(c)) + '</i>'; }
+    var last = (g && g.last && g.last.issue) || 1000001, next = (g && g.nextIssue) || (last + 1);
+    return '<div class="race-head">' +
+      '<span class="race-title">' + esc(def.raceTitle || '极速赛车') + ' »</span>' +
+      '<span class="race-mode">信用玩法 ▾</span>' +
+      '<span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
+      '<div class="race-result"><div class="rr-left"><div class="rr-issue">第 ' + last + ' 期开奖结果</div><div class="rr-balls">' + balls + '</div><div class="rr-zods">' + zods + '</div></div>' +
+      '<div class="rr-right"><div class="rr-next">' + next + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-race-cd>00:00:04</div></div></div>' +
+      '<div class="race-balance"><span>余额：<b>' + (parseInt(points, 10) || 0) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
+  }
+  function racingPage(id, def, g) {
+    if (!betState.raceCat || RACING_CATS5.map(function (x) { return x.id; }).indexOf(betState.raceCat) < 0) betState.raceCat = 'first10';
+    var cat = betState.raceCat;
+    var body;
+    if (cat === 'first10') body = '<div class="race-sec-hd">冠军</div>' + raceGrid('r1') + '<div class="race-sec-hd">亚军</div>' + raceGrid('r2');
+    else if (cat === 'two-side') {
+      var R = window.LH_RACING_ODDS || {}, t = R.twoSide || {};
+      body = '<div class="race-opts">' + [['big','大',t.big],['small','小',t.small],['odd','单',t.odd],['even','双',t.even]].map(function (x) {
+        return '<button type="button" class="bet-option race-opt ' + (isSel('rt-' + x[0]) ? 'on' : '') + '" data-bet="rt-' + x[0] + '" data-label="' + x[1] + '" data-odds="' + x[2] + '"><span>' + x[1] + '</span><em>' + x[2] + '</em></button>';
+      }).join('') + '</div>';
+    } else {
+      body = '<div class="race-placeholder">' + esc((RACING_CATS5.filter(function (x) { return x.id === cat; })[0] || {}).name || '') + ' 演示占位</div>';
+    }
+    var chips = [10,20,50,100,200,500,1000].map(function (v, i) {
+      var cc = ['#F5A623','#E23A3A','#1FA85C','#1E5FD8','#555555','#1E5FD8','#FFD700'][i] || '#999';
+      return '<button type="button" class="race-chip ' + (String(betState.qty) === String(v) ? 'on' : '') + '" data-qty="' + v + '" style="--cc:' + cc + '">' + v + '</button>';
+    }).join('');
+    return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + racingHeaderHtml(def, g) +
+      '<div class="race-layout"><div class="race-cats">' + RACING_CATS5.map(function (c) {
+        return '<button type="button" class="race-cat ' + (cat === c.id ? 'on' : '') + '" data-race-cat="' + c.id + '"><i></i>' + c.name + '</button>';
+      }).join('') + '</div><div class="race-main">' + body + '</div></div>' +
+      '<div class="race-picked">已选：<b data-picked-list>—</b></div>' +
+      '<div class="race-chips">' + chips + '</div>' +
+      '<div class="race-amount"><label>金额：</label><input id="betQty" type="text" inputmode="numeric" value="' + esc(betState.qty) + '"><span class="race-unit">积分</span><button type="button" class="race-quick">快捷金额</button><button type="button" class="race-reset" data-race-reset>重置</button><button type="button" class="race-submit" data-bet-submit>下注</button></div>' +
+      '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
+  }
   function betPage(id) {
     if (betState.game !== id) { betState.game = id; betState.sel = loadSel(id); }
     var def = DEFS[id] || DEFS.newhk, g = state.games[id] || mockGame(id);
+    if (def.racing) return racingPage(id, def, g);
     if (def.racing && !(def.cats || []).length) { /* racing 用 RACING_CATS */ }
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
     if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState('正在读取 ' + def.name + ' 数据…');
@@ -1052,7 +1112,18 @@
     return { name: ROUTES[parts[0]] ? parts[0] : 'lotteryhall', id: null };
   }
   function setBottomTab(name) { var tab = name === 'game' ? 'lotteryhall' : name; $$('.bottomtab a').forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-tab') === tab); }); }
-  function updateCountdowns() { $$('[data-cd]').forEach(function (el) { var g = state.games[el.getAttribute('data-cd')]; if (g) el.textContent = countdownText(g); }); }
+  function updateCountdowns() {
+    try {
+      var cdEl = document.querySelector('[data-race-cd]');
+      if (cdEl) {
+        var d = DEFS[betState.game] || {}; var sec = Number(d.periodSec || d.periodSeconds) || 60;
+        var left = sec - (Math.floor(Date.now() / 1000) % sec);
+        var hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60), ss = left % 60;
+        cdEl.textContent = ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2) + ':' + ('0' + ss).slice(-2);
+      }
+    } catch (e) {}
+  }
+  function updateCountdownsLegacy() { $$('[data-cd]').forEach(function (el) { var g = state.games[el.getAttribute('data-cd')]; if (g) el.textContent = countdownText(g); }); }
   function startBanner() {
     clearInterval(bannerTimer);
     if (!document.getElementById('hallBanner')) return;
@@ -1071,6 +1142,7 @@
     if (r.name === 'bet' && !currentUser()) { AUTH_NEXT = '#/bet/' + r.id; location.hash = '#/login'; return; }
     if (r.name === 'bet') betState.game = r.id;
     document.body.classList.toggle('bet-mode', r.name === 'bet');
+    document.body.classList.toggle('race-mode', r.name === 'bet' && !!DEFS[r.id] && !!DEFS[r.id].racing);
     if (r.name === 'game') view.innerHTML = gamePage(r.id);
     else if (r.name === 'bet') { view.innerHTML = betPage(r.id); updateBetBar(); }
     else if (r.name === 'howto') view.innerHTML = howtoPage(r.anchor);
@@ -1122,7 +1194,7 @@
     $$('.amount-chip').forEach(function (b) { b.classList.toggle('on', String(b.getAttribute('data-qty')) === String(betState.qty)); });
     var insuff = notes > 0 && cost > points;
     var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = insuff ? (points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）') : ''; hint.classList.toggle('show', insuff); }
-    var submit = $('[data-bet-submit]'); if (submit) { submit.disabled = insuff || betSubmitting; submit.textContent = betSubmitting ? '投注中…' : '立即投注'; }
+    var submit = $('[data-bet-submit]'); if (submit) { submit.disabled = insuff || betSubmitting; submit.textContent = betSubmitting ? '投注中…' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注'); }
     updatePointsUI();
   }
   document.addEventListener('input', function (e) {
@@ -1172,6 +1244,10 @@
     }
     var am = e.target.closest('[data-qty]');
     if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
+    var rc = e.target.closest('[data-race-cat]');
+    if (rc) { betState.raceCat = rc.getAttribute('data-race-cat'); render(true); return; }
+    if (e.target.closest('[data-race-reset]')) { betState.sel = {}; betState.qty = '1'; saveSel(); render(true); return; }
+    if (e.target.closest('.race-quick')) { betState.qty = '100'; updateBetBar(); render(true); return; }
     if (e.target.closest('[data-bet-clear]')) { betState.sel = {}; betState.qty = '1'; saveSel(); render(true); return; }
     if (e.target.closest('[data-bet-submit]')) {
       if (betSubmitting) return;
