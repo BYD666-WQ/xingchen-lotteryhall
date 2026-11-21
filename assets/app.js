@@ -229,7 +229,7 @@
   function zeroPointsBanner() {
     var seen = false; try { seen = sessionStorage.getItem('xcRegZero') === '1'; } catch (e) {}
     if ((parseInt(points, 10) || 0) <= 0) {
-      var txt = (regZeroNotice || seen) ? '账号已创建，积分 0，请联系管理员加分' : '积分不足，请联系管理员加分后再投注';
+      var txt = (regZeroNotice || seen) ? '账号已创建，当前积分 0，请联系管理员加分' : '积分不足，请联系管理员加分后再投注';
       return '<div class="reg-zero-banner" data-reg-banner>' + txt + '<button type="button" data-dismiss-reg>知道了</button></div>';
     }
     return '';
@@ -1471,7 +1471,7 @@
     var next = AUTH_NEXT || '#/lotteryhall'; AUTH_NEXT = '#/lotteryhall';
     if (wasRegister) { regZeroNotice = true; try { sessionStorage.setItem('xcRegZero', '1'); } catch (e) {} }
     location.hash = next; updateUserChip();
-    showToast(wasRegister ? '账号已创建，积分 0，请联系管理员加分' : '登录成功，已加载账户积分');
+    showToast(wasRegister ? '账号已创建，当前积分 0，请联系管理员加分' : '登录成功，已加载账户积分');
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
   window.addEventListener('hashchange', function () { render(); });
