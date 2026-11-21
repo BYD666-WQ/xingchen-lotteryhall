@@ -721,3 +721,43 @@ body.race-mode .back-link{display:block;padding:8px 10px;background:#fff;color:#
 .rr-right{width:80px;flex:0 0 auto;}
 .rr-next{font-size:11px;}
 .rr-cd{font-size:14px;}
+
+.reg-zero-banner{display:flex;align-items:center;gap:8px;justify-content:space-between;background:#FFF4E5;border-bottom:1px solid #F5D8A8;color:#8A5A00;font-size:13px;padding:10px 12px;line-height:1.4;}
+.reg-zero-banner button{background:#E60012;color:#fff;border:0;border-radius:4px;padding:5px 10px;font-size:12px;flex:0 0 auto;}
+.bet-zero{background:#FFF1F1;border-color:#F3C6C6;color:#B00016;}
+
+
+/* Phase L3：第1-10名 每名次一行 10 格 */
+.rk-body .rnum-grid{grid-template-columns:repeat(10,1fr);}
+.rank-cell{height:60px;padding:3px 0 2px;flex-direction:column;justify-content:center;align-items:center;gap:2px;border-right:1px solid #f4dede;border-bottom:1px solid #f4dede;}
+.rank-cell .rnum-sq{width:28px;height:28px;border-radius:50%;font-size:11px;line-height:1;box-shadow:inset 0 -2px 3px rgba(0,0,0,.25),inset 0 2px 2px rgba(255,255,255,.32);}
+.rank-cell .rnum-odds{font-size:9px;margin:0;line-height:1;color:#333;font-weight:600;}
+.rank-cell.on{background:#d9d9d9;}
+.rank-cell.on .rnum-odds{color:#555;}
+
+
+/* Phase L4：单行 10 格 & 开奖条不撑宽 */
+.race-layout,.race-main{min-width:0;max-width:100%;}
+.race-result{overflow:hidden;gap:4px;padding:6px;}
+.rr-balls{gap:1px;flex-wrap:nowrap;min-width:0;}
+.rr-balls .race-ball{width:22px;height:22px;font-size:9px;border-radius:3px;flex:0 0 auto;}
+.rr-sum{max-width:80px;gap:0 4px;}
+.rr-sum i{font-size:8px;}
+.rr-sum b{font-size:10px;}
+.rr-right{width:66px;}
+.rr-next{font-size:9px;}
+.rr-cd{font-size:12px;}
+.rk-body .rnum-grid{grid-template-columns:repeat(10,minmax(0,1fr));width:100%;}
+.rank-cell{height:56px;padding:2px 0;gap:1px;min-width:0;}
+.rank-cell .rnum-sq{width:26px;height:26px;font-size:10px;}
+.rank-cell .rnum-odds{font-size:8px;}
+
+
+/* Phase L7：摘要移到球下方一行 */
+.race-result{display:flex;align-items:center;gap:6px;overflow:hidden;}
+.rr-left{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;}
+.rr-sumline{display:flex;align-items:center;gap:4px;font-size:11px;color:#999;}
+.rr-sumline .lab{font-size:10px;color:#999;}
+.rr-sumline b{font-size:12px;color:#B00016;font-weight:800;}
+.rr-sumline em{font-style:normal;color:#ccc;font-size:10px;}
+.rr-right{width:78px;flex:0 0 auto;text-align:right;}
