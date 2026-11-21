@@ -662,3 +662,62 @@ body.race-mode .back-link{display:block;padding:8px 10px;background:#fff;color:#
 .rk-body{display:none;background:#fff;}
 .rk-sec.open .rk-body{display:block;}
 .rk-body .rnum-cell{border-right:1px solid #f2f2f2;}
+
+
+/* ===== Phase L：对齐 2231 赛车页 ===== */
+.race-ball.sm{width:29px;height:29px;font-size:12px;border-radius:4px;}
+.rr-balls{flex-wrap:nowrap;gap:2px;}
+.race-result{align-items:center;}
+.rr-sum{display:flex;gap:8px;flex:0 0 auto;margin:0 4px;text-align:center;}
+.rr-sum>div{display:flex;flex-direction:column;gap:1px;}
+.rr-sum i{font-style:normal;font-size:10px;color:#999;}
+.rr-sum b{font-size:13px;color:#b00016;}
+.rr-dragon b{letter-spacing:1px;}
+.rr-right{width:92px;}
+.rr-cd{font-size:15px;}
+/* 名次全展开、2 列紧凑格 */
+.rk-list{background:#fff;}
+.rk-sec{border-bottom:1px solid #eee;}
+.rk-hd{display:block;padding:6px 10px;background:#fff;border-bottom:1px solid #f3dcdc;font-size:13px;color:#333;font-weight:700;}
+.rk-sec.open .rk-hd{background:#fff;color:#333;}
+.rk-body{display:block;}
+.rk-body .rnum-cell{height:55px;padding:4px 8px;border-right:1px solid #f2dcdc;border-bottom:1px solid #f2dcdc;}
+.rk-body .rnum-sq{width:30px;height:30px;font-size:13px;border-radius:3px;flex:0 0 auto;}
+.rk-body .rnum-odds{font-size:16px;margin-left:8px;}
+.rk-body .rnum-grid{grid-template-columns:1fr 1fr;}
+/* 左栏：白底 + 红点 + 细红线 */
+.race-cat{background:#fff;color:#222;border-left:3px solid transparent;}
+.race-cat i{background:#e60012;}
+.race-cat.on{background:#fff;color:#111;font-weight:700;border-left:3px solid #e60012;}
+.race-cat.on i{background:#e60012;}
+/* 选中格整格灰（球色保留） */
+.rnum-cell.on{background:#d9d9d9;}
+.rnum-cell.on .rnum-odds{color:#555;}
+/* 数字键盘 */
+.race-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#ddd;padding:1px;}
+.race-keypad[hidden]{display:none;}
+.race-keypad button{background:#fff;border:0;height:52px;font-size:18px;color:#222;}
+.race-keypad button:active{background:#f2f2f2;}
+/* 停盘遮罩 */
+.race-closed{position:fixed;inset:0;background:rgba(255,255,255,.72);z-index:60;display:flex;align-items:center;justify-content:center;}
+.race-closed[hidden]{display:none;}
+.race-closed>div{background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.18);padding:20px 18px;text-align:center;min-width:230px;}
+.race-closed b{display:block;font-size:16px;color:#e60012;margin-bottom:6px;}
+.race-closed span{font-size:12px;color:#666;}
+.race-closed>button{margin-top:12px;background:#e60012;color:#fff;border:0;border-radius:4px;padding:8px 18px;font-size:13px;}
+
+
+/* Phase L2：开奖条紧凑（球行 + 摘要 + 倒计时） */
+.race-result{display:flex;align-items:center;gap:6px;padding:6px 8px;}
+.rr-left{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+.rr-issue{font-size:11px;white-space:nowrap;margin:0;}
+.rr-balls{gap:2px;flex-wrap:nowrap;}
+.rr-balls .race-ball{width:26px;height:26px;font-size:11px;border-radius:4px;}
+.rr-sum{display:grid;grid-template-columns:repeat(2,auto);gap:1px 6px;flex:0 0 auto;text-align:left;}
+.rr-sum>div{flex-direction:row;align-items:center;gap:3px;}
+.rr-sum i{font-size:9px;}
+.rr-sum b{font-size:12px;white-space:nowrap;}
+.rr-dragon{grid-column:1/-1;}
+.rr-right{width:80px;flex:0 0 auto;}
+.rr-next{font-size:11px;}
+.rr-cd{font-size:14px;}
