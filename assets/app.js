@@ -377,7 +377,7 @@
   }
   var AUTH_NEXT = '#/lotteryhall', authMode = 'login', authReady = false, authBusy = false;
   var awUser = null, awRow = null, gameConfigs = {};
-  var rtUnsub = null, rtRetry = 0, rtRetryTimer = null, rtHeartbeat = null, rtPoll = null, rtLive = false, rtState = { s:'–', degraded:false };
+  var rtUnsub = null, rtRetry = 0, rtRetryTimer = null, rtHeartbeat = null, rtPoll = null, rtLive = false, rtState = { s:'–', degraded:false }, rtConnTimer = null, rtGotEvent = false;
   function safeUsername(n) {
     var s = String(n || '').trim().replace(/[^A-Za-z0-9_\u4e00-\u9fa5]/g, '');
     if (s.length < 2) s = '玩家' + String(Date.now()).slice(-6);
@@ -470,40 +470,64 @@
     if (rtPoll) return;
     rtPoll = setInterval(async function () {
       if (!awUser || document.hidden) return;
-      try { await refreshPoints(); bets = await loadUserBets(); updateBetsOnly(); } catch (e) {}
-    }, 5000);
+      try { await refreshPoints(); var nx = await loadUserBets(); if (JSON.stringify(nx) !== JSON.stringify(bets)) { bets = nx; updateBetsOnly(); } } catch (e) {}
+    }, 30000);
   }
   async function onRealtime(resp) {
-    if (!awUser) return;
-    var events = (resp && resp.events ? resp.events.join(' ') : '');
+    var events = (resp && resp.events) || [];
     var payload = (resp && resp.payload) || {};
-    if (events.indexOf('tables.' + APPWRITE.users) >= 0) {
-      if (payload.$id === (awRow && awRow.$id) && payload.points != null) { points = parseInt(payload.points, 10) || 0; if (awRow) awRow.points = points; updatePointsUI(); updateBetBar(); }
-      else { refreshPoints(); }
+    rtGotEvent = true;
+    if (rtConnTimer) { clearTimeout(rtConnTimer); rtConnTimer = null; }
+    rtLive = true; rtRetry = 0; stopPoll(); updateRTStatus('WS');
+    var mine = String((awRow && awRow.$id) || '');
+    var evText = events.join(' ');
+    var isUsers = evText.indexOf('tables.' + APPWRITE.users) >= 0;
+    var isBets = evText.indexOf('tables.' + APPWRITE.bets) >= 0;
+    if (isUsers) {
+      if (!mine || String(payload.$id || '') !== mine) { try { console.info('[rt] 忽略非本人 users 事件'); } catch (e) {} return; }
+      if (payload.points != null) {
+        var v = parseInt(payload.points, 10);
+        if (isFinite(v)) { points = v; awRow.points = v; updatePointsUI(); updateBetBar(); }
+      }
     }
-    if (events.indexOf('tables.' + APPWRITE.bets) >= 0) {
-      try { bets = await loadUserBets(); updateBetsOnly(); } catch (e) {}
+    if (isBets) {
+      try { var next = await loadUserBets(); if (JSON.stringify(next) !== JSON.stringify(bets)) { bets = next; updateBetsOnly(); } } catch (e) {}
     }
   }
   function stopRealtime() {
     if (rtUnsub) { try { rtUnsub(); } catch (e) {} rtUnsub = null; }
     if (rtHeartbeat) { clearInterval(rtHeartbeat); rtHeartbeat = null; }
     if (rtRetryTimer) { clearTimeout(rtRetryTimer); rtRetryTimer = null; }
+    if (rtConnTimer) { clearTimeout(rtConnTimer); rtConnTimer = null; }
     rtLive = false;
   }
   function realtimeDown() {
-    stopRealtime(); updateRTStatus('降级', true); startPoll();
+    stopRealtime(); updateRTStatus('轮询（降级）', true); startPoll();
     var delay = Math.min(30000, 1000 * Math.pow(2, Math.min(rtRetry, 5))); rtRetry++;
     rtRetryTimer = setTimeout(startRealtime, delay);
   }
-  // Phase D：不订阅整表（权限一放宽会泄漏），改为 30s 轮询只刷积分/注单数据区
+  // Realtime（WebSocket）优先；5s 未连上/未收到事件 → 降级 30s 轮询；断开指数退避重连
   function startRealtime() {
-    if (!awUser) { updateRTStatus('关'); return; }
-    stopRealtime(); updateRTStatus('轮询');
-    rtPoll = setInterval(async function () {
-      try { await refreshPoints(); } catch (e) {}
-      try { var next = await loadUserBets(); if (JSON.stringify(next) !== JSON.stringify(bets)) { bets = next; updateBetsOnly(); } } catch (e) {}
-    }, 30000);
+    if (!awUser || !awClient) { updateRTStatus('关'); return; }
+    stopRealtime(); updateRTStatus('…');
+    rtGotEvent = false;
+    var rid = String((awUser && awUser.$id) || '');
+    // 只订阅自己的 users 行 + bets（行权限过滤，不订阅裸表频道）
+    var chans = [];
+    if (rid) chans.push('tablesdb.' + APPWRITE.db + '.tables.' + APPWRITE.users + '.rows.' + rid);
+    chans.push('tablesdb.' + APPWRITE.db + '.tables.' + APPWRITE.bets + '.rows');
+    try {
+      rtUnsub = awClient.subscribe(chans, onRealtime);
+      rtLive = true;
+      updateRTStatus('WS');
+      // 5 秒内没有收到任何事件或连接失败 → 降级轮询
+      rtConnTimer = setTimeout(function () {
+        if (!rtGotEvent) { try { if (rtUnsub) rtUnsub(); } catch (e) {} rtUnsub = null; realtimeDown(); }
+      }, 5000);
+      rtHeartbeat = setInterval(async function () {
+        try { await awClient.ping(); } catch (e) { if (rtLive) realtimeDown(); }
+      }, 15000);
+    } catch (e) { realtimeDown(); }
   }
   async function refreshPoints() {
     if (!awRow) return;
