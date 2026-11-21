@@ -1018,7 +1018,7 @@
   function racingHeaderHtml(def, g) {
     var balls = '', zods = '';
     var nums = (g && g.last && g.last.nums) || [];
-    for (var i = 0; i < 10; i++) { var t = nums[i]; var raw = t ? parseInt(t.c, 10) : 0; var c = (raw >= 1 && raw <= 10) ? raw : (i + 1); balls += raceBallHtml(c); zods += '<i>' + (t && t.z && raw >= 1 && raw <= 10 ? t.z : raceZod(c)) + '</i>'; }
+    for (var i = 0; i < 10; i++) { var c = i + 1; balls += raceBallHtml(c); zods += '<i>' + raceZod(c) + '</i>'; }
     var last = (g && g.last && g.last.issue) || 1000001, next = (g && g.nextIssue) || (last + 1);
     return '<div class="race-head">' +
       '<span class="race-title">' + esc(def.raceTitle || '极速赛车') + ' »</span>' +
@@ -1252,7 +1252,7 @@
     if (e.target.closest('[data-bet-submit]')) {
       if (betSubmitting) return;
       if (!currentUser()) { AUTH_NEXT = '#/bet/' + (betState.game || 'newhk'); location.hash = '#/login'; return; }
-      var nodes = $$('.bet-center [data-bet].on');
+      var nodes = $$('[data-bet].on');
       var qty = parseInt(betState.qty, 10);
       if (!nodes.length) { showToast('请先选择玩法'); return; }
       if (!qty || qty < 1) { showToast('请输入注数'); return; }
