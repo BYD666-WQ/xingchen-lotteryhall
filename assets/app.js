@@ -230,6 +230,39 @@
     return banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
       '<div class="mini-note">数据来自主站只读接口 · 每 30 秒自动刷新 · 仅作演示</div>';
   }
+  var FAST = {}, FAST_LAST = 0;
+  function shapeFast(id, d) {
+    var nums = (d && d.lastResult && d.lastResult.nums) || [];
+    nums = nums.map(function (x) { return (typeof x === 'object') ? { c: String(x.c || ''), z: x.z || '' } : { c: String(x), z: '' }; });
+    var g = {
+      last: { issue: (d && d.lastResult && d.lastResult.issue) || ((d && d.issue) ? d.issue - 1 : 0), nums: nums },
+      nextIssue: (d && d.issue) || 0,
+      mockNext: d && d.closeAt ? Date.parse(d.closeAt) : 0,
+      periodSec: (d && d.periodSec) || 60,
+      periodSeconds: (d && d.periodSec) || 60,
+      server: true,
+      history: []
+    };
+    return g;
+  }
+  function syncFastIssue(id) {
+    var def = DEFS[id]; if (!def || !def.mock) return Promise.resolve();
+    FAST[id] = FAST[id] || {};
+    FAST[id].lastTry = Date.now();
+    return window.LotteryAPI.call('/issues/' + encodeURIComponent(id), { method: 'GET' }).then(function (d) {
+      FAST[id].data = d; state.games[id] = shapeFast(id, d);
+      try { console.info('[fast] /issues ' + id + ' → issue=' + d.issue + ' closeAt=' + d.closeAt + ' lastNums=' + ((d.lastResult && d.lastResult.nums) || []).length); } catch (e) {}
+      var cr = currentRoute();
+      if (cr.name === 'bet' && cr.id === id) render(true);
+      try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e) {}
+    }).catch(function (e) {
+      console.warn('[fast] /issues 失败，回退本地 mock：' + String(e && e.message || e));
+      FAST[id].failed = true;
+      if (!state.games[id]) state.games[id] = mockGame(id);
+      var cr = currentRoute();
+      if (cr.name === 'bet' && cr.id === id) render(true);
+    });
+  }
   function mockGame(id) {
     var def = DEFS[id]; if (!def || !def.mock) return null;
     var sec = def.periodSeconds || 60, now = Date.now();
@@ -311,6 +344,25 @@
       '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="完整走势为演示入口">查看完整走势</button></div><div class="mini-note">走势基于主站近 12 期真实开奖号码计算。</div>';
   }
   function rankPage() {
+    return catTabs('rank') + '<div class="page-head"><div><div class="page-kicker">LEADERBOARD</div><h1 class="page-title">高手排行</h1><div class="page-sub">实时统计 · 结算注单</div></div><span class="demo-pill">LIVE</span></div>' +
+      '<div id="rank-live" class="rank-list"><div class="data-empty" style="padding:30px 16px">加载中…</div></div>' +
+      '<div class="mini-note">按已结算注单统计：注数 / 命中 / 命中率 / 最近连中。</div>';
+  }
+  function loadRankLive() {
+    var box = document.getElementById('rank-live'); if (!box) return;
+    box.innerHTML = '<div class="data-empty" style="padding:30px 16px">加载中…</div>';
+    Promise.resolve().then(function () { return window.LotteryAPI.call('/rank?limit=20', { method: 'GET' }); }).then(function (res) {
+      var rows = (res && (res.rank || res.rows)) || [];
+      if (!rows.length) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无数据</div>'; return; }
+      box.innerHTML = rows.slice(0, 20).map(function (r, i) {
+        var name = esc(String(r.username || '玩家'));
+        var rate = Number(r.rate);
+        var rateTxt = isFinite(rate) ? (rate <= 1 ? (rate * 100).toFixed(1) : rate.toFixed(1)) + '%' : '—';
+        return '<div class="rank-row"><span class="rank-no">' + (i + 1) + '</span><span class="avatar">' + esc(name.slice(0, 1)) + '</span><div class="rank-info"><b>' + name + '</b><span>注数 ' + (r.bets || 0) + ' · 命中 ' + (r.hits || 0) + '</span></div><div class="rank-val"><b>' + rateTxt + '</b><span>连中 ' + (r.streak || 0) + '</span></div></div>';
+      }).join('');
+    }).catch(function (e) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">加载失败：' + esc(String(e && e.message || '接口异常')) + '</div>'; });
+  }
+  function rankPageLegacy() {
     var top = RANKS.slice(0, 3);
     var podium = [top[1], top[0], top[2]].map(function (r) { return '<div class="podium-item ' + (r.name === top[0].name ? 'first' : '') + '">' + (r.name === top[0].name ? '<span class="crown">♛</span>' : '') + '<span class="avatar ' + esc(r.cls) + '">' + esc(r.avatar) + '</span><b>' + esc(r.name) + '</b><span>' + esc(r.tag.split(' · ')[0]) + '</span><strong>' + esc(r.value) + '</strong></div>'; }).join('');
     return catTabs('rank') + '<div class="page-head"><div><div class="page-kicker">LEADERBOARD</div><h1 class="page-title">高手排行</h1><div class="page-sub">演示榜单 · 每日更新样例</div></div><span class="demo-pill">MOCK</span></div>' +
@@ -879,7 +931,7 @@
       '<div class="trend-panel"><div class="trend-head"><b>近 12 期波色分布</b><span>共 ' + total + ' 个号码</span></div><div class="bars">' + bars + '</div><div class="num-grid">' + cells + '</div><div class="legend"><span><i style="background:#DC3C41"></i>近 12 期出现</span><span><i style="background:#eee"></i>未出现</span></div></div>' +
       '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="完整走势为演示入口">查看完整走势</button></div><div class="mini-note">走势基于主站近 12 期真实开奖号码计算。</div>';
   }
-  function rankPage() {
+  function rankPageLegacyOld() {
     var top = RANKS.slice(0, 3);
     var podium = [top[1], top[0], top[2]].map(function (r) { return '<div class="podium-item ' + (r.name === top[0].name ? 'first' : '') + '">' + (r.name === top[0].name ? '<span class="crown">♛</span>' : '') + '<span class="avatar ' + esc(r.cls) + '">' + esc(r.avatar) + '</span><b>' + esc(r.name) + '</b><span>' + esc(r.tag.split(' · ')[0]) + '</span><strong>' + esc(r.value) + '</strong></div>'; }).join('');
     return catTabs('rank') + '<div class="page-head"><div><div class="page-kicker">LEADERBOARD</div><h1 class="page-title">高手排行</h1><div class="page-sub">演示榜单 · 每日更新样例</div></div><span class="demo-pill">MOCK</span></div>' +
@@ -1045,14 +1097,18 @@
   function racingHeaderHtml(def, g) {
     var balls = '', zods = '';
     var nums = (g && g.last && g.last.nums) || [];
-    for (var i = 0; i < 10; i++) { var c = i + 1; balls += raceBallHtml(c); zods += '<i>' + raceZod(c) + '</i>'; }
+    if (nums.length >= 7) {
+      for (var i = 0; i < nums.length && i < 10; i++) { var raw = parseInt(nums[i].c, 10); var c = (raw >= 1 && raw <= 10) ? raw : (i + 1); balls += raceBallHtml(c); zods += '<i>' + (nums[i].z || raceZod(c)) + '</i>'; }
+    } else {
+      balls = '<span class="rr-wait">上期待开</span>'; zods = '';
+    }
     var last = (g && g.last && g.last.issue) || 1000001, next = (g && g.nextIssue) || (last + 1);
     return '<div class="race-head">' +
       '<span class="race-title">' + esc(def.raceTitle || '极速赛车') + ' »</span>' +
       '<span class="race-mode">信用玩法 ▾</span>' +
       '<span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
       '<div class="race-result"><div class="rr-left"><div class="rr-issue">第 ' + last + ' 期开奖结果</div><div class="rr-balls">' + balls + '</div><div class="rr-zods">' + zods + '</div></div>' +
-      '<div class="rr-right"><div class="rr-next">' + next + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-race-cd>00:00:04</div></div></div>' +
+      '<div class="rr-right"><div class="rr-next">' + next + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
       '<div class="race-balance"><span>余额：<b>' + (parseInt(points, 10) || 0) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
   }
   function racingPage(id, def, g) {
@@ -1083,7 +1139,10 @@
   }
   function betPage(id) {
     if (betState.game !== id) { betState.game = id; betState.sel = loadSel(id); }
-    var def = DEFS[id] || DEFS.newhk, g = state.games[id] || mockGame(id);
+    var def = DEFS[id] || DEFS.newhk;
+    if (def.mock && (!FAST[id] || !FAST[id].data || (Date.now() - (FAST[id].lastTry || 0) > 5500))) syncFastIssue(id);
+    var g = state.games[id] || (def.mock && FAST[id] && FAST[id].data ? shapeFast(id, FAST[id].data) : mockGame(id));
+    if (def.mock && !state.games[id]) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + '<div class="data-empty" style="padding:40px 16px">正在读取服务端期号…</div>';
     if (def.racing) return racingPage(id, def, g);
     if (def.racing && !(def.cats || []).length) { /* racing 用 RACING_CATS */ }
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
@@ -1143,8 +1202,11 @@
     try {
       var cdEl = document.querySelector('[data-race-cd]');
       if (cdEl) {
-        var d = DEFS[betState.game] || {}; var sec = Number(d.periodSec || d.periodSeconds) || 60;
-        var left = sec - (Math.floor(Date.now() / 1000) % sec);
+        var d = DEFS[betState.game] || {}; var closeAt = Number(cdEl.getAttribute('data-close')) || 0;
+        var sec = Number(d.periodSec || d.periodSeconds) || 60;
+        var left = closeAt > Date.now() ? Math.round((closeAt - Date.now()) / 1000) : (sec - (Math.floor(Date.now() / 1000) % sec));
+        // 到期后每 5s 拉 /issues
+        if (closeAt && Date.now() >= closeAt && Date.now() - (FAST[betState.game] && FAST[betState.game].lastTry || 0) > 5000) syncFastIssue(betState.game);
         var hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60), ss = left % 60;
         cdEl.textContent = ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2) + ':' + ('0' + ss).slice(-2);
       }
@@ -1174,6 +1236,7 @@
     else if (r.name === 'bet') { view.innerHTML = betPage(r.id); updateBetBar(); }
     else if (r.name === 'howto') view.innerHTML = howtoPage(r.anchor);
     else if (r.name === 'login') view.innerHTML = loginPage();
+    else if (r.name === 'rank') { view.innerHTML = rankPage(); loadRankLive(); }
     else view.innerHTML = ROUTES[r.name] ? ROUTES[r.name]() : hallPage();
     setBottomTab(r.name);
     var ttl = r.name === 'game' ? DEFS[r.id].name + '开奖' : (r.name === 'bet' ? (DEFS[r.id].name + '模拟投注') : (r.name === 'howto' ? '玩法说明' : (r.name === 'login' ? '登录 / 注册' : TITLES[r.name])));
