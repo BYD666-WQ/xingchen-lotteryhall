@@ -229,7 +229,7 @@
     { name:'极速飞艇', id:'fast-race-2', color:'#5a8fd4', icon:'艇' },
     { name:'幸运飞艇', id:'fast-race-5', color:'#4aa99d', icon:'飞' },
     { name:'北京赛车', id:'fast-race-10', color:'#7b68c8', icon:'北' },
-    { name:'幸运赛车', id:'newhk', color:'#e6a62f', icon:'运' },
+    { name:'幸运赛车', id:'newhk', game:true, color:'#e6a62f', icon:'运' },
     { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' }
   ];
   function hallGrid18() {
@@ -1057,7 +1057,7 @@
     { name:'极速飞艇', id:'fast-race-2', color:'#5a8fd4', icon:'艇' },
     { name:'幸运飞艇', id:'fast-race-5', color:'#4aa99d', icon:'飞' },
     { name:'北京赛车', id:'fast-race-10', color:'#7b68c8', icon:'北' },
-    { name:'幸运赛车', id:'newhk', color:'#e6a62f', icon:'运' },
+    { name:'幸运赛车', id:'newhk', game:true, color:'#e6a62f', icon:'运' },
     { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' }
   ];
   function hallGrid18() {
