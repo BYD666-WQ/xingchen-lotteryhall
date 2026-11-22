@@ -259,7 +259,8 @@
     return g;
   }
   function syncFastIssue(id) {
-    var def = DEFS[id]; if (!def || !def.mock) return Promise.resolve();
+    try { console.info('[fast] sync ' + id); } catch (e) {}
+    var def = DEFS[id]; if (!def || !def.mock) { try { console.info('[fast] skip ' + id + ' mock=' + (def && def.mock)); } catch (e) {} return Promise.resolve(); }
     FAST[id] = FAST[id] || {};
     FAST[id].lastTry = Date.now();
     return window.LotteryAPI.call('/issues/' + encodeURIComponent(id), { method: 'GET' }).then(function (d) {
@@ -274,10 +275,10 @@
       } catch (e) {}
       try { console.info('[fast] /issues ' + id + ' → issue=' + d.issue + ' closeAt=' + d.closeAt + ' lastNums=' + ((d.lastResult && d.lastResult.nums) || []).length); } catch (e) {}
       var cr = currentRoute();
-      if (cr.name === 'bet' && cr.id === id) render(true);
+      if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) { try { render(true); } catch (e2) { console.error('[fast] render error: ' + (e2 && e2.stack || e2)); } }
       try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e) {}
     }).catch(function (e) {
-      console.warn('[fast] /issues 失败，回退本地 mock：' + String(e && e.message || e));
+      console.warn('[fast] /issues 失败，回退本地 mock：' + String(e && (e.stack || e.message) || e));
       FAST[id].failed = true;
       if (!state.games[id]) state.games[id] = mockGame(id);
       var cr = currentRoute();
@@ -326,18 +327,28 @@
     var zs = Object.keys(zc).sort(function (a, b) { return zc[b] - zc[a]; }).slice(0, 8).map(function (z) { return '<span class="zodiac-chip">' + esc(z) + ' <b>' + zc[z] + '</b></span>'; }).join('') || '<span class="data-empty">暂无可统计生肖</span>';
     return '<div class="wave-stats">' + bars + '</div><div class="zodiac-row">' + zs + '</div>';
   }
+  function loadingCard(def, id) {
+    setTimeout(function () {
+      var el = document.querySelector('[data-loading]');
+      if (el) { el.innerHTML = '数据加载失败，请点击重试'; el.setAttribute('data-retry', String(id)); el.classList.add('load-error'); }
+    }, 8000);
+    return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-last card"><div class="data-empty" data-loading>正在读取 ' + esc(def.name) + ' 数据…<div class="load-hint">最长等待 8 秒</div></div></div>';
+  }
   function gamePage(id) {
+    try { console.info('[gp] ' + id + ' mock=' + (DEFS[id] && DEFS[id].mock)); } catch (e) {}
     var def = DEFS[id]; if (!def) return hallPage();
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
     var g = state.games[id];
-    if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-last card"><div class="data-empty">正在读取 ' + def.name + ' 数据…</div></div>';
+    if (!g && def.mock) { syncFastIssue(id); return loadingCard(def, id); }
+    if (!g) return loadingCard(def, id);
+    var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
     return zeroTip + '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
       '<section class="detail-head"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><div><div class="page-kicker">' + def.name + ' · 实时数据</div><h1 class="page-title">' + def.name + '开奖</h1><div class="page-sub">' + esc(def.desc) + '</div></div></section>' +
       '<div class="detail-actions"><a class="action-btn action-primary" href="#/bet/' + id + '">立即投注</a><a class="action-btn action-ghost" href="#/howto">玩法说明</a></div>' +
       '<section class="detail-last"><div class="detail-label">上期开奖 <span>第 ' + shortIssue(last.issue) + ' 期</span></div><div class="detail-balls">' + balls(last.nums) + '</div><div class="wave-legend"><span><i class="r"></i>红波</span><span><i class="b"></i>蓝波</span><span><i class="g"></i>绿波</span><span class="special-legend">+ 后为特码</span></div></section>' +
-      '<section class="next-card"><div><span>下期开奖</span><b>第 ' + shortIssue(g.nextIssue) + ' 期</b><em>' + g.timeCfg.time + (id === 'hk' ? ' · 周日' : ' · 每日') + '</em></div><strong data-cd="' + id + '">' + countdownText(g) + '</strong></section>' +
+      '<section class="next-card"><div><span>下期开奖</span><b>第 ' + shortIssue(g.nextIssue) + ' 期</b><em>' + ((g.timeCfg && g.timeCfg.time) || def.period || '实时') + (id === 'hk' ? ' · 周日' : ' · 每日') + '</em></div><strong data-cd="' + id + '">' + countdownText(g) + '</strong></section>' +
       '<div class="section"><div class="section-head"><h2 class="section-title">波色 / 生肖统计</h2><span class="section-link">近 10 期</span></div><div class="trend-panel">' + gameStats(g) + '</div></div>' +
       '<div class="section"><div class="section-head"><h2 class="section-title">近 10 期开奖</h2><a class="section-link" href="#/history">全部记录 ›</a></div><div class="detail-history">' + rows + '</div></div>' +
       '<div class="mini-note">数据来自主站只读接口；号码、特码与开奖时间以主站为准。</div>';
@@ -927,14 +938,16 @@
     var def = DEFS[id]; if (!def) return hallPage();
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
     var g = state.games[id];
-    if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-last card"><div class="data-empty">正在读取 ' + def.name + ' 数据…</div></div>';
+    if (!g && def.mock) { syncFastIssue(id); return loadingCard(def, id); }
+    if (!g) return loadingCard(def, id);
+    var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
     return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
       '<section class="detail-head"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><div><div class="page-kicker">' + def.name + ' · 实时数据</div><h1 class="page-title">' + def.name + '开奖</h1><div class="page-sub">' + esc(def.desc) + '</div></div></section>' +
       '<div class="detail-actions"><a class="action-btn action-primary" href="#/bet/' + id + '">立即投注</a><a class="action-btn action-ghost" href="#/howto">玩法说明</a></div>' +
       '<section class="detail-last"><div class="detail-label">上期开奖 <span>第 ' + shortIssue(last.issue) + ' 期</span></div><div class="detail-balls">' + balls(last.nums) + '</div><div class="wave-legend"><span><i class="r"></i>红波</span><span><i class="b"></i>蓝波</span><span><i class="g"></i>绿波</span><span class="special-legend">+ 后为特码</span></div></section>' +
-      '<section class="next-card"><div><span>下期开奖</span><b>第 ' + shortIssue(g.nextIssue) + ' 期</b><em>' + g.timeCfg.time + (id === 'hk' ? ' · 周日' : ' · 每日') + '</em></div><strong data-cd="' + id + '">' + countdownText(g) + '</strong></section>' +
+      '<section class="next-card"><div><span>下期开奖</span><b>第 ' + shortIssue(g.nextIssue) + ' 期</b><em>' + ((g.timeCfg && g.timeCfg.time) || def.period || '实时') + (id === 'hk' ? ' · 周日' : ' · 每日') + '</em></div><strong data-cd="' + id + '">' + countdownText(g) + '</strong></section>' +
       '<div class="section"><div class="section-head"><h2 class="section-title">波色 / 生肖统计</h2><span class="section-link">近 10 期</span></div><div class="trend-panel">' + gameStats(g) + '</div></div>' +
       '<div class="section"><div class="section-head"><h2 class="section-title">近 10 期开奖</h2><a class="section-link" href="#/history">全部记录 ›</a></div><div class="detail-history">' + rows + '</div></div>' +
       '<div class="mini-note">数据来自主站只读接口；号码、特码与开奖时间以主站为准。</div>';
@@ -1309,7 +1322,7 @@
     var def = DEFS[id] || DEFS.newhk;
     if (def.mock && (!FAST[id] || !FAST[id].data || (Date.now() - (FAST[id].lastTry || 0) > 5500))) syncFastIssue(id);
     var g = state.games[id] || (def.mock && FAST[id] && FAST[id].data ? shapeFast(id, FAST[id].data) : mockGame(id));
-    if (def.mock && !state.games[id]) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + '<div class="data-empty" style="padding:40px 16px">正在读取服务端期号…</div>';
+    if (def.mock && !state.games[id]) return loadingCard(def, id);
     if (def.racing) return betZeroBanner() + racingPage(id, def, g);
     if (def.racing && !(def.cats || []).length) { /* racing 用 RACING_CATS */ }
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
@@ -1474,6 +1487,8 @@
   });
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-dismiss-reg]')) { try { sessionStorage.removeItem('xcRegZero'); } catch (x) {} regZeroNotice = false; var bn = document.querySelector('[data-reg-banner]'); if (bn) bn.remove(); return; }
+    var retry = e.target.closest('[data-retry]');
+    if (retry) { syncFastIssue(retry.getAttribute('data-retry')); return; }
     if (e.target.closest('[data-menu-close]')) { closeMenu(); return; }
     var mi = e.target.closest('[data-menu]');
     if (mi) {
