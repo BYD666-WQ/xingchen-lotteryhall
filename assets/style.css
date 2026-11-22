@@ -871,3 +871,18 @@ body.race-mode .back-link{display:block;padding:8px 10px;background:#fff;color:#
 .race-quick,.race-reset,.race-submit{height:35.359px;box-sizing:border-box;font-size:14.56px;border-radius:4.16px;padding:0 14.56px;display:flex;align-items:center;}
 .race-submit{min-width:62.391px;}
 .race-foot{height:45.75px;box-sizing:border-box;font-size:14.56px;padding:0 11.44px;display:flex;align-items:center;justify-content:center;}
+
+
+/* Phase L13：号码块恢复立体感 + 右侧只留期号/倒计时 + 标签等宽 */
+.rr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.rr-issue{flex:1;min-width:0;}
+.rr-sum-side{display:none !important;}
+.rr-nums .nbox{box-sizing:border-box;border:1px solid rgba(0,0,0,.32);box-shadow:inset 0 2px 2px rgba(255,255,255,.55),inset 0 -3px 4px rgba(0,0,0,.30),0 1px 2px rgba(0,0,0,.20);text-shadow:0 1px 1px rgba(0,0,0,.28);}
+.rank-cell .rank-block{box-sizing:border-box;border:1px solid rgba(0,0,0,.32);box-shadow:inset 0 2px 2px rgba(255,255,255,.5),inset 0 -3px 4px rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.18);text-shadow:0 1px 1px rgba(0,0,0,.25);}
+.rr-labels{display:flex;gap:5.188px;width:268.234px;}
+.rr-labels .lbox{flex:1 1 0;min-width:0;width:auto;padding:0 1px;font-size:15.6px;}
+.rr-labels .lbox.wide{font-size:12px;padding:0 2px;}
+
+
+/* Phase L13b：和值标签加宽，文字不溢出 */
+.rr-labels .lbox.wide{flex:1.6 1 0;font-size:10.5px;padding:0 2px;}
