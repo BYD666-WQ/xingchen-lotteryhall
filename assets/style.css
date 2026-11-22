@@ -1193,3 +1193,33 @@ body.dark-theme .six-result-head .rr-nums{border-bottom-color:#2a2a2a;}
 .win-closed{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 10px;padding:8px 10px;border:1px solid #EC2829;background:#fff5f5;color:#B00016;font-size:.8rem;border-radius:4px;}
 .win-closed span{font-variant-numeric:tabular-nums;font-weight:700;}
 body.dark-theme .win-closed{background:#2a1212;color:#ffb3b3;border-color:#7a2b2b;}
+
+
+/* Phase L22：右栏 85% 宽 + 字号 14/13/20 */
+.rr-right{flex:0 0 clamp(88px, 23.6vw, 92px) !important;width:auto !important;min-width:0 !important;padding:8px 2px !important;gap:6px !important;justify-content:center !important;}
+.rr-right .rr-next{font-size:14px !important;line-height:1.15 !important;white-space:nowrap !important;}
+.rr-right .rr-next span[data-audit="time-row"]:first-child{font-size:14px !important;}
+.rr-right .rr-next i{font-size:13px !important;line-height:1.15 !important;display:block;font-style:normal;}
+.rr-right .rr-cd{font-size:20px !important;font-weight:700 !important;line-height:1.1 !important;white-space:nowrap !important;letter-spacing:-0.4px;padding-bottom:0 !important;}
+
+
+/* Phase H1：首页三列圆形图标网格 + 顶部 tab */
+.home-tabs{display:flex;background:#fff;border-bottom:1px solid #eee;overflow-x:auto;white-space:nowrap;}
+.home-tab{flex:1 0 auto;min-width:64px;height:44px;border:0;background:transparent;font-size:15px;color:#111;position:relative;padding:0 10px;}
+.home-tab.on{color:#E23A3A;font-weight:700;}
+.home-tab.on::after{content:'';position:absolute;left:14px;right:14px;bottom:0;height:2px;background:#E23A3A;border-radius:1px;}
+.home-grid{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-top:1px solid #eee;}
+.home-cell{height:116px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-decoration:none;position:relative;border-right:1px solid #eee;border-bottom:1px solid #eee;box-sizing:border-box;min-width:0;}
+.home-cell:nth-child(3n){border-right:0;}
+.home-icon{width:68px;height:68px;border-radius:50%;background:radial-gradient(circle at 30% 25%,var(--g2,#ccc),var(--g1,#999));display:flex;align-items:center;justify-content:center;position:relative;box-shadow:inset 0 -2px 5px rgba(0,0,0,.12);}
+.home-icon b{color:#fff;font-size:22px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.18);}
+.home-icon .home-hot{position:absolute;top:-4px;right:-8px;background:#FFD54A;color:#E23A3A;font-size:9px;font-weight:700;font-style:normal;padding:1px 5px;border-radius:8px;line-height:1.35;}
+.home-name{font-size:16.5px;color:#111;line-height:1.1;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+.home-cell.soon .home-icon{filter:grayscale(1);opacity:.55;}
+.home-cell.soon .home-name{color:#999;}
+.home-soon{position:absolute;bottom:8px;font-size:10px;color:#E23A3A;background:#fff2f2;border:1px solid #ffd3d3;border-radius:8px;padding:0 6px;font-style:normal;}
+body.dark-theme .home-tabs,body.dark-theme .home-grid{background:#1b1b1b;}
+body.dark-theme .home-tab{color:#eaeaea;}
+body.dark-theme .home-tab.on{color:#ff6b6b;}
+body.dark-theme .home-cell{border-color:#2a2a2a;}
+body.dark-theme .home-name{color:#eaeaea;}
