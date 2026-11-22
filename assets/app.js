@@ -403,7 +403,13 @@
       } catch (e) {}
       try { console.info('[fast] /issues ' + id + ' → issue=' + d.issue + ' closeAt=' + d.closeAt + ' lastNums=' + ((d.lastResult && d.lastResult.nums) || []).length); } catch (e) {}
       var cr = currentRoute();
-      if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) { try { if (soft) updateFastHeader(id); else render(true); } catch (e2) { console.error('[fast] render error: ' + (e2 && e2.stack || e2)); } }
+      if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) {
+        try {
+          if (id === 'fast-k3') render(true);
+          else if (soft) updateFastHeader(id);
+          else render(true);
+        } catch (e2) { console.error('[fast] render error: ' + (e2 && e2.stack || e2)); }
+      }
       try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e) {}
     }).catch(function (e) {
       console.warn('[fast] /issues 失败，回退本地 mock：' + String(e && (e.stack || e.message) || e));
@@ -2001,6 +2007,59 @@
       '<div class="race-amount"><label>金额：</label><input id="betQty" type="text" inputmode="numeric" value="' + esc(betState.qty) + '"><span class="race-unit">积分</span><button type="button" class="race-quick">快捷金额</button><button type="button" class="race-reset" data-race-reset>重置</button><button type="button" class="race-submit" data-bet-submit>下注</button></div>' +
       '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
   }
+
+  var K3_PIPS = { 1:[[50,50]], 2:[[26,26],[74,74]], 3:[[24,24],[50,50],[76,76]], 4:[[26,26],[74,26],[26,74],[74,74]], 5:[[26,26],[74,26],[50,50],[26,74],[74,74]], 6:[[26,24],[74,24],[26,50],[74,50],[26,76],[74,76]] };
+  function k3Die(n, cls) {
+    var pips = K3_PIPS[parseInt(n, 10)] || [];
+    return '<span class="k3-die ' + (cls || '') + '" aria-label="' + (pips.length ? n + '点' : '待开奖') + '">' + pips.map(function (p) { return '<i style="left:' + p[0] + '%;top:' + p[1] + '%"></i>'; }).join('') + '</span>';
+  }
+  function k3Dice(n) { return '<span class="k3-dice3">' + k3Die(n) + k3Die(n) + k3Die(n) + '</span>'; }
+  function k3Page(id, def, g) {
+    var cat = betState.k3Cat || 'tri';
+    var last = (g && g.last) || {};
+    var raw = (last.nums || []).slice(0, 3).map(function (x) { return parseInt(x && x.c != null ? x.c : x, 10); });
+    var has = raw.length === 3 && raw.every(function (n) { return n >= 1 && n <= 6; });
+    var sum = has ? raw.reduce(function (a, b) { return a + b; }, 0) : 0;
+    var bigSmall = has ? (sum >= 11 ? '大' : '小') : '';
+    var oe = has ? (sum % 2 ? '单' : '双') : '';
+    var head = '<div class="k3-head"><div class="k3-head-top"><span class="k3-logo">极速快三 »</span><span class="k3-mode">信用玩法 ▾</span><span class="k3-help">小助手</span><span class="k3-menu">☰</span></div>' +
+      '<div class="k3-result"><span class="k3-res-dice">' + (has ? raw.map(function (n) { return k3Die(n); }).join('') : k3Die('') + k3Die('') + k3Die('')) + '</span>' +
+      '<span class="k3-sum">和值<b>' + (has ? sum : '—') + '</b></span>' +
+      '<span class="k3-tags">' + (bigSmall ? '<i>' + bigSmall + '</i>' : '') + (oe ? '<i>' + oe + '</i>' : '') + '</span>' +
+      '<span class="k3-next"><b>下一期 ' + esc((g && g.nextIssue) || '—') + '</b><strong>封盘 ⏱ ' + countdownText(g) + '</strong></span></div></div>';
+    var cats = [['tri','全骰、围骰'],['sum','点数'],['long','长龙']].map(function (x) {
+      return '<button type="button" class="k3-cat ' + (cat === x[0] ? 'on' : '') + '" data-k3-cat="' + x[0] + '">' + x[1] + '</button>';
+    }).join('');
+    var body;
+    if (cat === 'tri') {
+      var ob = (window.LH_ODDS_BY_PLAY && window.LH_ODDS_BY_PLAY.k3) || {};
+      var all = Number(ob.triAll) || 35, exact = Number(ob.triExact) || 175;
+      var grid = '<button type="button" class="k3-cell k3-any ' + (isSel('tri:any') ? 'on' : '') + '" data-bet="tri:any" data-label="全骰" data-odds="' + all + '"><b>全骰</b><em>' + fmtOdds(all) + '</em></button>';
+      for (var i = 1; i <= 6; i++) {
+        grid += '<button type="button" class="k3-cell ' + (isSel('tri:' + i) ? 'on' : '') + '" data-bet="tri:' + i + '" data-label="围骰' + i + '" data-odds="' + exact + '">' + k3Dice(i) + '<em>' + fmtOdds(exact) + '</em></button>';
+      }
+      body = '<div class="k3-title">全骰、围骰</div><div class="k3-grid">' + grid + '</div>';
+    } else if (cat === 'sum') {
+      var sums = [];
+      for (var s = 3; s <= 18; s++) sums.push('<button type="button" class="k3-sum-cell" disabled><b>' + s + '</b><em>待确认</em></button>');
+      body = '<div class="k3-title">点数 <small>赔率待确认</small></div><div class="k3-sum-grid">' + sums.join('') + '</div>' +
+        '<div class="k3-side-grid">' + ['大','小','单','双'].map(function (x) { return '<button type="button" class="k3-sum-cell" disabled><b>' + x + '</b><em>待确认</em></button>'; }).join('') + '</div>';
+    } else {
+      body = '<div class="k3-title">长龙</div><div class="k3-empty"><b>长龙监控</b><span>数据接入中，暂不支持投注</span></div>';
+    }
+    var chips = [10,20,50,100,200,500,1000].map(function (v, i) {
+      var cc = ['#F5A623','#E23A3A','#1FA85C','#1E5FD8','#555555','#1E5FD8','#FFD700'][i] || '#999';
+      return '<button type="button" class="race-chip ' + (String(betState.qty) === String(v) ? 'on' : '') + '" data-qty="' + v + '" style="--cc:' + cc + '">' + v + '</button>';
+    }).join('');
+    var bottom = cat === 'long' ? '<div class="k3-note">长龙为只读监控，不支持下注</div>' :
+      '<div class="race-picked">已选：<b data-picked-list>—</b></div><div class="bet-hint" data-bet-hint></div>' +
+      '<div class="race-chips">' + chips + '</div>' +
+      '<div class="race-amount"><label>金额：</label><input id="betQty" type="text" inputmode="numeric" value="' + esc(betState.qty) + '"><span class="race-unit">积分</span><button type="button" class="race-quick">快捷金额</button><button type="button" class="race-reset" data-race-reset>重置</button><button type="button" class="race-submit" data-bet-submit>下注</button></div>' +
+      '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
+    return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + head +
+      '<div class="k3-layout"><div class="k3-cats">' + cats + '</div><div class="k3-main">' + body + '</div></div>' + bottom;
+  }
+
   function betPage(id) {
     if (betState.game !== id) { betState.game = id; betState.sel = loadSel(id); }
     var def = DEFS[id] || DEFS.newhk;
@@ -2010,6 +2069,7 @@
     if (!def.mock && !state.win[id]) syncIssueWindow(id);
     if (def.racing) return betZeroBanner() + winBanner(id) + racingPage(id, def, g);
     if (id === 'newhk' || id === 'newmo' || id === 'hk' || id === 'fast-mark6-1' || id === 'fast-mark6-5') return betZeroBanner() + winBanner(id) + sixSpecialPage(id, def, g);
+    if (id === 'fast-k3') return betZeroBanner() + winBanner(id) + k3Page(id, def, g);
     if (def.racing && !(def.cats || []).length) { /* racing 用 RACING_CATS */ }
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
     if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState('正在读取 ' + def.name + ' 数据…');
@@ -2128,8 +2188,7 @@
     try {
       if (r.name === 'game') view.innerHTML = gamePage(r.id);
       else if (r.name === 'bet') {
-        if (r.id === 'fast-k3') view.innerHTML = '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + '<div class="data-empty" style="padding:40px 20px">快三 · 数据接入中，暂时无法投注</div>';
-        else { view.innerHTML = betPage(r.id); updateBetBar(); }
+        view.innerHTML = betPage(r.id); updateBetBar();
       }
       else if (r.name === 'howto') view.innerHTML = howtoPage(r.anchor);
       else if (r.name === 'login') view.innerHTML = loginPage();
@@ -2315,6 +2374,8 @@
     if (zt) { var zz = zt.getAttribute('data-six-zodiac'); betState.sixZodiac = (betState.sixZodiac === zz ? '' : zz); render(true); return; }
     var sc = e.target.closest('[data-six-cat]');
     if (sc) { betState.sixCat = sc.getAttribute('data-six-cat'); render(true); return; }
+    var kc = e.target.closest('[data-k3-cat]');
+    if (kc) { betState.k3Cat = kc.getAttribute('data-k3-cat'); render(true); return; }
     if (e.target.closest('[data-dragon-n]') || (e.target.tagName === 'SELECT' && e.target.hasAttribute('data-dragon-n'))) {
       betState.dragonN = parseInt(e.target.value, 10) || 4; render(true); return;
     }
@@ -2357,6 +2418,7 @@
             if (/^regular:\d{2}$/.test(key)) return key;
             if (/^zhengte:\d{2}$/.test(key)) return key;
             if (/^tail:[0-9]$/.test(key)) return key;
+            if (/^tri:(any|[1-6])$/.test(key)) return key;
             if (/^zodiac:[\u4e00-\u9fa5]$/.test(key)) return key;
             if (/^flat:[\u4e00-\u9fa5]$/.test(key)) return key;
             if (key.indexOf('race-') === 0) return key.slice(5);        // 赛车冠军/亚军旧格式
