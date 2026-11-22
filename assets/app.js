@@ -285,8 +285,8 @@
       return '<a class="home-cell" href="#/bet/' + id + '">' + icon + '<span class="home-name">' + esc(name) + '</span></a>';
     }).join('') + '</div>';
   }
-  var LOGO_MAP = { '极速赛车':'极速赛车.png', '香港六合彩':'香港六合彩.png', '新澳门六合彩':'新澳门六合彩.png', '澳门六合彩':'澳门六合彩.png', '极速时时彩':'极速时时彩.png', '极速六合彩':'极速六合彩.png' };
-  var LOGO_HAS_HOT = { '极速赛车':1, '极速时时彩':1, '极速六合彩':1, '澳门六合彩':1 };
+  var LOGO_MAP = { '极速赛车':'极速赛车.png', '极速时时彩':'极速时时彩.png', '极速六合彩':'极速六合彩.png', '香港六合彩':'香港六合彩.png', '澳门六合彩':'澳门六合彩.png', '新澳门六合彩':'新澳门六合彩.png', '极速快三':'极速快三.png', '极速飞艇':'极速飞艇.png', '幸运飞艇':'幸运飞艇.png', '北京赛车':'北京赛车.png', '幸运赛车':'幸运赛车.png', '极速28':'极速28.png', '幸运28':'幸运28.png', '腾讯分分彩':'腾讯分分彩.png' };
+  var LOGO_HAS_HOT = { '极速赛车':1, '极速时时彩':1, '极速六合彩':1, '澳门六合彩':1, '新澳门六合彩':1, '极速快三':1 };
   function decorateLogos() {
     try {
       document.querySelectorAll('.game-cell').forEach(function (cell) {
