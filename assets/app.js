@@ -1506,7 +1506,13 @@
       slides[bannerIndex].classList.add('on'); dots[bannerIndex] && dots[bannerIndex].classList.add('on');
     }, 4000);
   }
+  function refreshDefs() {
+    try {
+      (window.LH_GAMES || []).forEach(function (g) { if (g && g.id && !DEFS[g.id]) DEFS[g.id] = g; });
+    } catch (e) {}
+  }
   function render(keepScroll) {
+    refreshDefs();
     settleBets();
     var r = currentRoute(), view = $('#view'); if (!view) return;
     if (r.name === 'bet') betState.game = r.id;
