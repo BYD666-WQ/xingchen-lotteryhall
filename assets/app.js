@@ -652,11 +652,15 @@
       }
       // 服务端权威玩法赔率（/games.oddsByPlay）为唯一来源；本地 config/games.js 只在接口失败时兜底
       var ob = (res && (res.oddsByPlay || (res.odds && res.odds.oddsByPlay))) || null;
+      try { window.LH_ODDS_BY_PLAY = ob || null; } catch (e) {}
       if (ob && typeof ob === 'object') {
         if (ob.oneZodiac != null) ODDS.oneZodiac = Number(ob.oneZodiac);
         if (ob.flatZodiac != null) ODDS.specialZodiac = Number(ob.flatZodiac && ob.flatZodiac.default != null ? ob.flatZodiac.default : ob.flatZodiac);
         if (ob.horse != null) ODDS.horse = Number(ob.horse);
         if (ob.colorWave != null) SIX_ODDS.colorWave = Number(ob.colorWave);
+        if (ob.regular != null) SIX_ODDS.regular = Number(ob.regular);
+        if (ob.zhengte != null) SIX_ODDS.zhengte = Number(ob.zhengte);
+        if (ob.tail != null) SIX_ODDS.tail = Number(ob.tail);
         if (ob.specialZodiac != null) {
           if (typeof ob.specialZodiac === 'object') { if (ob.specialZodiac.horse != null) SIX_ODDS.specialZodiac.horse = Number(ob.specialZodiac.horse); if (ob.specialZodiac.default != null) SIX_ODDS.specialZodiac.other = Number(ob.specialZodiac.default); if (ob.specialZodiac.other != null) SIX_ODDS.specialZodiac.other = Number(ob.specialZodiac.other); }
           else { var sz = Number(ob.specialZodiac); if (sz) { SIX_ODDS.specialZodiac.other = sz; } }
@@ -1874,6 +1878,9 @@
             if (/^combo:\d{1,2}_\d{1,2}$/.test(key)) return key;          // 冠亚组合：combo:1_2
             if (/^r\d{1,2}:(bs|oe):(big|small|odd|even)$/.test(key)) return key; // 名次大小/单双
             if (/^color:(red|blue|green)$/.test(key)) return key;
+            if (/^regular:\d{2}$/.test(key)) return key;
+            if (/^zhengte:\d{2}$/.test(key)) return key;
+            if (/^tail:[0-9]$/.test(key)) return key;
             if (/^zodiac:[\u4e00-\u9fa5]$/.test(key)) return key;
             if (/^flat:[\u4e00-\u9fa5]$/.test(key)) return key;
             if (key.indexOf('race-') === 0) return key.slice(5);        // 赛车冠军/亚军旧格式
