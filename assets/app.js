@@ -152,7 +152,7 @@
     var amap = {};(attrs && attrs.rows || []).forEach(function (r) { var n = parseInt(r.num, 10); if (n) amap[n] = { z: r.zodiac || '', color: r.color || colorOf(n) }; });
     if (Object.keys(amap).length) state.attrs = amap; state.updated = Date.now(); state.error = '';
   }
-  function loadData(silent) {
+  function loadData(silent, soft) {
     if (state.loading) return Promise.resolve();
     state.loading = true; setRefreshBusy(true);
     var jobs = [fetchOne('data/manual-draw.json'), fetchOne('data/draw.json'), fetchOne('data/site-config.json'), fetchOne('data/num-attrs.json')];
@@ -164,10 +164,10 @@
       var attrs = res[3] && res[3].status === 'fulfilled' ? res[3].value : null;
       if (!manual && !draw && !cfg && !attrs) throw new Error('数据源不可达');
       setData(manual, draw, cfg, attrs);
-      if (!silent) { showToast('数据已更新'); render(true); }
-      else render(true);
+      if (!silent) showToast('数据已更新');
+      if (!soft) render(true);
     }).catch(function (e) {
-      state.error = String(e && e.message || e); if (!state.games.newhk && !state.games.newmo && !state.games.hk) render(true); if (!silent) showToast('刷新失败，稍后重试');
+      state.error = String(e && e.message || e); if (!soft && !state.games.newhk && !state.games.newmo && !state.games.hk) render(true); if (!silent) showToast('刷新失败，稍后重试');
     }).then(function () { state.loading = false; setRefreshBusy(false); });
   }
   function setRefreshBusy(on) { var b = $('#refreshDataBtn'); if (!b) return; b.classList.toggle('busy', on); b.disabled = on; b.setAttribute('aria-busy', on ? 'true' : 'false'); }
@@ -357,7 +357,31 @@
       if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id && prev !== next) { try { render(true); } catch (e) {} }
     }).catch(function () {});
   }
-  function syncFastIssue(id) {
+  function updateFastHeader(id) {
+    try {
+      var g = state.games[id]; if (!g || !g.last) return;
+      var root = document.querySelector('[data-audit="head-wrap"]'); if (!root) return;
+      var nums = g.last.nums || [];
+      var boxes = root.querySelectorAll('[data-audit="num"]');
+      for (var i = 0; i < boxes.length && i < nums.length; i++) {
+        var v = parseInt(nums[i].c, 10); if (!isFinite(v)) continue;
+        boxes[i].textContent = pad(v);
+        if (DEFS[id] && DEFS[id].racing) { var c = RACING_COLORS[pad(v)] || '#999'; boxes[i].style.background = c; boxes[i].style.setProperty('--rc', c); }
+        else { var col = nums[i].color || colorOf(v); boxes[i].style.background = col === '红' ? '#E23A3A' : (col === '蓝' ? '#1F6FEB' : '#1FA85C'); }
+      }
+      var title = root.querySelector('[data-audit="title"]');
+      if (title) title.textContent = '第 ' + shortIssue(g.last.issue) + ' 期开奖结果';
+      var labels = root.querySelectorAll('[data-audit="label"]');
+      if (DEFS[id] && DEFS[id].racing) {
+        var sm = raceSummary(nums);
+        var vals = ['和值 ' + sm.sum, sm.big, sm.odd].concat(sm.dragon);
+        for (var j = 0; j < labels.length && j < vals.length; j++) labels[j].textContent = vals[j];
+      } else {
+        for (var k = 0; k < labels.length && k < nums.length; k++) labels[k].textContent = (nums[k].z || '') + '·' + (nums[k].color || colorOf(parseInt(nums[k].c, 10)));
+      }
+    } catch (e) {}
+  }
+  function syncFastIssue(id, soft) {
     try { console.info('[fast] sync ' + id); } catch (e) {}
     var def = DEFS[id]; if (!def || !def.mock) { try { console.info('[fast] skip ' + id + ' mock=' + (def && def.mock)); } catch (e) {} return Promise.resolve(); }
     FAST[id] = FAST[id] || {};
@@ -375,7 +399,7 @@
       } catch (e) {}
       try { console.info('[fast] /issues ' + id + ' → issue=' + d.issue + ' closeAt=' + d.closeAt + ' lastNums=' + ((d.lastResult && d.lastResult.nums) || []).length); } catch (e) {}
       var cr = currentRoute();
-      if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) { try { render(true); } catch (e2) { console.error('[fast] render error: ' + (e2 && e2.stack || e2)); } }
+      if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) { try { if (soft) updateFastHeader(id); else render(true); } catch (e2) { console.error('[fast] render error: ' + (e2 && e2.stack || e2)); } }
       try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e) {}
     }).catch(function (e) {
       console.warn('[fast] /issues 失败，回退本地 mock：' + String(e && (e.stack || e.message) || e));
@@ -681,11 +705,8 @@
   }
   function stopPoll() { if (rtPoll) { clearInterval(rtPoll); rtPoll = null; } }
   function startPoll() {
-    if (rtPoll) return;
-    rtPoll = setInterval(async function () {
-      if (!awUser || document.hidden) return;
-      try { await refreshPoints(); var nx = await loadUserBets(); if (JSON.stringify(nx) !== JSON.stringify(bets)) { bets = nx; updateBetsOnly(); } } catch (e) {}
-    }, 8000);
+    // 统一轮询：由全局 pollTick（8s）负责，避免叠加第二个定时器。
+    return;
   }
   async function onRealtime(resp) {
     var events = (resp && resp.events) || [];
@@ -1621,7 +1642,7 @@
           subBtn.textContent = winOff ? '已停售（时段结束）' : (noPts ? '积分不足' : (closed ? '已停止投注' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注')));
         }
         // 到期后每 5s 拉 /issues
-        if (closeAt && Date.now() >= closeAt && Date.now() - (FAST[betState.game] && FAST[betState.game].lastTry || 0) > 5000) syncFastIssue(betState.game);
+        // 期号/号码刷新交给统一 pollTick（避免多定时器）
         var hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60), ss = left % 60;
         cdEl.textContent = ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2) + ':' + ('0' + ss).slice(-2);
       }
@@ -1867,7 +1888,7 @@
           var newPoints = (res && res.user && res.user.points != null) ? parseInt(res.user.points, 10) : ((res && res.points != null) ? parseInt(res.points, 10) : (points - cost));
           if (isFinite(newPoints)) { points = newPoints; awRow.points = newPoints; }
           try { refreshPointsAndBets(); } catch (e) {}
-          setTimeout(function () { try { refreshPointsAndBets(); } catch (e) {} }, 300);
+          try { refreshPointsAndBets(); } catch (e) {}
           var bet = (res && res.bet) || {};
           bets.unshift({ id: bet.id || bet.$id || idem, game: betState.game, targetIssue: bet.issue || g.nextIssue, placedIssue: g.last.issue, qty: qty, cost: cost, notes: notes, selections: selections, labels: selections.map(function (s) { return s.label; }).join('、'), status: bet.status || 'pending', payout: Number(bet.payout) || 0, created: Date.now() });
           betState.sel = {}; betState.qty = '1'; betSubmitting = false; updateBetBar(); render(true);
@@ -1906,14 +1927,27 @@
       if ((br.name === 'bet' || br.name === 'game') && document.querySelectorAll('[data-audit]').length === 0) render(true);
     } catch (e) {}
     if (window.__bootWatchdogTicks = (window.__bootWatchdogTicks || 0) + 1, window.__bootWatchdogTicks > 30) clearInterval(bootWatchdog);
-  }, 400); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
+  }, 400);
   function refreshPointsAndBets() {
     if (!awUser) return;
     try { refreshPoints(); } catch (e) {}
     try { loadUserBets().then(function (nb) { if (JSON.stringify(nb) !== JSON.stringify(bets)) { bets = nb; updateBetsOnly(); } }); } catch (e) {}
   }
-  setInterval(function () { if (!document.hidden && awUser) refreshPointsAndBets(); }, 8000);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && awUser) refreshPointsAndBets(); });
+  var pollTimer = null, pollTicks = 0;
+  function pollTick() {
+    if (document.hidden) return;
+    refreshPointsAndBets();
+    pollTicks++;
+    try {
+      var r = currentRoute();
+      if ((r.name === 'bet' || r.name === 'game') && DEFS[r.id] && DEFS[r.id].mock) syncFastIssue(r.id, true);
+      if (pollTicks % 4 === 0) loadData(true, true);
+    } catch (e) {}
+  }
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  pollTimer = setInterval(pollTick, 8000);
+  window.__pollTimerCount = 1;
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { try { pollTick(); } catch (e) {} } });
   // 快开：每秒刷新期号/倒计时；到新周期调 /settle（带 cron 触发头，Function 允许）
   var FAST_LAST = {};
   setInterval(function () {
