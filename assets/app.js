@@ -553,11 +553,24 @@
   var bets = [];
   var APPWRITE = { endpoint:'https://sgp.cloud.appwrite.io/v1', project:'6aff4c2f0016ee43abad', db:'lottery', users:'6aff4ea1000cecd6c798', bets:'bets', config:'config' };
   var awClient = null, awAccount = null, awTables = null;
-  if (window.Appwrite) {
-    awClient = new window.Appwrite.Client().setEndpoint(APPWRITE.endpoint).setProject(APPWRITE.project);
-    awAccount = new window.Appwrite.Account(awClient);
-    awTables = new window.Appwrite.TablesDB(awClient);
+  function initAppwrite() {
+    if (!window.Appwrite || !window.Appwrite.Client) return false;
+    if (!awClient) awClient = new window.Appwrite.Client().setEndpoint(APPWRITE.endpoint).setProject(APPWRITE.project);
+    if (!awAccount) awAccount = new window.Appwrite.Account(awClient);
+    if (!awTables && window.Appwrite.TablesDB) awTables = new window.Appwrite.TablesDB(awClient);
+    return !!awAccount;
   }
+  function ensureAppwrite(timeoutMs) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now(), limit = timeoutMs || 10000;
+      (function poll() {
+        if (initAppwrite()) return resolve(true);
+        if (Date.now() - t0 > limit) return resolve(false);
+        setTimeout(poll, 100);
+      })();
+    });
+  }
+  initAppwrite();
   var AUTH_NEXT = '#/lotteryhall', authMode = 'login', authReady = false, authBusy = false;
   var awUser = null, awRow = null, gameConfigs = {};
   var rtUnsub = null, rtRetry = 0, rtRetryTimer = null, rtHeartbeat = null, rtPoll = null, rtLive = false, rtState = { s:'–', degraded:false }, rtConnTimer = null, rtGotEvent = false, rtProbeTimer = null;
@@ -784,7 +797,10 @@
     authReady = true; updateUserChip(); render(true); startRealtime();
   }
   async function initAuth() {
-    if (!window.Appwrite) { setTimeout(initAuth, 250); return; }
+    if (!window.Appwrite || !awAccount) {
+      var okSdk = await ensureAppwrite(10000);
+      if (!okSdk) { authReady = true; window.__lhSdkError = 'Appwrite SDK 加载超时（' + (window.Appwrite ? 'Account 初始化失败' : 'window.Appwrite undefined') + '）'; render(); return; }
+    }
     if (!awAccount) { authReady = true; render(); return; }
     try { var u = await awAccount.get(); await afterAuth(u, u.name || (u.email || '').split('@')[0]); }
     catch (e) { window.__lhInitError = String((e && e.message) || e); stopRealtime(); stopPoll(); awUser = null; awRow = null; points = 0; bets = []; authReady = true; updateRTStatus('关'); updateUserChip(); render(true); }
@@ -794,7 +810,7 @@
     name = String(name || '').trim(); pass = String(pass || '');
     if (name.length < 2) return '用户名至少 2 个字符';
     if (pass.length < 8) return '密码至少 8 位';
-    if (!awAccount) return 'Appwrite SDK 未加载';
+    if (!await ensureAppwrite(10000) || !awAccount) return 'SDK 加载超时，请刷新（' + (window.Appwrite ? 'Account 初始化失败' : 'window.Appwrite undefined') + '）';
     authBusy = true;
     try {
       await awAccount.createEmailPasswordSession({ email:emailFor(name), password:pass });
@@ -809,7 +825,7 @@
     name = String(name || '').trim(); pass = String(pass || '');
     if (name.length < 2) return '用户名至少 2 个字符';
     if (pass.length < 8) return '密码至少 8 位';
-    if (!awAccount) return 'Appwrite SDK 未加载';
+    if (!await ensureAppwrite(10000) || !awAccount) return 'SDK 加载超时，请刷新（' + (window.Appwrite ? 'Account 初始化失败' : 'window.Appwrite undefined') + '）';
     authBusy = true;
     try {
       var u = await awAccount.create({ userId:window.Appwrite.ID.unique(), email:emailFor(name), password:pass, name:name });
