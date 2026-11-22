@@ -1692,6 +1692,7 @@
           } });
           var newPoints = (res && res.user && res.user.points != null) ? parseInt(res.user.points, 10) : ((res && res.points != null) ? parseInt(res.points, 10) : (points - cost));
           if (isFinite(newPoints)) { points = newPoints; awRow.points = newPoints; }
+          setTimeout(function () { try { refreshPointsAndBets(); } catch (e) {} }, 300);
           var bet = (res && res.bet) || {};
           bets.unshift({ id: bet.id || bet.$id || idem, game: betState.game, targetIssue: bet.issue || g.nextIssue, placedIssue: g.last.issue, qty: qty, cost: cost, notes: notes, selections: selections, labels: selections.map(function (s) { return s.label; }).join('、'), status: bet.status || 'pending', payout: Number(bet.payout) || 0, created: Date.now() });
           betState.sel = {}; betState.qty = '1'; betSubmitting = false; updateBetBar(); render(true);
@@ -1721,7 +1722,13 @@
   window.addEventListener('hashchange', function () { render(); });
   if (!location.hash) location.hash = '#/lotteryhall';
   applyTheme(); render(); loadData(true); initAuth(); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
-  setInterval(function () { if (!document.hidden && awUser) { try { refreshPoints(); } catch (e) {} } }, 15000);
+  function refreshPointsAndBets() {
+    if (!awUser) return;
+    try { refreshPoints(); } catch (e) {}
+    try { loadUserBets().then(function (nb) { if (JSON.stringify(nb) !== JSON.stringify(bets)) { bets = nb; updateBetsOnly(); } }); } catch (e) {}
+  }
+  setInterval(function () { if (!document.hidden && awUser) refreshPointsAndBets(); }, 8000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && awUser) refreshPointsAndBets(); });
   // 快开：每秒刷新期号/倒计时；到新周期调 /settle（带 cron 触发头，Function 允许）
   var FAST_LAST = {};
   setInterval(function () {
