@@ -1024,3 +1024,19 @@ body.dark-theme .rk-hd,body.dark-theme .race-cat.on{background:#2a2a2a !importan
 body.dark-theme .rank-cell,body.dark-theme .ts-opt,body.dark-theme .combo-cell{background:#222 !important;border-color:#333 !important;}
 body.dark-theme .rr-labels .lbox{background:#222 !important;border-color:#555 !important;color:#ccc !important;}
 body.dark-theme .race-foot b{color:#FFD400;}
+
+
+/* Phase P：长龙只读监控 */
+.dragon-toolbar{padding:8px 10px;background:#fff8f8;border-bottom:1px solid #f0dcdc;}
+.dragon-toolbar select{width:100%;height:36px;border:1px solid #ddd;border-radius:4px;font-size:14px;padding:0 8px;background:#fff;}
+.dragon-card{margin:8px 10px;border:1px solid #f0dcdc;border-radius:6px;background:#fff;overflow:hidden;}
+.dragon-hd{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;font-size:14px;color:#333;border-bottom:1px solid #f5eeee;}
+.dragon-streak{color:#999;font-size:12px;}
+.dragon-streak b{color:#e60012;}
+.dragon-mid{display:flex;align-items:center;justify-content:space-between;padding:10px;background:#fff;}
+.dragon-dir{display:inline-flex;min-width:56px;justify-content:center;padding:6px 12px;border:1px solid #e60012;border-radius:4px;color:#e60012;font-weight:700;font-size:15px;}
+.dragon-odds{font-style:normal;font-size:15px;color:#333;}
+.dragon-foot{padding:6px 10px;background:#fafafa;color:#999;font-size:11px;}
+.dragon-empty{padding:40px 16px;text-align:center;color:#999;font-size:13px;}
+
+.dragon-note{padding:12px 16px;color:#999;font-size:12px;text-align:center;background:#fff;}
