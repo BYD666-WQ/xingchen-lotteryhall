@@ -832,3 +832,42 @@ body.race-mode .back-link{display:block;padding:8px 10px;background:#fff;color:#
 .rank-cell .rank-block{width:66px;height:50px;font-size:21px;border-radius:8px;box-shadow:inset 0 -2px 3px rgba(0,0,0,.22),inset 0 2px 2px rgba(255,255,255,.28),0 1px 1px rgba(0,0,0,.12);}
 .rank-cell .rnum-odds{font-size:17px;}
 @media (max-width:360px){.rank-cell .rank-block{width:60px;height:48px;}.rank-cell .rnum-odds{font-size:16px;}}
+
+
+/* Phase L12：照 2231 浏览器实测 CSS px */
+.race-head{height:45.234px;box-sizing:border-box;padding:0;display:flex;align-items:center;gap:10px;}
+.race-title{font-size:18.72px;margin-left:10px;}
+.race-help{font-size:14.56px;}
+.race-mode{font-size:14.56px;}
+.race-result{padding:6px 10px;display:block;}
+.rr-top{gap:6px;}
+.rr-issue{font-size:14.56px;}
+.rr-sum-side{font-size:12px;}
+.rr-nums{display:grid;grid-template-columns:repeat(10,24.953px);gap:2.078px;margin-top:4px;}
+.rr-nums .nbox{width:24.953px;height:24.953px;border-radius:2.08px;font-size:14.56px;box-shadow:none;}
+.rr-labels{display:flex;gap:5.188px;margin-top:3.109px;}
+.rr-labels .lbox{min-width:25.906px;height:25.906px;box-sizing:border-box;border:1px solid #999;border-radius:5.2px;background:#fff;color:#999;font-size:15.6px;display:flex;align-items:center;justify-content:center;line-height:1;padding:0 2px;white-space:nowrap;}
+.rr-labels .lbox.wide{padding:0 5px;}
+.rr-zods{display:none !important;}
+/* 左栏 */
+.race-cats{width:96.797px;flex:0 0 96.797px;}
+.race-cat{width:96.797px;height:42.594px;box-sizing:border-box;font-size:16.12px;padding:0 0 0 13.52px;gap:6px;}
+.race-cat i{width:8.3125px;height:8.3125px;}
+.race-cat.on{background:#EC2829;color:#fff;border-left:0;font-weight:400;}
+.race-cat.on i{background:#fff;}
+/* 名次区 */
+.race-main{width:291.203px;flex:0 0 291.203px;border:0;}
+.rk-sec{border-bottom:0;}
+.rk-hd{height:34.297px;box-sizing:border-box;font-size:15.6px;padding:0 0 0 10.4px;display:flex;align-items:center;border-bottom:1px solid #EC2829;}
+.rk-body .rnum-grid{grid-template-columns:repeat(2,145.594px);gap:0;width:291.203px;}
+.rank-cell{width:145.594px;height:55.047px;box-sizing:border-box;padding:10.4px 0 10.4px 31.2px;gap:4.672px;justify-content:flex-start;border-right:0;border-bottom:1px solid #EC2829;background:#fff;}
+.rank-cell .rank-block{width:30.156px;height:30.156px;border-radius:2.08px;font-size:20.8px;box-shadow:none;}
+.rank-cell .rnum-odds{font-size:16.64px;font-weight:400;color:#000;}
+/* 底部 */
+.race-chips{padding:0 10.4px;gap:0;}
+.race-chip{width:54.078px;height:54.078px;font-size:12.48px;}
+.race-amount{height:41.594px;box-sizing:border-box;padding:0 10.4px;gap:4px;}
+.race-amount input{height:35.266px;width:90.375px;flex:0 0 90.375px;font-size:16.64px;border-radius:4.16px;padding-left:5.2px;}
+.race-quick,.race-reset,.race-submit{height:35.359px;box-sizing:border-box;font-size:14.56px;border-radius:4.16px;padding:0 14.56px;display:flex;align-items:center;}
+.race-submit{min-width:62.391px;}
+.race-foot{height:45.75px;box-sizing:border-box;font-size:14.56px;padding:0 11.44px;display:flex;align-items:center;justify-content:center;}
