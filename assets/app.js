@@ -354,10 +354,7 @@
       var prev = JSON.stringify(state.win[id] || null), next = JSON.stringify(w);
       state.win[id] = w;
       var cr = currentRoute();
-      if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id && prev !== next) {
-        var closedNow = !!(w && w.open === false), hadBanner = !!document.querySelector('[data-win-banner]');
-        if (closedNow !== hadBanner) { try { render(true); } catch (e) {} }
-      }
+      // 窗口状态只更新缓存；关闭态由下一次路由/轮询局部更新，避免导航 +2 render
     }).catch(function () {});
   }
   function updateFastHeader(id) {
