@@ -1655,12 +1655,18 @@
       var notes = nodes.length * qty, cost = notes * 2;
       var g = state.games[betState.game] || mockGame(betState.game);
       if (!g) { showToast('彩种数据未就绪'); return; }
-      if (points <= 0) { updateBetBar(); var zh = document.querySelector('[data-bet-hint]'); if (zh) { zh.textContent = '积分不足，请联系管理员加分后再投注'; zh.classList.add('show'); } return; }
-      if (cost > points) { updateBetBar(); var zh2 = document.querySelector('[data-bet-hint]'); if (zh2) { zh2.textContent = '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '），请联系管理员加分'; zh2.classList.add('show'); } return; }
+
       var selections = nodes.map(function (el) { var key = el.getAttribute('data-bet'); return { key:key, label:el.getAttribute('data-label') || key, odds:parseFloat(el.getAttribute('data-odds')) || 0, zodiacs:el.getAttribute('data-zodiacs') || '' }; });
       betSubmitting = true; updateBetBar();
       (async function () {
         try {
+          await refreshPoints();
+          if (points <= 0 || cost > points) {
+            betSubmitting = false; updateBetBar();
+            var zh = document.querySelector('[data-bet-hint]');
+            if (zh) { zh.textContent = points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '），请联系管理员加分'; zh.classList.add('show'); }
+            return;
+          }
           // 只传号码（Function 结算按开奖号码匹配）；生肖/两面等取 label 文本
           var pickIds = selections.map(function (s) {
             var key = String(s.key || '');
@@ -1709,6 +1715,7 @@
   window.addEventListener('hashchange', function () { render(); });
   if (!location.hash) location.hash = '#/lotteryhall';
   applyTheme(); render(); loadData(true); initAuth(); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
+  setInterval(function () { if (!document.hidden && awUser) { try { refreshPoints(); } catch (e) {} } }, 15000);
   // 快开：每秒刷新期号/倒计时；到新周期调 /settle（带 cron 触发头，Function 允许）
   var FAST_LAST = {};
   setInterval(function () {
