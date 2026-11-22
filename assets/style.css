@@ -1529,3 +1529,79 @@ body.dark-theme .cat-tabs{background:#1b1b1b !important;border-bottom-color:#2a2
 body.dark-theme .cat-tabs a{color:#eaeaea;}
 body.dark-theme .cat-tabs a.on{color:#EC2829 !important;}
 body.dark-theme .cat-tabs a.on:after{background:#EC2829 !important;}
+
+
+/* ==== 2026-11-23 三页顶部节奏（rank/trend/history） ==== */
+.page-head:has(+ .rank-list),
+.page-head:has(+ .chips){padding-bottom:10px;}
+.rank-list{margin-top:8px;}
+.trend-panel{margin-top:8px;}
+.table-scroll{margin-top:8px;}
+
+
+
+/* ==== 2026-11-23 三页基准对齐（lead 定值） ==== */
+.page-head:has(+ .rank-list),
+.page-head:has(+ .chips){padding-bottom:10px !important;}
+.page-head:has(+ .rank-list) .page-title,
+.page-head:has(+ .chips) .page-title{font-size:24px !important;}
+.page-head:has(+ .rank-list) .page-sub,
+.page-head:has(+ .chips) .page-sub{font-size:13px !important;color:#999 !important;}
+.page-head + .chips{margin-top:8px;}
+
+/* rank：顶部8、gap8、行56、字号 */
+.rank-list{margin-top:8px !important;padding-top:0 !important;gap:8px !important;}
+.rank-row{min-height:56px !important;height:56px !important;box-sizing:border-box;}
+.rank-no{font-size:15.6px !important;font-weight:800;color:#aaa;}
+.rank-info b{font-size:15.6px !important;line-height:1.15;}
+.rank-info span{font-size:12px !important;line-height:1.15;}
+.rank-val b{font-size:20.8px !important;font-weight:800;line-height:1.1;}
+.rank-val span{font-size:12px !important;}
+
+/* trend：顶部8、面板 padding12、球24.94、行40 */
+.trend-panel{margin-top:8px !important;padding:12px !important;}
+.trend-panel .num-grid{grid-auto-rows:40px;align-items:center;justify-items:center;}
+.trend-panel .num-cell{width:24.94px;height:24.94px;aspect-ratio:auto;border-radius:50%;font-size:10px;}
+
+/* history：顶部8、表头40、行56、期号15.6、球24.94、1px线 */
+.table-scroll{margin-top:8px !important;}
+.hist th{height:40px;padding:0 6px;vertical-align:middle;}
+.hist td{height:56px;padding:0 6px;vertical-align:middle;}
+.hist .iss{font-size:15.6px !important;font-weight:800;white-space:nowrap;}
+.hist .ball{width:24.94px !important;height:24.94px !important;font-size:9px !important;}
+.hist th,.hist td{border-bottom:1px solid #f1f1f1;}
+
+/* 真实 DOM 空态（由 page 函数输出） */
+#rank-live .data-empty{min-height:56px;display:flex;align-items:center;justify-content:center;font-size:12px !important;color:#999 !important;}
+.hist .empty-state{min-height:120px;justify-content:center;}
+.hist .empty-state span{font-size:12px !important;color:#aaa !important;}
+
+/* 深色三页 */
+body.dark-theme .page-head{background:#1b1b1b !important;color:#eaeaea !important;}
+body.dark-theme .page-sub{color:#b9b9b9 !important;}
+body.dark-theme .rank-list{background:#1b1b1b !important;}
+body.dark-theme .rank-row{background:#1b1b1b !important;border:1px solid #2a2a2a !important;color:#eaeaea !important;}
+body.dark-theme .rank-info b,body.dark-theme .rank-val b{color:#eaeaea !important;}
+body.dark-theme .rank-info span,body.dark-theme .rank-val span,body.dark-theme .rank-no{color:#b9b9b9 !important;}
+body.dark-theme .trend-panel{background:#1b1b1b !important;border-color:#2a2a2a !important;color:#eaeaea !important;}
+body.dark-theme .trend-head b{color:#eaeaea !important;}
+body.dark-theme .num-cell{background:#1b1b1b !important;border-color:#2a2a2a !important;color:#eaeaea !important;}
+body.dark-theme .num-cell.hot{background:#EC2829 !important;border-color:#EC2829 !important;color:#fff !important;}
+body.dark-theme .chips{background:#1b1b1b !important;}
+body.dark-theme .chip{background:#1b1b1b !important;border-color:#2a2a2a !important;color:#eaeaea !important;}
+body.dark-theme .chip.on{background:#EC2829 !important;border-color:#EC2829 !important;color:#fff !important;}
+body.dark-theme .table-scroll,body.dark-theme table.hist{background:#1b1b1b !important;border-color:#2a2a2a !important;color:#eaeaea !important;}
+body.dark-theme .hist th,body.dark-theme .hist td{background:#1b1b1b !important;border-color:#2a2a2a !important;color:#eaeaea !important;}
+
+/* 320：表格内部不滚动；隐藏非关键彩种列，保留期号/号码/状态 */
+@media(max-width:360px){
+  .hist th,.hist td{padding-left:2px;padding-right:2px;}
+}
+@media(max-width:340px){
+  .hist th:nth-child(2),.hist td:nth-child(2){display:none;}
+  .hist td:nth-child(2){font-size:10px;padding:0 2px;}
+  .hist .ball-row{gap:0;}
+  .hist .ball.plus{width:5px;}
+  .hist th:last-child,.hist td:last-child{width:40px;max-width:40px;padding:0 2px;text-align:right;overflow:hidden;}
+  .hist .status{font-size:7px;letter-spacing:-.25px;}
+}
