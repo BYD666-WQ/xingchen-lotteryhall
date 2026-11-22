@@ -977,3 +977,50 @@ html{font-size:clamp(13px, calc(100vw / 390 * 16), 17.64px);}
 .race-foot{height:2.8594rem;font-size:0.91rem;padding:0 0.715rem;}
 .race-balance{margin-top:0.1875rem;padding:0.5rem 0.625rem;}
 .race-balance{font-size:0.8125rem;}
+
+
+/* Phase N：冠亚组合 45 格（2 列表格） */
+.combo-grid{display:grid;grid-template-columns:1fr 1fr;background:#fff;}
+.combo-cell{display:flex;align-items:center;justify-content:space-between;padding:0 0.845rem;height:2.6621rem;background:#fff;border-right:1px solid #f2dcdc;border-bottom:1px solid #f2dcdc;font-size:1.3rem;font-weight:500;color:#333;}
+.combo-cell:nth-child(2n){border-right:0;}
+.combo-cell .combo-name{font-size:1.3rem;font-weight:500;}
+.combo-cell .combo-odds{font-style:normal;font-size:1.04rem;font-weight:500;color:#111;}
+.combo-cell.on{background:#d9d9d9;}
+
+
+/* Phase O：右侧滑出菜单 + 深色主题（最低可读） */
+.side-wrap{position:fixed;inset:0;z-index:200;}
+.side-mask{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:.2s;pointer-events:none;}
+.side-mask.show{opacity:1;pointer-events:auto;}
+.side-menu{position:absolute;top:0;right:0;bottom:0;width:220px;background:#fff;transform:translateX(100%);transition:.25s;box-shadow:-4px 0 16px rgba(0,0,0,.15);}
+.side-menu.show{transform:none;}
+.side-menu-hd{padding:14px 18px;font-size:13px;color:#999;border-bottom:1px solid #f2f2f2;}
+.side-item{display:block;width:100%;text-align:left;padding:16px 18px;font-size:16px;color:#333;background:#fff;border:0;border-bottom:1px solid #f2f2f2;}
+.side-item:active{background:#f7f7f7;}
+body.dark-theme{background:#111;color:#eaeaea;}
+body.dark-theme .view,body.dark-theme .race-result,body.dark-theme .race-layout,body.dark-theme .race-main,body.dark-theme .rk-body,body.dark-theme .rank-cell,body.dark-theme .race-cat,body.dark-theme .ts-opt,body.dark-theme .combo-cell,body.dark-theme .race-balance,body.dark-theme .race-amount,body.dark-theme .race-chips,body.dark-theme .race-picked{background:#1b1b1b;color:#eaeaea;}
+body.dark-theme .side-menu,body.dark-theme .side-item{background:#1b1b1b;color:#eaeaea;border-color:#333;}
+body.dark-theme .rr-issue,body.dark-theme .rank-cell .rnum-odds,body.dark-theme .combo-cell .combo-odds,body.dark-theme .ts-opt em{color:#f0f0f0;}
+body.dark-theme .rk-hd{background:#222;color:#eee;border-color:#444;}
+body.dark-theme .race-cat.on{background:#EC2829;color:#fff;}
+body.dark-theme .side-menu-hd{color:#aaa;border-color:#333;}
+
+
+/* Phase O2：小助手/☰ 下方白色下拉卡片（210px） */
+.drop-wrap{position:fixed;inset:0;z-index:300;}
+.drop-backdrop{position:absolute;inset:0;background:transparent;}
+.drop-card{position:fixed;width:210px;background:#fff;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);overflow:hidden;opacity:0;transform:translateY(-4px);transition:.16s;}
+.drop-card.show{opacity:1;transform:none;}
+.drop-item{display:block;width:100%;height:44px;line-height:44px;text-align:left;padding:0 16px;font-size:16.12px;color:#333;background:#fff;border:0;border-bottom:1px solid #f0f0f0;}
+.drop-item:last-child{border-bottom:0;}
+.drop-item:active{background:#f7f7f7;}
+body.dark-theme .drop-card,body.dark-theme .drop-item{background:#1f1f1f;color:#eaeaea;border-color:#333;}
+body.dark-theme{background:#111 !important;color:#eaeaea !important;}
+
+
+/* Phase O3：深色主题可读性补强 */
+body.dark-theme .race-cats,body.dark-theme .race-cat,body.dark-theme .rk-hd,body.dark-theme .rk-sec,body.dark-theme .rk-body,body.dark-theme .race-result,body.dark-theme .race-balance,body.dark-theme .race-foot,body.dark-theme .race-chips,body.dark-theme .race-amount,body.dark-theme .race-picked{background:#1b1b1b !important;color:#eaeaea !important;border-color:#333 !important;}
+body.dark-theme .rk-hd,body.dark-theme .race-cat.on{background:#2a2a2a !important;color:#fff !important;}
+body.dark-theme .rank-cell,body.dark-theme .ts-opt,body.dark-theme .combo-cell{background:#222 !important;border-color:#333 !important;}
+body.dark-theme .rr-labels .lbox{background:#222 !important;border-color:#555 !important;color:#ccc !important;}
+body.dark-theme .race-foot b{color:#FFD400;}
