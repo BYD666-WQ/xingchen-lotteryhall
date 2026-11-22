@@ -1239,3 +1239,281 @@ body.dark-theme .game-hot{background:#FFD54A;color:#B00016;}
 .game-circle.has-logo .game-glyph,.game-circle.has-logo .badge-shine{visibility:hidden;}
 
 .game-new{position:absolute;top:-4px;left:-8px;background:#E23A3A;color:#fff;font-size:9px;font-weight:700;font-style:normal;padding:1px 5px;border-radius:8px;line-height:1.35;z-index:4;}
+
+/* 六合彩尾数 5×2（仅本板块） */
+.six-tail-grid{display:grid;grid-template-columns:repeat(5,1fr);background:#fff;}
+.six-tail-cell{height:3.378rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:#fff;border:0;border-right:1px solid #EC2829;border-bottom:1px solid #EC2829;min-width:0;color:#333;}
+.six-tail-cell:nth-child(5n){border-right:0;}
+.six-tail-cell b{font-size:1.35rem;line-height:1;font-weight:800;}
+.six-tail-cell em{font-style:normal;font-size:1.04rem;color:#111;font-weight:400;}
+.six-tail-cell small{font-size:.76rem;color:#999;line-height:1.1;}
+.six-tail-cell.on{background:#d9d9d9;}
+
+/* P2-2：banner 关闭后保留占位，首排 y 不跳 */
+.reg-zero-banner{min-height:47px;box-sizing:border-box;}
+.reg-zero-banner.dismissed{visibility:hidden;pointer-events:none;}
+
+
+/* ==== 2026-11-23 首页/大厅/榜单修复（dev-theme） ==== */
+/* P1-1 角标：右上角小标签 18×12，圆角 0 4 0 4，不压名称/不改变卡片坐标；目标 circleOverlap<=15% */
+.hot-grid.hall18 .game-hot,
+.hot-grid.hall18 .game-new{position:absolute;top:2px;right:2px;left:auto;width:18px;height:12px;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:0 4px 0 4px;font-size:9px;line-height:1;font-style:normal;text-align:center;pointer-events:none;overflow:hidden;z-index:5}
+.hot-grid.hall18 .game-new{background:#E23A3A;color:#fff}
+.hot-grid.hall18 .game-hot{background:#FFD54A;color:#E23A3A}
+
+/* P1-3 chips 热区 >=44（视觉保持紧凑，仅扩大高度） */
+.chip{min-height:44px}
+
+/* P2-4 深色首页/大厅/榜单卡片 */
+body.dark-theme .hot-section,
+body.dark-theme .hot-head,
+body.dark-theme .hot-grid.hall18 .game-cell,
+body.dark-theme .rank-list,
+body.dark-theme .rank-row,
+body.dark-theme .section,
+body.dark-theme .card,
+body.dark-theme .trend-panel,
+body.dark-theme .table-scroll{background:#1b1b1b !important;border-color:#2a2a2a !important;color:#eaeaea !important}
+body.dark-theme .hot-grid.hall18{background:#2a2a2a !important;border-color:#2a2a2a !important}
+body.dark-theme .hot-title,
+body.dark-theme .section-title,
+body.dark-theme .page-title,
+body.dark-theme .rank-info b,
+body.dark-theme .rank-val b,
+body.dark-theme .game-name,
+body.dark-theme .hist th,
+body.dark-theme .trend-head b{color:#eaeaea !important}
+body.dark-theme .game-issue,
+body.dark-theme .page-sub,
+body.dark-theme .mini-note,
+body.dark-theme .rank-info span,
+body.dark-theme .rank-val span,
+body.dark-theme .rank-no,
+body.dark-theme .trend-head span{color:#b9b9b9 !important}
+body.dark-theme .hot-grid.hall18 .game-cell.soon .game-issue{color:#8a8a8a !important}
+
+
+/* ==== 投注记录（购彩查询）+ 撤单 · owner: dev-lottery · 2026-11-23 ==== */
+.bets-head{padding-bottom:10px}
+.bets-stats{margin:8px 10px 0;padding:12px 12px 0;background:#fff;border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.bets-stats-grid{display:grid;grid-template-columns:repeat(3,1fr)}
+.bets-stat{position:relative;text-align:center;padding-bottom:11px}
+.bets-stat + .bets-stat:before{content:"";position:absolute;left:0;top:3px;bottom:14px;width:1px;background:#f1f1f1}
+.bets-stat span{display:block;font-size:10px;color:#9a9a9a;letter-spacing:.02em;margin-bottom:5px}
+.bets-stat b{display:block;font:800 19px/1.15 Arial,Helvetica,sans-serif;color:#222;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.bets-stat b.pos{color:#1FA85C}
+.bets-stat b.neg{color:#EC2829}
+.bets-stat b.zero{color:#888}
+.bets-filter{display:flex;align-items:center;gap:6px;padding:9px 0 10px;border-top:1px solid #f4f4f4}
+.bets-filter button{height:26px;padding:0 11px;border:1px solid #ececec;background:#fafafa;color:#666;font-size:11px;font-family:inherit;line-height:24px;cursor:pointer}
+.bets-filter button.on{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
+.bets-count{margin-left:auto;font-size:10px;color:#aaa;white-space:nowrap}
+.bets-preview{display:flex;align-items:center;gap:6px;margin:8px 10px 0;padding:7px 10px;border:1px solid #f2dfb4;background:#fffaeb;font-size:10px;color:#8a6a1f;line-height:1.35}
+.bets-preview b{flex:none;font-size:10px;color:#7a5a12;border:1px solid #e6c983;background:#fff3d1;padding:1px 5px}
+.bets-list{margin:8px 10px 0;display:flex;flex-direction:column;gap:8px}
+.bets-item{padding:10px 11px 9px;background:#fff;border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.025)}
+.bs-top{display:flex;align-items:center;gap:6px;min-height:18px}
+.bs-game{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:#333;min-width:0}
+.bs-icon{flex:none;width:16px;height:16px;background:var(--gc,#EC2829);color:#fff;font-style:normal;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;border-radius:2px}
+.bs-issue{font-size:10.5px;color:#9a9a9a;font-variant-numeric:tabular-nums}
+.bs-status{margin-left:auto;flex:none;font-style:normal;font-size:10px;line-height:16px;padding:1px 6px;border-radius:2px}
+.bs-status.pending{color:#a5791f;background:#fff7e6;border:1px solid #f3e2bd}
+.bs-status.win{color:#1FA85C;background:#f0faf4;border:1px solid #cdebd9}
+.bs-status.lose{color:#888;background:#f6f6f6;border:1px solid #ececec}
+.bs-status.cancel{color:#8a8a8a;background:#f4f4f4;border:1px solid #e6e6e6}
+.bs-picks{display:flex;flex-wrap:wrap;align-items:center;gap:4px 5px;margin-top:7px}
+.bs-pick{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;background:#f7f7f8;border:1px solid #f0f0f0;font-size:11px;color:#444;line-height:1.45}
+.bs-pick i{font-style:normal}
+.bs-pick em{font-style:normal;font-size:9.5px;color:#EC2829;font-weight:700;font-variant-numeric:tabular-nums}
+.bs-pick.empty{color:#aaa}
+.bs-qty{font-size:9.5px;color:#a5a5a5;margin-left:1px}
+.bs-more{height:20px;padding:0 6px;border:1px dashed #ddd;background:#fff;color:#999;font-size:9.5px;font-family:inherit;cursor:pointer}
+.bs-money{display:grid;grid-template-columns:repeat(3,1fr);margin-top:8px;padding-top:7px;border-top:1px dashed #f0f0f0}
+.bs-money div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bs-money span{font-size:9.5px;color:#a8a8a8}
+.bs-money b{font:700 13px/1.2 Arial,Helvetica,sans-serif;color:#333;font-variant-numeric:tabular-nums}
+.bs-money b.pos{color:#1FA85C}
+.bs-money b.neg{color:#EC2829}
+.bs-money b.muted,.bs-money b.max.muted{color:#b5b5b5;font-weight:400}
+.bs-money div.al-r{align-items:flex-end;text-align:right}
+.bs-foot{display:flex;align-items:center;gap:8px;margin-top:8px;min-height:30px}
+.bs-time{font-size:9.5px;color:#b0b0b0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bs-btn{margin-left:auto;flex:none;height:30px;padding:0 14px;border:1px solid rgba(236,40,41,.5);background:#fff;color:var(--red);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+.bs-btn:active{background:#fff2f2}
+.bs-btn.off,.bs-btn[disabled]{border-color:#e8e8e8;background:#fafafa;color:#b9b9b9;font-weight:400;cursor:not-allowed}
+.bets-empty{margin:10px 10px 0;padding:34px 16px;background:#fff;border:1px solid var(--line);text-align:center}
+.bets-empty b{display:block;font-size:13px;color:#555}
+.bets-empty span{display:block;margin-top:5px;font-size:10.5px;color:#a5a5a5}
+.bets-login{margin:10px;padding:18px 16px;background:#fff;border:1px solid var(--line);text-align:center}
+.bets-login b{display:block;font-size:14px;color:#333}
+.bets-login span{display:block;margin:6px 0 14px;font-size:11px;color:#999;line-height:1.5}
+.bets-login .btn{display:inline-flex;min-width:132px;justify-content:center}
+body.cs-open{overflow:hidden}
+.cs-mask{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.cs-mask[hidden]{display:none}
+.cs-card{width:min(100%,500px);background:#fff;border-radius:12px 12px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -6px 24px rgba(0,0,0,.18);animation:csUp .22s ease}
+@keyframes csUp{from{transform:translateY(18px);opacity:.6}to{transform:translateY(0);opacity:1}}
+.cs-card h3{margin:0;font-size:17px;color:#222;text-align:center;letter-spacing:.01em}
+.cs-bet{margin-top:12px;padding:10px 11px;background:#fafafa;border:1px solid #f0f0f0}
+.cs-line{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:#555}
+.cs-line b{flex:none;color:var(--red);font-size:11.5px}
+.cs-picks{margin-top:6px;font-size:11px;color:#444;line-height:1.55;word-break:break-word}
+.cs-mock{margin-top:7px;padding-top:6px;border-top:1px dashed #eee;font-size:9.5px;color:#a07a2a}
+.cs-note{margin:11px 0 0;font-size:10.5px;color:#9a9a9a;line-height:1.55}
+.cs-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}
+.cs-actions button{height:42px;border:0;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+.cs-ghost{background:#f4f4f4;color:#555}
+.cs-main{background:var(--red);color:#fff}
+.cs-main[disabled]{opacity:.6;cursor:default}
+body.dark-theme .bets-stats,body.dark-theme .bets-item,body.dark-theme .bets-empty,body.dark-theme .bets-login{background:#1b1b1b !important;border-color:#2a2a2a !important;box-shadow:none !important}
+body.dark-theme .bets-stat + .bets-stat:before{background:#2a2a2a}
+body.dark-theme .bets-stat b{color:#eaeaea}
+body.dark-theme .bets-stat b.pos{color:#4bd18b}
+body.dark-theme .bets-stat b.neg{color:#ff7b7b}
+body.dark-theme .bets-stat span,body.dark-theme .bets-count{color:#8f8f8f}
+body.dark-theme .bets-filter{border-top-color:#2a2a2a}
+body.dark-theme .bets-filter button{background:#232323;border-color:#333;color:#bbb}
+body.dark-theme .bets-filter button.on{background:var(--red);border-color:var(--red);color:#fff}
+body.dark-theme .bets-preview{background:#2b2417;border-color:#4a3d22;color:#d8c08a}
+body.dark-theme .bets-preview b{background:#3a2f1c;border-color:#5a4a28;color:#e8cf9a}
+body.dark-theme .bs-game{color:#eaeaea}
+body.dark-theme .bs-issue,body.dark-theme .bs-time,body.dark-theme .bs-qty{color:#8f8f8f}
+body.dark-theme .bs-pick{background:#232323;border-color:#333;color:#ddd}
+body.dark-theme .bs-pick em{color:#ff8a8a}
+body.dark-theme .bs-more{background:#232323;border-color:#3a3a3a;color:#999}
+body.dark-theme .bs-money{border-top-color:#2a2a2a}
+body.dark-theme .bs-money span{color:#8f8f8f}
+body.dark-theme .bs-money b{color:#eaeaea}
+body.dark-theme .bs-money b.pos{color:#4bd18b}
+body.dark-theme .bs-money b.neg{color:#ff7b7b}
+body.dark-theme .bs-btn{background:#1b1b1b;border-color:#7a2b2b;color:#ff8a8a}
+body.dark-theme .bs-btn.off,body.dark-theme .bs-btn[disabled]{background:#1f1f1f;border-color:#333;color:#777}
+body.dark-theme .bets-empty b,body.dark-theme .bets-login b{color:#eaeaea}
+body.dark-theme .cs-card{background:#1b1b1b;color:#eaeaea}
+body.dark-theme .cs-card h3{color:#eaeaea}
+body.dark-theme .cs-bet{background:#222;border-color:#333}
+body.dark-theme .cs-line,.body.dark-theme .cs-picks{color:#ccc}
+body.dark-theme .cs-ghost{background:#2a2a2a;color:#ccc}
+@media (max-width:340px){
+  .bets-stat b{font-size:17px}
+  .bets-filter button{padding:0 8px}
+  .bs-btn{padding:0 11px}
+}
+
+
+/* Phase H4：开奖结果下方历史面板 */
+.hist-arrow{font-style:normal;font-size:.7rem;color:#999;margin-left:2px;}
+.race-history{background:#fff;border-bottom:1px solid #eee;}
+.hh-tabs{display:flex;border-bottom:1px solid #eee;}
+.hh-tab{flex:1 1 0;height:44px;border:0;background:#fff;color:#111;font-size:.8rem;}
+.hh-tab.on{background:#555;color:#fff;}
+.hh-row{height:56px;display:flex;align-items:center;padding:0 8px;border-bottom:1px solid #eee;box-sizing:border-box;}
+.hh-row.alt{background:#fafafa;}
+.hh-issue{width:96px;flex:0 0 96px;text-align:center;font-size:.875rem;font-weight:700;color:#111;white-space:nowrap;}
+.hh-cells{flex:1;display:flex;align-items:center;justify-content:space-between;gap:2px;min-width:0;}
+.hh-ball{width:28px;height:26px;border-radius:3px;color:#fff;font-size:.75rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.hh-cell{width:28px;height:26px;border:1px solid #ccc;border-radius:3px;background:#fff;color:#111;font-size:.75rem;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.hh-cell.big{color:#E23A3A;border-color:#f0b4b4;}
+.hh-sum{font-size:.75rem;color:#B00016;font-weight:700;white-space:nowrap;}
+.hh-dragon{font-size:.7rem;color:#333;white-space:nowrap;margin-left:3px;}
+.hh-empty{padding:18px 10px;color:#999;font-size:.8rem;text-align:center;}
+.hh-more{padding:8px 10px;text-align:right;}
+.hh-more a{font-size:.8rem;color:#B00016;text-decoration:none;}
+body.dark-theme .race-history{background:#1b1b1b;border-color:#2a2a2a;}
+body.dark-theme .hh-tab{background:#1b1b1b;color:#eaeaea;}
+body.dark-theme .hh-tab.on{background:#555;color:#fff;}
+body.dark-theme .hh-row{border-color:#2a2a2a;}
+body.dark-theme .hh-row.alt{background:#222;}
+body.dark-theme .hh-issue,body.dark-theme .hh-dragon{color:#eaeaea;}
+body.dark-theme .hh-cell{background:#1b1b1b;color:#eaeaea;border-color:#444;}
+
+/* Review: 六合彩正码/正特 3 等分 + 固定行高（仅 .six-* 段） */
+.six-main{border-left:1px solid #EC2829;box-sizing:border-box;}
+.six-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;width:100%;background:#fff;}
+.six-grid .six-cell{width:100%;height:54.047px;min-height:54.047px;max-height:54.047px;display:flex;align-items:center;justify-content:flex-start;gap:4.672px;padding:0 5.2px 0 10.4px;box-sizing:border-box;min-width:0;border-right:1px solid #EC2829;border-bottom:1px solid #EC2829;overflow:hidden;}
+.six-grid .six-cell:nth-child(3n){border-right:0;}
+.six-grid .six-ball{width:31.188px;height:31.188px;font-size:18.72px;flex:0 0 31.188px;line-height:1;}
+.six-grid .six-odds{font-size:16.64px;line-height:1;flex:0 0 auto;}
+.six-grid .six-cell.on{background:#d9d9d9;}
+@media (max-width:340px){
+  .six-grid .six-cell{height:54.047px;min-height:54.047px;max-height:54.047px;gap:3px;padding:0 3px 0 5px;}
+  .six-grid .six-ball{width:28px;height:28px;font-size:16px;flex:0 0 28px;}
+  .six-grid .six-odds{font-size:14px;}
+}
+
+/* 投注页「最近注单」小卡（dev-lottery） */
+.my-bets-all{margin-left:auto;font-size:9.5px;color:var(--red);text-decoration:none}
+.my-bet-picks{margin-top:3px;font-size:10.5px;color:#555;line-height:1.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.my-bet-top em.cancel{color:#8a8a8a;background:#f4f4f4}
+.my-bet-empty a{color:var(--red);text-decoration:none}
+body.dark-theme .my-bet{border-top-color:#2a2a2a}
+body.dark-theme .my-bets{background:#1b1b1b;border-color:#2a2a2a}
+body.dark-theme .my-bets-head h2{color:#eaeaea}
+body.dark-theme .my-bet-picks{color:#c9c9c9}
+body.dark-theme .my-bet-sub{color:#8f8f8f}
+
+/* Review fix: six divider + countdown overflow + strict 5x2 */
+.six-layout{width:100%;max-width:100%;overflow:hidden;box-sizing:border-box;}
+.six-cats{box-sizing:border-box;border-right:1px solid #EC2829;}
+.six-main{box-sizing:border-box;width:calc(100% - 5.237rem);flex:1 1 auto;border-left:0;min-width:0;overflow:hidden;}
+.six-result-head .rr-right{width:auto;flex:0 0 clamp(100px,26vw,108px);min-width:0;box-sizing:border-box;}
+.six-result-head .rr-cd{font-size:clamp(16px,4.4vw,20px);letter-spacing:-0.6px;white-space:nowrap;}
+.six-tail-grid{width:100%;max-width:100%;grid-template-columns:repeat(5,minmax(0,1fr));overflow:hidden;box-sizing:border-box;}
+.six-tail-cell{width:100%;min-width:0;box-sizing:border-box;}
+
+/* 深色：记录页头部与状态 pill（本板块内） */
+body.dark-theme .bets-head{background:#111}
+body.dark-theme .bs-status.pending{background:#332a17;border-color:#5a4a28;color:#e8c07a}
+body.dark-theme .bs-status.win{background:#16301f;border-color:#2a5a3a;color:#6fe0a0}
+body.dark-theme .bs-status.lose{background:#242424;border-color:#333;color:#aaa}
+body.dark-theme .bs-status.cancel{background:#242424;border-color:#333;color:#aaa}
+
+/* 可读性微调 + 记录页隐藏右下角悬浮签到（避免压住撤单/已封盘按钮） */
+body:has(#betsBody) .float-sign{display:none}
+.bets-count,.bs-time,.bs-qty,.bs-money span{color:#8f8f8f}
+body.dark-theme .bets-count,body.dark-theme .bs-time,body.dark-theme .bs-qty{color:#9a9a9a}
+
+
+/* ==== 2026-11-23 底部导航深色/签到收进底栏（lead feedback） ==== */
+.bottomtab{grid-template-columns:repeat(6,minmax(0,1fr)) !important;}
+.float-sign{display:flex !important;position:fixed;z-index:51;right:max(0px,calc((100vw - 500px)/2));bottom:3px;width:calc(min(100vw,500px)/6);height:56px;border:0;border-left:1px solid #e6e6e6;border-radius:0;background:#F6F6F6;color:#EC2829;box-shadow:none;padding:0 2px 4px;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10px;font-weight:800;line-height:1.05;letter-spacing:0;}
+body.dark-theme .bottomtab{background:#1b1b1b !important;border-top:1px solid #2a2a2a !important;box-shadow:none !important;}
+body.dark-theme .bottomtab a{color:#eaeaea !important;}
+body.dark-theme .bottomtab a.on,body.dark-theme .bottomtab a[aria-current]{color:#EC2829 !important;}
+body.dark-theme .float-sign{background:#1b1b1b !important;color:#eaeaea !important;border-color:#2a2a2a !important;box-shadow:none !important;}
+body.dark-theme .demo-footer{background:#1b1b1b !important;color:#8a8a8a !important;border-color:#2a2a2a !important;}
+
+body.dark-theme:has(#betsBody) .cat-tabs{background:#1b1b1b;border-bottom-color:#2a2a2a}
+body.dark-theme:has(#betsBody) .cat-tabs a{color:#b9b9b9}
+body.dark-theme:has(#betsBody) .cat-tabs a.on{color:#ff8a8a}
+
+
+/* 底部安全区：footer 承担底栏留白，避免 view 出现大块空白 */
+.view{padding-bottom:12px !important;}
+.demo-footer{padding-top:12px !important;padding-bottom:calc(16px + 62px + 12px) !important;}
+
+/* 合并修正：六合彩倒计时收进右栏，消除 400 横向溢出 */
+.six-result-head .rr-cd{font-size:16px !important;letter-spacing:-0.4px;}
+
+
+/* Phase L23：赛车名次格一比一参考尺寸 + 内容居中 */
+.rk-body .rank-cell,.rank-cell{width:9.099625rem !important;flex:0 0 9.099625rem !important;height:3.4404rem !important;box-sizing:border-box !important;padding:1px 1px 0 2px !important;justify-content:center !important;align-items:center !important;gap:0.292rem !important;}
+.rank-cell .rank-block{width:1.88475rem !important;height:1.88475rem !important;font-size:1.3rem !important;}
+.rank-cell .rnum-odds{font-size:1.04rem !important;}
+
+/* Lead: 六合彩 16 玩法空态 + 号码格内容居中 + 精确内容区宽度 */
+.six-empty{margin:12px 10px;padding:28px 12px;background:#fff;border:1px dashed #EC2829;text-align:center;color:#999;}
+.six-empty b{display:block;font-size:16px;color:#333;margin-bottom:6px;}
+.six-empty span{font-size:12px;}
+.six-main{width:calc(100% - 5.237rem - 2px);flex:0 1 calc(100% - 5.237rem - 2px);margin-left:2px;border-left:0;box-sizing:border-box;}
+.six-grid .six-cell{justify-content:center;padding:0 5.2px;}
+@media (max-width:340px){
+  .six-grid .six-cell{justify-content:center;padding:0 3px;}
+}
+
+/* Center group exactly inside border-box cell */
+.six-grid .six-cell{justify-content:center;padding:0 4.2px 0 5.2px;}
+@media (max-width:340px){.six-grid .six-cell{justify-content:center;padding:0 2.5px 0 3px;}}
+
+/* 投注页隐藏悬浮签到，避免压号码格 */
+body.bet-mode .float-sign{display:none !important;}
