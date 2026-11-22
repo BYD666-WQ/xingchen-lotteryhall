@@ -28,7 +28,7 @@
   var RED = [1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46];
   var BLUE = [3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48];
   var KEY = 'Xc9vF2026';
-  var state = { games: {}, config: {}, attrs: {}, updated: 0, error: '', loading: false };
+  var state = { games: {}, config: {}, attrs: {}, win: {}, updated: 0, error: '', loading: false };
   var historyGame = 'newhk';
   var countdownTimer = 0;
   var bannerTimer = 0;
@@ -270,6 +270,28 @@
     };
     return g;
   }
+  function winClosed(id) { var w = state.win[id]; return !!(w && w.open === false); }
+  function winCloseText(id) {
+    var w = state.win[id]; if (!w || w.open !== false) return '';
+    var d = w.nextOpenAt ? new Date(w.nextOpenAt) : null;
+    if (!d || isNaN(d.getTime())) return '本时段已结束';
+    var bj = new Date(d.getTime() + 8 * 3600 * 1000);
+    return '本时段已结束，下次开奖 ' + bj.toISOString().slice(11, 16);
+  }
+  function winBanner(id) {
+    if (!winClosed(id)) return '';
+    return '<div class="win-closed" data-win-banner="' + id + '"><b>' + winCloseText(id) + '</b><span data-win-cd>--:--</span></div>';
+  }
+  function syncIssueWindow(id) {
+    return window.LotteryAPI.call('/issues/' + encodeURIComponent(id), { method: 'GET' }).then(function (d) {
+      var w = d && (d.window || d.windowInfo);
+      if (!w) return;
+      var prev = JSON.stringify(state.win[id] || null), next = JSON.stringify(w);
+      state.win[id] = w;
+      var cr = currentRoute();
+      if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id && prev !== next) { try { render(true); } catch (e) {} }
+    }).catch(function () {});
+  }
   function syncFastIssue(id) {
     try { console.info('[fast] sync ' + id); } catch (e) {}
     var def = DEFS[id]; if (!def || !def.mock) { try { console.info('[fast] skip ' + id + ' mock=' + (def && def.mock)); } catch (e) {} return Promise.resolve(); }
@@ -277,6 +299,7 @@
     FAST[id].lastTry = Date.now();
     return window.LotteryAPI.call('/issues/' + encodeURIComponent(id), { method: 'GET' }).then(function (d) {
       FAST[id].data = d; state.games[id] = shapeFast(id, d);
+      if (d && d.window) state.win[id] = d.window;
       try {
         var key = 'xc-race-hist-' + id, hist = JSON.parse(localStorage.getItem(key) || '[]');
         var lr = d.lastResult || {};
@@ -1439,8 +1462,9 @@
     if (def.mock && (!FAST[id] || !FAST[id].data || (Date.now() - (FAST[id].lastTry || 0) > 5500))) syncFastIssue(id);
     var g = state.games[id] || (def.mock && FAST[id] && FAST[id].data ? shapeFast(id, FAST[id].data) : mockGame(id));
     if (def.mock && !state.games[id]) { state.games[id] = mockGame(id); syncFastIssue(id); }
-    if (def.racing) return betZeroBanner() + racingPage(id, def, g);
-    if (id === 'newhk' || id === 'newmo' || id === 'hk') return betZeroBanner() + sixSpecialPage(id, def, g);
+    if (!def.mock && !state.win[id]) syncIssueWindow(id);
+    if (def.racing) return betZeroBanner() + winBanner(id) + racingPage(id, def, g);
+    if (id === 'newhk' || id === 'newmo' || id === 'hk') return betZeroBanner() + winBanner(id) + sixSpecialPage(id, def, g);
     if (def.racing && !(def.cats || []).length) { /* racing 用 RACING_CATS */ }
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
     if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState('正在读取 ' + def.name + ' 数据…');
@@ -1510,13 +1534,23 @@
         var subBtn = document.querySelector('[data-bet-submit]');
         if (subBtn) {
           var noPts = (parseInt(points, 10) || 0) <= 0;
-          subBtn.disabled = closed || noPts;
-          subBtn.textContent = noPts ? '积分不足' : (closed ? '已停止投注' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注'));
+          var winOff = winClosed(betState.game);
+          subBtn.disabled = closed || noPts || winOff;
+          subBtn.textContent = winOff ? '已停售（时段结束）' : (noPts ? '积分不足' : (closed ? '已停止投注' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注')));
         }
         // 到期后每 5s 拉 /issues
         if (closeAt && Date.now() >= closeAt && Date.now() - (FAST[betState.game] && FAST[betState.game].lastTry || 0) > 5000) syncFastIssue(betState.game);
         var hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60), ss = left % 60;
         cdEl.textContent = ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2) + ':' + ('0' + ss).slice(-2);
+      }
+      var wEls = document.querySelectorAll('[data-win-cd]');
+      if (wEls.length) {
+        var ww = state.win[betState.game];
+        if (ww && ww.nextOpenAt) {
+          var wd = new Date(ww.nextOpenAt), wl = Math.max(0, Math.floor((wd.getTime() - Date.now()) / 1000));
+          var wm = Math.floor(wl / 60), wss = wl % 60;
+          wEls.forEach(function (el) { el.textContent = ('0' + wm).slice(-2) + ':' + ('0' + wss).slice(-2); });
+        }
       }
     } catch (e) {}
   }
@@ -1594,9 +1628,10 @@
     $$('[data-picked-list]').forEach(function (el) { el.textContent = picks.length ? picks.join(' ') : '—'; });
     var input = $('#betQty'); if (input && document.activeElement !== input && String(input.value) !== String(betState.qty)) input.value = betState.qty;
     $$('.amount-chip').forEach(function (b) { b.classList.toggle('on', String(b.getAttribute('data-qty')) === String(betState.qty)); });
+    var closed = winClosed(betState.game);
     var insuff = (points <= 0) || (notes > 0 && cost > points);
-    var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = insuff ? (points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）') : ''; hint.classList.toggle('show', insuff); }
-    var submit = $('[data-bet-submit]'); if (submit) { submit.disabled = insuff || betSubmitting; submit.textContent = betSubmitting ? '投注中…' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注'); }
+    var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = closed ? winCloseText(betState.game) : (insuff ? (points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）') : ''); hint.classList.toggle('show', closed || insuff); }
+    var submit = $('[data-bet-submit]'); if (submit) { submit.disabled = closed || insuff || betSubmitting; submit.textContent = closed ? '已停售（时段结束）' : (betSubmitting ? '投注中…' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注')); }
     updatePointsUI();
   }
   document.addEventListener('input', function (e) {
