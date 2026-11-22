@@ -1350,10 +1350,18 @@
     var cat = betState.sixCat || '特码';
     var last = (g && g.last) || { issue: 0, nums: [] };
     var balls = '', zods = '';
-    (last.nums || []).slice(0, 7).forEach(function (x) { balls += sixBall(parseInt(x.c, 10)); zods += '<i>' + (x.z || '') + '</i>'; });
+    (last.nums || []).slice(0, 7).forEach(function (x, idx) {
+      var n = parseInt(x.c, 10), col = x.color || colorOf(n);
+      var hex = col === '红' ? '#E23A3A' : (col === '蓝' ? '#1F6FEB' : '#1FA85C');
+      balls += '<span class="nbox six-nbox' + (idx === 6 ? ' special' : '') + '" style="background:' + hex + '">' + pad(n) + '</span>';
+      zods += '<span class="lbox six-lbox">' + (x.z || '') + '·' + col + '</span>';
+    });
     var head = '<div class="six-head"><span class="race-title">' + esc(def.name) + ' »</span><span class="race-mode">信用玩法 ▾</span><span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
-      '<div class="six-result"><div class="six-res-left"><div class="rr-issue">第 ' + shortIssue(last.issue) + ' 期开奖结果</div><div class="six-balls">' + balls + '</div><div class="six-zods">' + zods + '</div></div>' +
-      '<div class="six-res-right"><div class="rr-next">' + (g.nextIssue || last.issue + 1) + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
+      '<div class="race-result six-result-head"><div class="rr-left">' +
+      '<div class="rr-issue">第 ' + shortIssue(last.issue) + ' 期开奖结果</div>' +
+      '<div class="rr-nums six-rr-nums">' + balls + '</div>' +
+      '<div class="rr-labels six-rr-labels">' + zods + '</div></div>' +
+      '<div class="rr-right"><div class="rr-next">' + (g.nextIssue || last.issue + 1) + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
     var cats = SIX_CATS.map(function (c) { return '<button type="button" class="six-cat ' + (cat === c ? 'on' : '') + '" data-six-cat="' + c + '">' + c + '</button>'; }).join('');
     var main;
     if (cat === '特码') {
