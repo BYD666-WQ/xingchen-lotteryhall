@@ -1751,7 +1751,15 @@
   if (!location.hash) location.hash = '#/lotteryhall';
   applyTheme(); render(); loadData(true); initAuth();
   [300, 1200, 2500].forEach(function (ms) { setTimeout(function () { try { render(true); } catch (e) {} }, ms); });
-  window.addEventListener('load', function () { try { render(true); } catch (e) {} }); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
+  window.addEventListener('load', function () { try { render(true); } catch (e) {} });
+  var bootWatchdog = setInterval(function () {
+    try {
+      refreshDefs();
+      var br = currentRoute();
+      if ((br.name === 'bet' || br.name === 'game') && document.querySelectorAll('[data-audit]').length === 0) render(true);
+    } catch (e) {}
+    if (window.__bootWatchdogTicks = (window.__bootWatchdogTicks || 0) + 1, window.__bootWatchdogTicks > 30) clearInterval(bootWatchdog);
+  }, 400); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
   function refreshPointsAndBets() {
     if (!awUser) return;
     try { refreshPoints(); } catch (e) {}
