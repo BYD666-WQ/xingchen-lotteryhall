@@ -1154,10 +1154,9 @@
       '<span class="race-title">' + esc(def.raceTitle || '极速赛车') + ' »</span>' +
       '<span class="race-mode">信用玩法 ▾</span>' +
       '<span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
-      '<div class="race-result"><div class="rr-top"><div class="rr-issue">第 ' + last + ' 期开奖结果</div>' +
-
-      '<div class="rr-right"><div class="rr-next">' + next + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
+      '<div class="race-result"><div class="rr-left"><div class="rr-issue">第 ' + last + ' 期开奖结果</div>' +
       '<div class="rr-nums">' + boxes + '</div>' + labelRow + '</div>' +
+      '<div class="rr-right"><div class="rr-next">' + next + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
       '<div class="race-balance"><span>余额：<b>' + (parseInt(points, 10) || 0) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
   }
   function racingPage(id, def, g) {
