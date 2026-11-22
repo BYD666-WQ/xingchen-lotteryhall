@@ -1583,6 +1583,7 @@
             var key = String(s.key || '');
             if (/^r\d{1,2}:\d{2}$/.test(key)) return key;              // 赛车名次：r3:07
             if (/^sum:(big|small|odd|even)$/.test(key)) return key;      // 冠亚和：sum:big
+            if (/^sum:\d{1,2}$/.test(key)) return key;                    // 和值：sum:11
             if (/^combo:\d{1,2}_\d{1,2}$/.test(key)) return key;          // 冠亚组合：combo:1_2
             if (/^r\d{1,2}:(bs|oe):(big|small|odd|even)$/.test(key)) return key; // 名次大小/单双
             if (key.indexOf('race-') === 0) return key.slice(5);        // 赛车冠军/亚军旧格式
