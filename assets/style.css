@@ -1132,3 +1132,6 @@ body.dark-theme .rr-right::before{content:none !important;}
 .six-opt:nth-child(3n){border-right:0;}
 .six-opt em{font-style:normal;font-size:1.04rem;color:#111;}
 .six-opt.on{background:#d9d9d9;}
+
+.my-bet-top em.ok{color:#1FA85C;font-style:normal;font-size:12px;font-weight:700;}
+.my-bet-top em.no{color:#999;font-style:normal;font-size:12px;}
