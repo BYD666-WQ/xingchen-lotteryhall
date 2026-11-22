@@ -28,7 +28,10 @@
   var RED = [1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46];
   var BLUE = [3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48];
   var KEY = 'Xc9vF2026';
-  var state = { games: {}, config: {}, attrs: {}, win: {}, histApi: {}, histLoading: {}, updated: 0, error: '', loading: false };
+  var state = { games: {}, config: {}, attrs: {}, win: {}, histApi: {}, histLoading: {}, noticeDismissed: {}, updated: 0, error: '', loading: false };
+  function noticeHash(s) { var h = 0; for (var i = 0; i < String(s).length; i++) { h = ((h << 5) - h + String(s).charCodeAt(i)) | 0; } return 'n' + ((h >>> 0).toString(36)); }
+  function noticeIsDismissed(id) { if (state.noticeDismissed[id]) return true; try { return localStorage.getItem('noticeDismissed:' + id) === '1'; } catch (e) { return false; } }
+  function dismissNotice(id) { if (!id) return; state.noticeDismissed[id] = true; try { localStorage.setItem('noticeDismissed:' + id, '1'); } catch (e) {} }
   var homeTab = 'hot';
   var historyGame = 'newhk';
   var countdownTimer = 0;
@@ -243,7 +246,8 @@
     var seen = false; try { seen = sessionStorage.getItem('xcRegZero') === '1'; } catch (e) {}
     if ((parseInt(points, 10) || 0) <= 0) {
       var txt = (regZeroNotice || seen) ? '账号已创建，当前积分 0，请联系管理员加分' : '积分不足，请联系管理员加分后再投注';
-      return '<div class="reg-zero-banner" data-reg-banner>' + txt + '<button type="button" data-dismiss-reg>知道了</button></div>';
+      var nid = noticeHash('reg:' + txt), off = noticeIsDismissed(nid);
+      return '<div class="reg-zero-banner' + (off ? ' dismissed' : '') + '" data-reg-banner data-notice-id="' + nid + '"' + (off ? ' aria-hidden="true"' : '') + '>' + txt + '<button type="button" data-dismiss-reg>知道了</button></div>';
     }
     return '';
   }
@@ -481,7 +485,7 @@
     var chips = ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('');
     var g = state.games[historyGame];
     var rows = state.histApi[historyGame] && state.histApi[historyGame].length ? histTableRows(historyGame, state.histApi[historyGame]) : (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
-    if (!rows) rows = '<tr><td colspan="4">' + emptyState('暂无更多历史') + '</td></tr>';
+    if (!rows) rows = '<tr><td colspan="4">' + emptyState('暂无数据') + '</td></tr>';
     setTimeout(function () { try { loadHistoryData(historyGame); } catch (e) {} }, 0);
     return catTabs('history') + '<div class="page-head"><div><div class="page-kicker">RESULTS</div><h1 class="page-title">开奖记录</h1><div class="page-sub">主站真实数据 · 当前可获取 ' + ((g && g.history.length) || 0) + ' 期</div></div><span class="demo-pill">REAL</span></div>' +
       '<div class="chips">' + chips + '</div><div style="padding:0 10px"><div class="table-scroll"><table class="hist"><thead><tr><th>期号</th><th>彩种</th><th>开奖号码</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
@@ -489,6 +493,12 @@
   }
   function trendPage() {
     var g = state.games[historyGame] || state.games.newhk;
+    if (!g || !g.history || !g.history.length) {
+      return catTabs('trend') + '<div class="page-head"><div><div class="page-kicker">TREND</div><h1 class="page-title">号码走势</h1><div class="page-sub">' + esc(DEFS[historyGame].name) + ' · 近 12 期</div></div><span class="demo-pill">REAL</span></div>' +
+        '<div class="chips">' + ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('') + '</div>' +
+        '<div class="trend-panel">' + emptyState('暂无数据') + '</div>' +
+        '<div class="mini-note">走势基于主站近 12 期真实开奖号码计算。</div>';
+    }
     var counts = { '红':0,'蓝':0,'绿':0 }, total = 0;
     (g && g.history || []).slice(0, 12).forEach(function (h) { h.nums.forEach(function (b) { counts[colorOf(b.c)]++; total++; }); });
     total = Math.max(1, total);
@@ -510,14 +520,14 @@
     box.innerHTML = '<div class="data-empty" style="padding:30px 16px">加载中…</div>';
     Promise.resolve().then(function () { return window.LotteryAPI.call('/rank?limit=20', { method: 'GET' }); }).then(function (res) {
       var rows = (res && (res.rank || res.rows)) || [];
-      if (!rows.length) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无数据</div>'; return; }
+      if (!rows.length) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无排行数据</div>'; return; }
       box.innerHTML = rows.slice(0, 20).map(function (r, i) {
         var name = esc(String(r.username || '玩家'));
         var rate = Number(r.rate);
         var rateTxt = isFinite(rate) ? (rate <= 1 ? (rate * 100).toFixed(1) : rate.toFixed(1)) + '%' : '—';
         return '<div class="rank-row"><span class="rank-no">' + (i + 1) + '</span><span class="avatar">' + esc(name.slice(0, 1)) + '</span><div class="rank-info"><b>' + name + '</b><span>注数 ' + (r.bets || 0) + ' · 命中 ' + (r.hits || 0) + '</span></div><div class="rank-val"><b>' + rateTxt + '</b><span>连中 ' + (r.streak || 0) + '</span></div></div>';
       }).join('');
-    }).catch(function (e) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">加载失败：' + esc(String(e && e.message || '接口异常')) + '</div>'; });
+    }).catch(function (e) { try{console.warn('[rank] load failed',e&&e.message);}catch(x){} box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无排行数据</div>'; });
   }
   function rankPageLegacy() {
     var top = RANKS.slice(0, 3);
@@ -1121,13 +1131,19 @@
     var chips = ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('');
     var g = state.games[historyGame];
     var rows = (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
-    if (!rows) rows = '<tr><td colspan="4">' + emptyState('正在读取主站数据…') + '</td></tr>';
+    if (!rows) rows = '<tr><td colspan="4">' + emptyState('暂无数据') + '</td></tr>';
     return catTabs('history') + '<div class="page-head"><div><div class="page-kicker">RESULTS</div><h1 class="page-title">开奖记录</h1><div class="page-sub">主站真实数据 · 当前可获取 ' + ((g && g.history.length) || 0) + ' 期</div></div><span class="demo-pill">REAL</span></div>' +
       '<div class="chips">' + chips + '</div><div style="padding:0 10px"><div class="table-scroll"><table class="hist"><thead><tr><th>期号</th><th>彩种</th><th>开奖号码</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
       '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="更多记录为演示入口">加载更多</button></div><div class="mini-note">主站当前可获取近 ' + ((g && g.history.length) || 0) + ' 期；开奖号码与主站一致。</div>';
   }
   function trendPage() {
     var g = state.games[historyGame] || state.games.newhk;
+    if (!g || !g.history || !g.history.length) {
+      return catTabs('trend') + '<div class="page-head"><div><div class="page-kicker">TREND</div><h1 class="page-title">号码走势</h1><div class="page-sub">' + esc(DEFS[historyGame].name) + ' · 近 12 期</div></div><span class="demo-pill">REAL</span></div>' +
+        '<div class="chips">' + ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('') + '</div>' +
+        '<div class="trend-panel">' + emptyState('暂无数据') + '</div>' +
+        '<div class="mini-note">走势基于主站近 12 期真实开奖号码计算。</div>';
+    }
     var counts = { '红':0,'蓝':0,'绿':0 }, total = 0;
     (g && g.history || []).slice(0, 12).forEach(function (h) { h.nums.forEach(function (b) { counts[colorOf(b.c)]++; total++; }); });
     total = Math.max(1, total);
@@ -2135,7 +2151,16 @@
     startBanner();
 
   }
-  function showToast(msg) { var el = $('#toast'); if (!el) return; el.textContent = msg || '演示功能，敬请期待'; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2200); }
+  function showToast(msg) {
+    var el = $('#toast'); if (!el) return;
+    var text = msg || '演示功能，敬请期待';
+    var key = 'toastAt:' + noticeHash(text), now = Date.now();
+    var prev = 0; try { prev = Number(localStorage.getItem(key)) || 0; } catch (e) {}
+    if (now - prev < 30000) return;
+    try { localStorage.setItem(key, String(now)); } catch (e) {}
+    el.textContent = text; el.classList.add('show'); clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2200);
+  }
   function showModal(msg) { var m = $('#modal'); if (!m) return; $('#modal-body').textContent = msg || '当前为展示站点，不提供真实交易或账户服务。'; m.hidden = false; modalOpen = true; }
   function closeModal() { var m = $('#modal'); if (m) m.hidden = true; modalOpen = false; }
   function selectionWins(s, draw) {
@@ -2202,7 +2227,7 @@
     if (e.target.closest('[data-cancel-abort]')) { closeCancelSheet(); return; }
     if (e.target.closest('[data-cancel-confirm]')) { doCancel(); return; }
     if (e.target.id === 'cancelSheet') { closeCancelSheet(); return; }
-    if (e.target.closest('[data-dismiss-reg]')) { try { sessionStorage.removeItem('xcRegZero'); } catch (x) {} regZeroNotice = false; var bn = document.querySelector('[data-reg-banner]'); if (bn) { bn.classList.add('dismissed'); bn.setAttribute('aria-hidden', 'true'); } return; }
+    if (e.target.closest('[data-dismiss-reg]')) { try { sessionStorage.removeItem('xcRegZero'); } catch (x) {} regZeroNotice = false; var bn = document.querySelector('[data-reg-banner]'); if (bn) { dismissNotice(bn.getAttribute('data-notice-id')); bn.classList.add('dismissed'); bn.setAttribute('aria-hidden', 'true'); } return; }
     if (e.target.closest('[data-retry-me]')) { initAuth(); return; }
     var retry = e.target.closest('[data-retry]');
     if (retry) { syncFastIssue(retry.getAttribute('data-retry'), true); return; }
