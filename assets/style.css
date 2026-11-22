@@ -1135,3 +1135,39 @@ body.dark-theme .rr-right::before{content:none !important;}
 
 .my-bet-top em.ok{color:#1FA85C;font-style:normal;font-size:12px;font-weight:700;}
 .my-bet-top em.no{color:#999;font-style:normal;font-size:12px;}
+
+
+/* Phase L19：深色头部返工（直角/零间距/单线分割/右栏居中） */
+.race-result{display:flex;gap:0 !important;padding:0 !important;background:#fff;border-radius:0 !important;box-shadow:none !important;overflow:hidden;border:0 !important;}
+.rr-left{flex:1 1 auto;min-width:0;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;padding:0 !important;display:flex;flex-direction:column;gap:0 !important;}
+.rr-issue{padding:0.25rem 0;border-bottom:1px solid #e5e5e5;text-align:center;width:100%;margin:0;font-size:0.975rem;color:#B00016;line-height:1.3rem;}
+.rr-nums{display:flex !important;gap:0 !important;width:100%;max-width:none !important;margin:0 !important;border-bottom:1px solid #e5e5e5;}
+.rr-nums .nbox{flex:1 1 0 !important;width:auto !important;max-width:none !important;height:1.72rem;aspect-ratio:auto;border-radius:0 !important;border:0 !important;border-right:1px solid #e5e5e5 !important;box-shadow:none !important;text-shadow:none !important;font-size:0.95rem;}
+.rr-nums .nbox:last-child{border-right:0 !important;}
+.rr-labels{display:flex !important;gap:0 !important;width:100% !important;max-width:none !important;margin:0 !important;}
+.rr-labels .lbox{flex:1 1 0;min-width:0;height:1.72rem;border-radius:0 !important;border:0 !important;border-right:1px solid #e5e5e5 !important;background:transparent;color:#999;font-size:0.95rem;padding:0 2px;display:flex;align-items:center;justify-content:center;white-space:nowrap;}
+.rr-labels .lbox.wide{flex:1.4 1 0;font-size:0.7rem;}
+.rr-labels .lbox:last-child{border-right:0 !important;}
+.rr-right{flex:0 0 auto !important;width:auto !important;min-width:6.2rem;background:transparent !important;border:0 !important;border-left:1px solid #e5e5e5 !important;border-radius:0 !important;box-shadow:none !important;padding:0 0.6rem 0.5rem 0.6rem !important;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0.375rem;text-align:center;}
+.rr-right .rr-next{font-size:0.75rem;line-height:1.1;white-space:nowrap;color:#999;}
+.rr-right .rr-next i{font-size:0.6875rem;}
+.rr-right .rr-cd{font-size:1.25rem;line-height:1.2;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;padding-bottom:0.5rem;}
+body.dark-theme .race-result,body.dark-theme .rr-left,body.dark-theme .rr-right{background:#1b1b1b !important;color:#eaeaea !important;}
+body.dark-theme .rr-issue{color:#eaeaea !important;border-bottom-color:#2a2a2a !important;}
+body.dark-theme .rr-nums,body.dark-theme .rr-labels{border-color:#2a2a2a !important;}
+body.dark-theme .rr-nums .nbox{border-right-color:#2a2a2a !important;}
+body.dark-theme .rr-labels .lbox{border-right-color:#2a2a2a !important;color:#bbb;}
+body.dark-theme .rr-right{border-left-color:#2a2a2a !important;}
+body.dark-theme .rr-right .rr-next,body.dark-theme .rr-right .rr-cd{color:#eaeaea;}
+
+
+/* Phase L19b：右栏垂直居中与不裁切 */
+.race-result{overflow:visible !important;}
+.rr-right{padding:8px 9.6px !important;justify-content:center !important;gap:6px !important;}
+.rr-cd{padding-bottom:0 !important;margin:0 !important;}
+.rr-right .rr-next{line-height:1.15;}
+
+
+/* Phase L19c：标签文字紧凑不贴边 */
+.rr-labels .lbox{padding:0 3px !important;font-size:0.9rem;letter-spacing:0;}
+.rr-labels .lbox.wide{font-size:0.68rem;}
