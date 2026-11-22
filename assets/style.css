@@ -1670,3 +1670,7 @@ body.dark-theme .hist th,body.dark-theme .hist td{background:#1b1b1b !important;
   .k3-head .k3-die{width:28px;height:28px;flex-basis:28px;}
   .k3-head .k3-die i{width:4px;height:4px;}
 }
+
+/* K3 dice: fixed colors independent of theme */
+.k3-die{filter:none !important;background-blend-mode:normal;color-scheme:light;}
+.k3-die i{filter:none !important;background-blend-mode:normal;}
