@@ -1653,3 +1653,20 @@ body.dark-theme .hist th,body.dark-theme .hist td{background:#1b1b1b !important;
 .k3-layout{min-height:0;}
 .k3-cats{min-height:0;}
 .k3-main{min-height:0;}
+
+/* K3 3D dice: ivory body, inset light/dark, red/blue/black pips */
+.k3-res-dice,.k3-dice3{perspective:600px;}
+.k3-die{width:31.188px;height:31.188px;flex:0 0 31.188px;border:0;border-radius:12%;background:linear-gradient(145deg,#ffffff 0%,#f2f0ea 60%,#dcd8cf 100%);box-shadow:inset 0 2px 3px #fff,inset 0 -3px 5px rgba(0,0,0,.12),0 2px 4px rgba(0,0,0,.14);transform:rotateX(8deg) rotateY(-6deg);transform-style:preserve-3d;box-sizing:border-box;overflow:visible;}
+.k3-die i{position:absolute;width:5px;height:5px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 34% 28%,#fff 0 7%,var(--pip,#222) 34%,var(--pip-dark,#000) 100%);box-shadow:inset 0 1px 1px rgba(255,255,255,.5),inset 0 -1px 1px rgba(0,0,0,.4);}
+.k3-die.d1 i,.k3-die.d4 i{--pip:#e02020;--pip-dark:#7f0b0b;}
+.k3-die.d3 i,.k3-die.d6 i{--pip:#1b4fd8;--pip-dark:#0b267a;}
+.k3-die.d2 i,.k3-die.d5 i{--pip:#222;--pip-dark:#000;}
+.k3-head .k3-die{width:34px;height:34px;flex:0 0 34px;border:0;background:linear-gradient(145deg,#ffffff 0%,#f2f0ea 60%,#dcd8cf 100%);border-radius:12%;box-shadow:inset 0 2px 3px #fff,inset 0 -3px 5px rgba(0,0,0,.12),0 2px 4px rgba(0,0,0,.14);}
+.k3-head .k3-die i{width:5px;height:5px;}
+body.dark-theme .k3-die{box-shadow:inset 0 2px 3px #fff,inset 0 -3px 5px rgba(0,0,0,.24),0 3px 7px rgba(0,0,0,.5);}
+@media (max-width:360px){
+  .k3-die{width:24px;height:24px;flex-basis:24px;}
+  .k3-die i{width:4px;height:4px;}
+  .k3-head .k3-die{width:28px;height:28px;flex-basis:28px;}
+  .k3-head .k3-die i{width:4px;height:4px;}
+}
