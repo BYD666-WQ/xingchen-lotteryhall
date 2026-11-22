@@ -550,6 +550,7 @@
         if (rl.resetOnLogout != null) window.LH_RULES.resetOnLogout = !!rl.resetOnLogout;
       }
     } catch (e) { /* 失败保留 config/games.js 静态兜底 */ }
+    try { if (document.getElementById('view')) render(true); } catch (e) {}
   }
   function updateRTStatus(s, degraded) {
     rtState.s = s; rtState.degraded = !!degraded;
@@ -1335,11 +1336,28 @@
     var main;
     if (cat === '特码') {
       var odds = def.specialOdds || 47.3, grid = '';
+      var zf = betState.sixZodiac || '';
       for (var i = 1; i <= 49; i++) {
         var key = pad(i);
+        if (zf && attrFor(i).z !== zf) continue;
         grid += '<button type="button" class="six-cell ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + key + '" data-odds="' + odds + '">' + sixBall(i) + '<em class="six-odds">' + fmtOdds(odds) + '</em></button>';
       }
-      main = '<div class="six-title">特码</div><div class="six-zodiac-strip">' + SIX_ZODIAC.map(function (z) { return '<button type="button" class="six-ztab">' + z + '</button>'; }).join('') + '</div><div class="six-grid">' + grid + '</div>';
+      main = '<div class="six-title">特码</div><div class="six-zodiac-strip">' + SIX_ZODIAC.map(function (z) { return '<button type="button" class="six-ztab ' + (zf === z ? 'on' : '') + '" data-six-zodiac="' + z + '">' + z + '</button>'; }).join('') + '</div><div class="six-grid">' + grid + '</div>';
+    } else if ((cat === '一肖' || cat === '特肖')) {
+      var o1 = ODDS.oneZodiac || 2.0;
+      main = '<div class="six-title">一肖</div><div class="six-opts">' + SIX_ZODIAC.map(function (z) {
+        return '<button type="button" class="six-opt ' + (isSel('zx:' + z) ? 'on' : '') + '" data-bet="zx:' + z + '" data-label="' + z + '" data-odds="' + o1 + '"><span>' + z + '</span><em>' + fmtOdds(o1) + '</em></button>';
+      }).join('') + '</div>';
+    } else if (cat === '两面') {
+      var o2 = ODDS.twoSide || 1.96;
+      main = '<div class="six-title">两面</div><div class="six-opts">' + ['大','小','单','双'].map(function (z) {
+        return '<button type="button" class="six-opt ' + (isSel('lm:' + z) ? 'on' : '') + '" data-bet="lm:' + z + '" data-label="' + z + '" data-odds="' + o2 + '"><span>' + z + '</span><em>' + fmtOdds(o2) + '</em></button>';
+      }).join('') + '</div>';
+    } else if (cat === '色波') {
+      var o3 = ODDS.color || 2.8;
+      main = '<div class="six-title">色波</div><div class="six-opts">' + [['红波','rb'],['蓝波','bb'],['绿波','gb']].map(function (z) {
+        return '<button type="button" class="six-opt ' + (isSel('bo:' + z[0]) ? 'on' : '') + '" data-bet="bo:' + z[0] + '" data-label="' + z[0] + '" data-odds="' + o3 + '"><span>' + z[0] + '</span><em>' + fmtOdds(o3) + '</em></button>';
+      }).join('') + '</div>';
     } else {
       main = '<div class="six-title">' + esc(cat) + '</div><div class="six-placeholder">' + esc(cat) + ' · 待开放</div>';
     }
@@ -1607,6 +1625,8 @@
       if (idx >= 0) betState.raceOpen.splice(idx, 1); else betState.raceOpen.push(rk);
       render(true); return;
     }
+    var zt = e.target.closest('[data-six-zodiac]');
+    if (zt) { var zz = zt.getAttribute('data-six-zodiac'); betState.sixZodiac = (betState.sixZodiac === zz ? '' : zz); render(true); return; }
     var sc = e.target.closest('[data-six-cat]');
     if (sc) { betState.sixCat = sc.getAttribute('data-six-cat'); render(true); return; }
     if (e.target.closest('[data-dragon-n]') || (e.target.tagName === 'SELECT' && e.target.hasAttribute('data-dragon-n'))) {
