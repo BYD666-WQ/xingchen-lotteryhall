@@ -101,7 +101,8 @@
     return { time: String(d.time || def.time), hour: parseInt(parts[0], 10) || 0, minute: parseInt(parts[1], 10) || 0, days: (d.days && d.days.length ? d.days : def.days).map(Number) };
   }
   function nextDrawAt(game, now) {
-    now = now || new Date(); var cfg = game.timeCfg;
+    if (!game) return null;
+    now = now || new Date(); var cfg = game.timeCfg; if (!cfg) return null;
     for (var i = 0; i < 15; i++) {
       var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, cfg.hour, cfg.minute, 0, 0);
       if (d.getTime() <= now.getTime()) continue;
@@ -111,6 +112,7 @@
     return null;
   }
   function countdownText(game) {
+    if (!game) return '--:--:--';
     var d = game.mockNext ? new Date(game.mockNext) : nextDrawAt(game); if (!d) return '--:--:--';
     var left = Math.max(0, Math.floor((d.getTime() - Date.now()) / 1000));
     var days = Math.floor(left / 86400), hours = Math.floor(left % 86400 / 3600);
@@ -235,6 +237,7 @@
     return '';
   }
   function betZeroBanner() {
+    if (!currentUser()) return '<div class="reg-zero-banner bet-zero">未登录 · 可浏览赔率，<a href="#/login">登录后投注</a></div>';
     if ((parseInt(points, 10) || 0) > 0) return '';
     return '<div class="reg-zero-banner bet-zero">积分不足，请联系管理员加分后再投注</div>';
   }
@@ -520,8 +523,8 @@
         if (ob.flatZodiac != null) ODDS.specialZodiac = Number(ob.flatZodiac);
         if (ob.horse != null) ODDS.horse = Number(ob.horse);
         if (ob.specialNewMo != null) { DEFS.newmo = DEFS.newmo || {}; DEFS.newmo.specialOdds = Number(ob.specialNewMo); }
-        if (ob.specialNewHk != null) { DEFS.newhk = DEFS.newhk || {}; DEFS.newhk.specialOdds = Number(ob.specialNewHk); }
-        if (ob.specialHk != null) { DEFS.hk = DEFS.hk || {}; DEFS.hk.specialOdds = Number(ob.specialHk); }
+        if (ob.specialNewHk != null) { DEFS.newhk = DEFS.newhk || {}; DEFS.newhk.specialOdds = Number(ob.specialNewHk); DEFS.hk = DEFS.hk || {}; DEFS.hk.specialOdds = Number(ob.specialNewHk); }
+        if (ob.specialHk != null) { DEFS['fast-mark6-1'] = DEFS['fast-mark6-1'] || {}; DEFS['fast-mark6-1'].specialOdds = Number(ob.specialHk); DEFS['fast-mark6-5'] = DEFS['fast-mark6-5'] || {}; DEFS['fast-mark6-5'].specialOdds = Number(ob.specialHk); }
         if (ob.zodiacNewMo != null) { DEFS.newmo = DEFS.newmo || {}; DEFS.newmo.zodiacOdds = Number(ob.zodiacNewMo); }
         var f = ob.fast;
         if (f && typeof f === 'object') {
@@ -778,7 +781,8 @@
     return { time: String(d.time || def.time), hour: parseInt(parts[0], 10) || 0, minute: parseInt(parts[1], 10) || 0, days: (d.days && d.days.length ? d.days : def.days).map(Number) };
   }
   function nextDrawAt(game, now) {
-    now = now || new Date(); var cfg = game.timeCfg;
+    if (!game) return null;
+    now = now || new Date(); var cfg = game.timeCfg; if (!cfg) return null;
     for (var i = 0; i < 15; i++) {
       var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, cfg.hour, cfg.minute, 0, 0);
       if (d.getTime() <= now.getTime()) continue;
@@ -788,6 +792,7 @@
     return null;
   }
   function countdownText(game) {
+    if (!game) return '--:--:--';
     var d = game.mockNext ? new Date(game.mockNext) : nextDrawAt(game); if (!d) return '--:--:--';
     var left = Math.max(0, Math.floor((d.getTime() - Date.now()) / 1000));
     var days = Math.floor(left / 86400), hours = Math.floor(left % 86400 / 3600);
@@ -1361,11 +1366,11 @@
       '<div class="rr-issue" data-audit="title">第 ' + shortIssue(last.issue) + ' 期开奖结果</div>' +
       '<div class="rr-nums six-rr-nums">' + balls + '</div>' +
       '<div class="rr-labels six-rr-labels">' + zods + '</div></div>' +
-      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + (g.nextIssue || last.issue + 1) + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
+      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + ((g && g.nextIssue) || last.issue + 1) + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
     var cats = SIX_CATS.map(function (c) { return '<button type="button" class="six-cat ' + (cat === c ? 'on' : '') + '" data-six-cat="' + c + '">' + c + '</button>'; }).join('');
     var main;
     if (cat === '特码') {
-      var odds = def.specialOdds || 47.3, grid = '';
+      var odds = Number(def.specialOdds) || Number(ODDS.special) || 0, grid = '';
       var zf = betState.sixZodiac || '';
       for (var i = 1; i <= 49; i++) {
         var key = pad(i);
@@ -1504,8 +1509,6 @@
   function render(keepScroll) {
     settleBets();
     var r = currentRoute(), view = $('#view'); if (!view) return;
-    if (r.name === 'bet' && !currentUser() && !authReady) { view.innerHTML = '<div class="data-empty" style="padding:50px 20px">正在验证登录状态…</div>'; return; }
-    if (r.name === 'bet' && !currentUser()) { AUTH_NEXT = '#/bet/' + r.id; location.hash = '#/login'; return; }
     if (r.name === 'bet') betState.game = r.id;
     document.body.classList.toggle('bet-mode', r.name === 'bet');
     document.body.classList.toggle('race-mode', r.name === 'bet' && !!DEFS[r.id] && !!DEFS[r.id].racing);
