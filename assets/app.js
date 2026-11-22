@@ -285,6 +285,25 @@
       return '<a class="home-cell" href="#/bet/' + id + '">' + icon + '<span class="home-name">' + esc(name) + '</span></a>';
     }).join('') + '</div>';
   }
+  var LOGO_MAP = { '极速赛车':'极速赛车.png', '香港六合彩':'香港六合彩.png', '新澳门六合彩':'新澳门六合彩.png', '澳门六合彩':'澳门六合彩.png', '极速时时彩':'极速时时彩.png', '极速六合彩':'极速六合彩.png' };
+  var LOGO_HAS_HOT = { '极速赛车':1, '极速时时彩':1, '极速六合彩':1, '澳门六合彩':1 };
+  function decorateLogos() {
+    try {
+      document.querySelectorAll('.game-cell').forEach(function (cell) {
+        var circle = cell.querySelector('.game-circle'); if (!circle || circle.querySelector('.game-logo')) return;
+        var nameEl = cell.querySelector('.game-name'); var name = (nameEl ? nameEl.textContent : '').trim();
+        var file = LOGO_MAP[name]; if (!file) return;
+        var img = document.createElement('img');
+        img.className = 'game-logo'; img.alt = ''; img.src = './assets/icons/' + encodeURIComponent(file);
+        img.onload = function () {
+          circle.classList.add('has-logo'); circle.setAttribute('data-logo', '1');
+          if (LOGO_HAS_HOT[name]) { var h = circle.querySelector('.game-hot'); if (h) h.remove(); }
+        };
+        img.onerror = function () { img.remove(); };
+        circle.appendChild(img);
+      });
+    } catch (e) {}
+  }
   function markHotIcons() {
     try {
       [['#/bet/fast-race-1', 'HOT'], ['#/bet/hk', 'HOT'], ['#/bet/newmo', 'HOT']].forEach(function (p) {
@@ -1628,7 +1647,7 @@
     else if (r.name === 'login') view.innerHTML = loginPage();
     else if (r.name === 'rank') { view.innerHTML = rankPage(); loadRankLive(); }
     else view.innerHTML = ROUTES[r.name] ? ROUTES[r.name]() : hallPage();
-    setBottomTab(r.name); markHotIcons();
+    setBottomTab(r.name); markHotIcons(); decorateLogos();
     var ttl = r.name === 'game' ? DEFS[r.id].name + '开奖' : (r.name === 'bet' ? (DEFS[r.id].name + '模拟投注') : (r.name === 'howto' ? '玩法说明' : (r.name === 'login' ? '登录 / 注册' : TITLES[r.name])));
     document.title = ttl + ' · 彩票大厅（演示）';
     if (!keepScroll) {
