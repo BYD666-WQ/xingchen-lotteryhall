@@ -75,6 +75,7 @@
     var body = opts.body || null;
     if (!CFG.enabled || !CFG.functionId) return mockCall(path, opts);
     var fns = window.__lhFunctions;
+    if (!fns && !window.Appwrite) return Promise.reject(new Error('SDK 加载中'));
     if (!fns) {
       var client = new window.Appwrite.Client().setEndpoint(CFG.endpoint).setProject(CFG.project);
       fns = window.__lhFunctions = new window.Appwrite.Functions(client);
