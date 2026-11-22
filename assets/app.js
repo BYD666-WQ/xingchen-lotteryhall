@@ -1192,19 +1192,19 @@
       var t = has ? nums[i] : null;
       var raw = t ? parseInt(t.c, 10) : 0;
       var c = (raw >= 1 && raw <= 10) ? raw : (i + 1);
-      boxes += '<span class="nbox" style="--rc:' + (RACING_COLORS[pad(c)] || '#999') + '">' + (has ? pad(c) : '—') + '</span>';
+      boxes += '<span class="nbox" data-audit="num" style="--rc:' + (RACING_COLORS[pad(c)] || '#999') + '">' + (has ? pad(c) : '—') + '</span>';
     }
     var last = (g && g.last && g.last.issue) || 1000001, next = (g && g.nextIssue) || (last + 1);
     var sm = raceSummary(has ? nums : []);
-    var dragons = has ? sm.dragon.map(function (d) { return '<span class="lbox">' + d + '</span>'; }).join('') : '<span class="lbox">—</span>';
-    var labelRow = '<div class="rr-labels"><span class="lbox wide">和值 ' + (has ? sm.sum : '—') + '</span><span class="lbox">' + (has ? sm.big : '—') + '</span><span class="lbox">' + (has ? sm.odd : '—') + '</span>' + dragons + '</div>';
+    var dragons = has ? sm.dragon.map(function (d) { return '<span class="lbox" data-audit="label">' + d + '</span>'; }).join('') : '<span class="lbox">—</span>';
+    var labelRow = '<div class="rr-labels"><span class="lbox wide" data-audit="label">和值 ' + (has ? sm.sum : '—') + '</span><span class="lbox" data-audit="label">' + (has ? sm.big : '—') + '</span><span class="lbox" data-audit="label">' + (has ? sm.odd : '—') + '</span>' + dragons + '</div>';
     return '<div class="race-head">' +
       '<span class="race-title">' + esc(def.raceTitle || '极速赛车') + ' »</span>' +
       '<span class="race-mode">信用玩法 ▾</span>' +
       '<span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
-      '<div class="race-result"><div class="rr-left"><div class="rr-issue">第 ' + last + ' 期开奖结果</div>' +
+      '<div class="race-result" data-audit="head-wrap"><div class="rr-left"><div class="rr-issue" data-audit="title">第 ' + last + ' 期开奖结果</div>' +
       '<div class="rr-nums">' + boxes + '</div>' + labelRow + '</div>' +
-      '<div class="rr-right"><div class="rr-next">' + next + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
+      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + next + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
       '<div class="race-balance"><span>余额：<b>' + (parseInt(points, 10) || 0) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
   }
   function menuHtml() {
@@ -1353,15 +1353,15 @@
     (last.nums || []).slice(0, 7).forEach(function (x, idx) {
       var n = parseInt(x.c, 10), col = x.color || colorOf(n);
       var hex = col === '红' ? '#E23A3A' : (col === '蓝' ? '#1F6FEB' : '#1FA85C');
-      balls += '<span class="nbox six-nbox' + (idx === 6 ? ' special' : '') + '" style="background:' + hex + '">' + pad(n) + '</span>';
-      zods += '<span class="lbox six-lbox">' + (x.z || '') + '·' + col + '</span>';
+      balls += '<span class="nbox six-nbox" data-audit="num"' + (idx === 6 ? ' special' : '') + '" style="background:' + hex + '">' + pad(n) + '</span>';
+      zods += '<span class="lbox six-lbox" data-audit="label">' + (x.z || '') + '·' + col + '</span>';
     });
     var head = '<div class="six-head"><span class="race-title">' + esc(def.name) + ' »</span><span class="race-mode">信用玩法 ▾</span><span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
-      '<div class="race-result six-result-head"><div class="rr-left">' +
-      '<div class="rr-issue">第 ' + shortIssue(last.issue) + ' 期开奖结果</div>' +
+      '<div class="race-result six-result-head" data-audit="head-wrap"><div class="rr-left">' +
+      '<div class="rr-issue" data-audit="title">第 ' + shortIssue(last.issue) + ' 期开奖结果</div>' +
       '<div class="rr-nums six-rr-nums">' + balls + '</div>' +
       '<div class="rr-labels six-rr-labels">' + zods + '</div></div>' +
-      '<div class="rr-right"><div class="rr-next">' + (g.nextIssue || last.issue + 1) + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
+      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + (g.nextIssue || last.issue + 1) + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
     var cats = SIX_CATS.map(function (c) { return '<button type="button" class="six-cat ' + (cat === c ? 'on' : '') + '" data-six-cat="' + c + '">' + c + '</button>'; }).join('');
     var main;
     if (cat === '特码') {
