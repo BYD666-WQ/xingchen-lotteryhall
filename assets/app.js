@@ -1139,18 +1139,17 @@
   function racingHeaderHtml(def, g) {
     var nums = (g && g.last && g.last.nums) || [];
     var has = nums.length >= 7;
-    var boxes = '', zods = '';
+    var boxes = '';
     for (var i = 0; i < 10; i++) {
       var t = has ? nums[i] : null;
       var raw = t ? parseInt(t.c, 10) : 0;
       var c = (raw >= 1 && raw <= 10) ? raw : (i + 1);
-      var z = (t && t.z) ? t.z : raceZod(c);
       boxes += '<span class="nbox" style="--rc:' + (RACING_COLORS[pad(c)] || '#999') + '">' + (has ? pad(c) : '—') + '</span>';
-      zods += '<i>' + (has ? z : '—') + '</i>';
     }
     var last = (g && g.last && g.last.issue) || 1000001, next = (g && g.nextIssue) || (last + 1);
     var sm = raceSummary(has ? nums : []);
-    var dragons = has ? sm.dragon.map(function (d) { return '<span class="dbox">' + d + '</span>'; }).join('') : '<span class="dbox">—</span>';
+    var dragons = has ? sm.dragon.map(function (d) { return '<span class="lbox">' + d + '</span>'; }).join('') : '<span class="lbox">—</span>';
+    var labelRow = '<div class="rr-labels"><span class="lbox wide">和值 ' + (has ? sm.sum : '—') + '</span><span class="lbox">' + (has ? sm.big : '—') + '</span><span class="lbox">' + (has ? sm.odd : '—') + '</span>' + dragons + '</div>';
     return '<div class="race-head">' +
       '<span class="race-title">' + esc(def.raceTitle || '极速赛车') + ' »</span>' +
       '<span class="race-mode">信用玩法 ▾</span>' +
@@ -1158,7 +1157,7 @@
       '<div class="race-result"><div class="rr-top"><div class="rr-issue">第 ' + last + ' 期开奖结果</div>' +
       '<div class="rr-sum-side"><span>和值 <b>' + (has ? sm.sum : '—') + '</b></span><span>大小 <b>' + (has ? sm.big : '—') + '</b></span><span>单双 <b>' + (has ? sm.odd : '—') + '</b></span></div>' +
       '<div class="rr-right"><div class="rr-next">' + next + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
-      '<div class="rr-nums">' + boxes + '</div><div class="rr-zods">' + zods + '</div><div class="rr-dragons">' + dragons + '</div></div>' +
+      '<div class="rr-nums">' + boxes + '</div>' + labelRow + '</div>' +
       '<div class="race-balance"><span>余额：<b>' + (parseInt(points, 10) || 0) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
   }
   function racingPage(id, def, g) {
