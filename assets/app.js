@@ -529,11 +529,21 @@
       var ob = (res && (res.oddsByPlay || (res.odds && res.odds.oddsByPlay))) || null;
       if (ob && typeof ob === 'object') {
         if (ob.oneZodiac != null) ODDS.oneZodiac = Number(ob.oneZodiac);
-        if (ob.flatZodiac != null) ODDS.specialZodiac = Number(ob.flatZodiac);
+        if (ob.flatZodiac != null) ODDS.specialZodiac = Number(ob.flatZodiac && ob.flatZodiac.default != null ? ob.flatZodiac.default : ob.flatZodiac);
         if (ob.horse != null) ODDS.horse = Number(ob.horse);
+        if (ob.colorWave != null) SIX_ODDS.colorWave = Number(ob.colorWave);
+        if (ob.specialZodiac != null) {
+          if (typeof ob.specialZodiac === 'object') { if (ob.specialZodiac.horse != null) SIX_ODDS.specialZodiac.horse = Number(ob.specialZodiac.horse); if (ob.specialZodiac.default != null) SIX_ODDS.specialZodiac.other = Number(ob.specialZodiac.default); if (ob.specialZodiac.other != null) SIX_ODDS.specialZodiac.other = Number(ob.specialZodiac.other); }
+          else { var sz = Number(ob.specialZodiac); if (sz) { SIX_ODDS.specialZodiac.other = sz; } }
+        }
+        if (ob.flatZodiac != null) {
+          if (typeof ob.flatZodiac === 'object') { if (ob.flatZodiac.horse != null) SIX_ODDS.flatZodiac.horse = Number(ob.flatZodiac.horse); if (ob.flatZodiac.default != null) SIX_ODDS.flatZodiac.other = Number(ob.flatZodiac.default); if (ob.flatZodiac.other != null) SIX_ODDS.flatZodiac.other = Number(ob.flatZodiac.other); }
+          else { var fz = Number(ob.flatZodiac); if (fz) SIX_ODDS.flatZodiac.other = fz; }
+        }
+        if (ob.horse != null) SIX_ODDS.flatZodiac.horse = Number(ob.horse);
         if (ob.specialNewMo != null) { DEFS.newmo = DEFS.newmo || {}; DEFS.newmo.specialOdds = Number(ob.specialNewMo); }
         if (ob.specialNewHk != null) { DEFS.newhk = DEFS.newhk || {}; DEFS.newhk.specialOdds = Number(ob.specialNewHk); DEFS.hk = DEFS.hk || {}; DEFS.hk.specialOdds = Number(ob.specialNewHk); }
-        if (ob.specialHk != null) { DEFS['fast-mark6-1'] = DEFS['fast-mark6-1'] || {}; DEFS['fast-mark6-1'].specialOdds = Number(ob.specialHk); DEFS['fast-mark6-5'] = DEFS['fast-mark6-5'] || {}; DEFS['fast-mark6-5'].specialOdds = Number(ob.specialHk); }
+        if (ob.special != null) { DEFS['fast-mark6-1'] = DEFS['fast-mark6-1'] || {}; DEFS['fast-mark6-1'].specialOdds = Number(ob.special); DEFS['fast-mark6-5'] = DEFS['fast-mark6-5'] || {}; DEFS['fast-mark6-5'].specialOdds = Number(ob.special); } else if (ob.specialHk != null) { DEFS['fast-mark6-1'] = DEFS['fast-mark6-1'] || {}; DEFS['fast-mark6-1'].specialOdds = Number(ob.specialHk); DEFS['fast-mark6-5'] = DEFS['fast-mark6-5'] || {}; DEFS['fast-mark6-5'].specialOdds = Number(ob.specialHk); }
         if (ob.zodiacNewMo != null) { DEFS.newmo = DEFS.newmo || {}; DEFS.newmo.zodiacOdds = Number(ob.zodiacNewMo); }
         var f = ob.fast;
         if (f && typeof f === 'object') {
@@ -1355,6 +1365,7 @@
       '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
     return topHtml + bottom;
   }
+  var SIX_ODDS = { colorWave: 2.7, specialZodiac: { horse: 9.5, other: 11.7 }, flatZodiac: { horse: 1.8, other: 2 } };
   var SIX_CATS = ['特码','两面','色波','特肖','正码','正特','正码1-6','连码','平特一肖','尾数','合肖','自选不中','连肖','尾数连','龙虎斗','长龙'];
   var SIX_ZODIAC = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
   function sixBall(n) {
@@ -1389,19 +1400,24 @@
       }
       main = '<div class="six-title">特码</div><div class="six-zodiac-strip">' + SIX_ZODIAC.map(function (z) { return '<button type="button" class="six-ztab ' + (zf === z ? 'on' : '') + '" data-six-zodiac="' + z + '">' + z + '</button>'; }).join('') + '</div><div class="six-grid">' + grid + '</div>';
     } else if ((cat === '一肖' || cat === '特肖')) {
-      var o1 = ODDS.oneZodiac || 2.0;
-      main = '<div class="six-title">一肖</div><div class="six-opts">' + SIX_ZODIAC.map(function (z) {
-        return '<button type="button" class="six-opt ' + (isSel('zx:' + z) ? 'on' : '') + '" data-bet="zx:' + z + '" data-label="' + z + '" data-odds="' + o1 + '"><span>' + z + '</span><em>' + fmtOdds(o1) + '</em></button>';
+      main = '<div class="six-title">特肖</div><div class="six-opts">' + SIX_ZODIAC.map(function (z) {
+        var oo = (z === '马' ? SIX_ODDS.specialZodiac.horse : SIX_ODDS.specialZodiac.other);
+        return '<button type="button" class="six-opt ' + (isSel('zodiac:' + z) ? 'on' : '') + '" data-bet="zodiac:' + z + '" data-label="' + z + '" data-odds="' + oo + '"><span>' + z + '</span><em>' + fmtOdds(oo) + '</em></button>';
       }).join('') + '</div>';
     } else if (cat === '两面') {
       var o2 = ODDS.twoSide || 1.96;
       main = '<div class="six-title">两面</div><div class="six-opts">' + ['大','小','单','双'].map(function (z) {
         return '<button type="button" class="six-opt ' + (isSel('lm:' + z) ? 'on' : '') + '" data-bet="lm:' + z + '" data-label="' + z + '" data-odds="' + o2 + '"><span>' + z + '</span><em>' + fmtOdds(o2) + '</em></button>';
       }).join('') + '</div>';
+    } else if (cat === '平特一肖') {
+      main = '<div class="six-title">平特一肖</div><div class="six-opts">' + SIX_ZODIAC.map(function (z) {
+        var fo = (z === '马' ? SIX_ODDS.flatZodiac.horse : SIX_ODDS.flatZodiac.other);
+        return '<button type="button" class="six-opt ' + (isSel('flat:' + z) ? 'on' : '') + '" data-bet="flat:' + z + '" data-label="' + z + '" data-odds="' + fo + '"><span>' + z + '</span><em>' + fmtOdds(fo) + '</em></button>';
+      }).join('') + '</div>';
     } else if (cat === '色波') {
-      var o3 = ODDS.color || 2.8;
-      main = '<div class="six-title">色波</div><div class="six-opts">' + [['红波','rb'],['蓝波','bb'],['绿波','gb']].map(function (z) {
-        return '<button type="button" class="six-opt ' + (isSel('bo:' + z[0]) ? 'on' : '') + '" data-bet="bo:' + z[0] + '" data-label="' + z[0] + '" data-odds="' + o3 + '"><span>' + z[0] + '</span><em>' + fmtOdds(o3) + '</em></button>';
+      var o3 = SIX_ODDS.colorWave;
+      main = '<div class="six-title">色波</div><div class="six-opts">' + [['红波','red'],['蓝波','blue'],['绿波','green']].map(function (z) {
+        return '<button type="button" class="six-opt ' + (isSel('color:' + z[1]) ? 'on' : '') + '" data-bet="color:' + z[1] + '" data-label="' + z[0] + '" data-odds="' + o3 + '"><span>' + z[0] + '</span><em>' + fmtOdds(o3) + '</em></button>';
       }).join('') + '</div>';
     } else {
       main = '<div class="six-title">' + esc(cat) + '</div><div class="six-placeholder">' + esc(cat) + ' · 待开放</div>';
@@ -1717,6 +1733,9 @@
             if (/^sum:\d{1,2}$/.test(key)) return key;                    // 和值：sum:11
             if (/^combo:\d{1,2}_\d{1,2}$/.test(key)) return key;          // 冠亚组合：combo:1_2
             if (/^r\d{1,2}:(bs|oe):(big|small|odd|even)$/.test(key)) return key; // 名次大小/单双
+            if (/^color:(red|blue|green)$/.test(key)) return key;
+            if (/^zodiac:[\u4e00-\u9fa5]$/.test(key)) return key;
+            if (/^flat:[\u4e00-\u9fa5]$/.test(key)) return key;
             if (key.indexOf('race-') === 0) return key.slice(5);        // 赛车冠军/亚军旧格式
             var m = key.match(/(\d{2})$/);
             return m ? m[1] : String(s.label || s.key);
