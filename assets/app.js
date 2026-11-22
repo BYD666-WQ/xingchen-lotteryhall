@@ -29,6 +29,7 @@
   var BLUE = [3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48];
   var KEY = 'Xc9vF2026';
   var state = { games: {}, config: {}, attrs: {}, win: {}, updated: 0, error: '', loading: false };
+  var homeTab = 'hot';
   var historyGame = 'newhk';
   var countdownTimer = 0;
   var bannerTimer = 0;
@@ -250,8 +251,42 @@
     if ((parseInt(points, 10) || 0) > 0) return '';
     return '<div class="reg-zero-banner bet-zero">积分不足，请联系管理员加分后再投注</div>';
   }
+  var HOME_TABS = [
+    { id:'hot', name:'热门', items:[
+      ['极速赛车','fast-race-1','赛','#e8402a','#ff8a5c','HOT'], ['极速六合彩','fast-mark6-1','六','#e39b38','#ffcf7a'], ['香港六合彩','hk','港','#d94b62','#ff8fa3'],
+      ['新澳门六合彩','newmo','澳','#3d8ed0','#7cc4ff'], ['极速快三','fast-k3','快','#d45f82','#ff9fbe'], ['极速飞艇','fast-airship','艇','#4aa99d','#8fe0d5']
+    ]},
+    { id:'race', name:'赛车飞艇', items:[
+      ['极速赛车','fast-race-1','赛','#e8402a','#ff8a5c','HOT'], ['幸运飞艇','fast-race-5','飞','#4aa99d','#8fe0d5'], ['北京赛车','fast-race-10','北','#7b68c8','#b9a8ff'],
+      ['幸运赛车','fast-race-2','幸','#5a8fd4','#9cc6ff'], ['澳洲幸运10',null,'澳10','#999','#ccc']
+    ]},
+    { id:'fast', name:'极速彩', items:[
+      ['极速时时彩',null,'时','#5a7bd4','#9cb6ff'], ['极速快三','fast-k3','快','#d45f82','#ff9fbe'], ['极速28',null,'28','#d08a3f','#ffc27a'], ['幸运28',null,'28','#c9a23f','#ffe39a']
+    ]},
+    { id:'ssc', name:'时时彩', items:[
+      ['极速时时彩',null,'时','#5a7bd4','#9cb6ff'], ['腾讯分分彩',null,'分','#687bd0','#a8b8ff'], ['极速28',null,'28','#d08a3f','#ffc27a'], ['幸运28',null,'28','#c9a23f','#ffe39a']
+    ]},
+    { id:'six', name:'六合彩', items:[
+      ['香港六合彩','hk','港','#d94b62','#ff8fa3'], ['澳门六合彩',null,'门','#4aa99d','#8fe0d5'], ['新澳门六合彩','newmo','澳','#3d8ed0','#7cc4ff'],
+      ['一分钟六合彩','fast-mark6-1','六','#e39b38','#ffcf7a'], ['5分钟六合彩','fast-mark6-5','5','#d36d55','#ffa58f']
+    ]}
+  ];
+  function homeTabsHtml() {
+    return '<div class="home-tabs">' + HOME_TABS.map(function (t) {
+      return '<button type="button" class="home-tab ' + (homeTab === t.id ? 'on' : '') + '" data-home-tab="' + t.id + '">' + t.name + '</button>';
+    }).join('') + '</div>';
+  }
+  function homeGridHtml() {
+    var tab = HOME_TABS.filter(function (t) { return t.id === homeTab; })[0] || HOME_TABS[0];
+    return '<div class="home-grid">' + tab.items.map(function (it) {
+      var name = it[0], id = it[1], glyph = it[2], c1 = it[3], c2 = it[4], hot = it[5];
+      var icon = '<span class="home-icon" style="--g1:' + c1 + ';--g2:' + c2 + '"><b>' + esc(glyph) + '</b>' + (hot ? '<i class="home-hot">HOT</i>' : '') + '</span>';
+      if (!id) return '<div class="home-cell soon">' + icon + '<span class="home-name">' + esc(name) + '</span><em class="home-soon">即将上线</em></div>';
+      return '<a class="home-cell" href="#/bet/' + id + '">' + icon + '<span class="home-name">' + esc(name) + '</span></a>';
+    }).join('') + '</div>';
+  }
   function hallPage() {
-    return zeroPointsBanner() + banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
+    return zeroPointsBanner() + banner() + notice() + pointsBar() + homeTabsHtml() + homeGridHtml() +
       '<div class="mini-note">数据来自主站只读接口 · 每 30 秒自动刷新 · 仅作演示</div>';
   }
   var SUM_SOURCE = 'guanya'; // 'guanya' 冠亚和（第1+第2）| 'total' 10 个号总和
@@ -952,7 +987,7 @@
     return hallGrid18();
   }
   function hallPage() {
-    return zeroPointsBanner() + banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
+    return zeroPointsBanner() + banner() + notice() + pointsBar() + homeTabsHtml() + homeGridHtml() +
       '<div class="mini-note">数据来自主站只读接口 · 每 30 秒自动刷新 · 仅作演示</div>';
   }
   function mockGame(id) {
@@ -1642,6 +1677,8 @@
     }
   });
   document.addEventListener('click', function (e) {
+    var ht = e.target.closest('[data-home-tab]');
+    if (ht) { homeTab = ht.getAttribute('data-home-tab'); render(true); return; }
     if (e.target.closest('[data-dismiss-reg]')) { try { sessionStorage.removeItem('xcRegZero'); } catch (x) {} regZeroNotice = false; var bn = document.querySelector('[data-reg-banner]'); if (bn) bn.remove(); return; }
     if (e.target.closest('[data-retry-me]')) { initAuth(); return; }
     var retry = e.target.closest('[data-retry]');
