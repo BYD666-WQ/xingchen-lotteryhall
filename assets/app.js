@@ -331,8 +331,8 @@
     setTimeout(function () {
       var el = document.querySelector('[data-loading]');
       if (el) { el.innerHTML = '数据加载失败，请点击重试'; el.setAttribute('data-retry', String(id)); el.classList.add('load-error'); }
-    }, 8000);
-    return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-last card"><div class="data-empty" data-loading>正在读取 ' + esc(def.name) + ' 数据…<div class="load-hint">最长等待 8 秒</div></div></div>';
+    }, 20000);
+    return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-last card"><div class="data-empty" data-loading>正在读取 ' + esc(def.name) + ' 数据…<div class="load-hint">首次加载可能较慢，最长等待 20 秒</div></div></div>';
   }
   function gamePage(id) {
     try { console.info('[gp] ' + id + ' mock=' + (DEFS[id] && DEFS[id].mock)); } catch (e) {}
@@ -658,7 +658,14 @@
             me = { username: (reg2 && reg2.user && reg2.user.username) || uname2, points: (reg2 && reg2.user && reg2.user.points) || 0 };
           } else { throw e2; }
         }
-      } else { throw e; }
+      } else {
+        try {
+          authReady = true;
+          var v = document.getElementById('view');
+          if (v) v.innerHTML = '<div class="data-empty" style="padding:40px 20px">账户数据加载失败（首次可能较慢）<br><button class="btn btn-primary" type="button" data-retry-me style="margin-top:12px">重试</button></div>';
+        } catch (e3) {}
+        return;
+      }
     }
     awRow = { $id: user.$id, username: String((me && me.username) || username || (user && user.name) || '玩家'), points: parseInt(me && me.points, 10) || 0 };
     points = parseInt(awRow.points, 10) || 0;
@@ -1543,6 +1550,7 @@
   });
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-dismiss-reg]')) { try { sessionStorage.removeItem('xcRegZero'); } catch (x) {} regZeroNotice = false; var bn = document.querySelector('[data-reg-banner]'); if (bn) bn.remove(); return; }
+    if (e.target.closest('[data-retry-me]')) { initAuth(); return; }
     var retry = e.target.closest('[data-retry]');
     if (retry) { syncFastIssue(retry.getAttribute('data-retry')); return; }
     if (e.target.closest('[data-menu-close]')) { closeMenu(); return; }
