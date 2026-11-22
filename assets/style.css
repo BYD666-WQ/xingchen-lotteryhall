@@ -1663,7 +1663,7 @@ body.dark-theme .hist th,body.dark-theme .hist td{background:#1b1b1b !important;
 .k3-die.d2 i,.k3-die.d5 i{--pip:#222;--pip-dark:#000;}
 .k3-head .k3-die{width:34px;height:34px;flex:0 0 34px;border:0;background:linear-gradient(145deg,#ffffff 0%,#f2f0ea 60%,#dcd8cf 100%);border-radius:12%;box-shadow:inset 0 2px 3px #fff,inset 0 -3px 5px rgba(0,0,0,.12),0 2px 4px rgba(0,0,0,.14);}
 .k3-head .k3-die i{width:5px;height:5px;}
-body.dark-theme .k3-die{box-shadow:inset 0 2px 3px #fff,inset 0 -3px 5px rgba(0,0,0,.24),0 3px 7px rgba(0,0,0,.5);}
+
 @media (max-width:360px){
   .k3-die{width:24px;height:24px;flex-basis:24px;}
   .k3-die i{width:4px;height:4px;}
