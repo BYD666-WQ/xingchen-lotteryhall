@@ -1742,7 +1742,9 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
   window.addEventListener('hashchange', function () { render(); });
   if (!location.hash) location.hash = '#/lotteryhall';
-  applyTheme(); render(); loadData(true); initAuth(); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
+  applyTheme(); render(); loadData(true); initAuth();
+  [300, 1200, 2500].forEach(function (ms) { setTimeout(function () { try { render(true); } catch (e) {} }, ms); });
+  window.addEventListener('load', function () { try { render(true); } catch (e) {} }); setInterval(function () { if (!document.hidden) loadData(true); }, 30000);
   function refreshPointsAndBets() {
     if (!awUser) return;
     try { refreshPoints(); } catch (e) {}
