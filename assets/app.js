@@ -264,6 +264,14 @@
     FAST[id].lastTry = Date.now();
     return window.LotteryAPI.call('/issues/' + encodeURIComponent(id), { method: 'GET' }).then(function (d) {
       FAST[id].data = d; state.games[id] = shapeFast(id, d);
+      try {
+        var key = 'xc-race-hist-' + id, hist = JSON.parse(localStorage.getItem(key) || '[]');
+        var lr = d.lastResult || {};
+        if (lr.issue && lr.nums && lr.nums.length >= 10 && !hist.some(function (x) { return String(x.issue) === String(lr.issue); })) {
+          hist.unshift({ issue: lr.issue, nums: lr.nums }); if (hist.length > 60) hist = hist.slice(0, 60);
+          localStorage.setItem(key, JSON.stringify(hist));
+        }
+      } catch (e) {}
       try { console.info('[fast] /issues ' + id + ' → issue=' + d.issue + ' closeAt=' + d.closeAt + ' lastNums=' + ((d.lastResult && d.lastResult.nums) || []).length); } catch (e) {}
       var cr = currentRoute();
       if (cr.name === 'bet' && cr.id === id) render(true);
@@ -1207,6 +1215,65 @@
           optCell('r' + rk + ':oe:odd', sideLabel + ' 单', oeO.odd) + optCell('r' + rk + ':oe:even', sideLabel + ' 双', oeO.even) + '</div></div>';
       }
       body = html;
+    } else if (cat === 'sum') {
+      var R3 = window.LH_RACING_ODDS || {}, t3 = R3.sum || R3.twoSide || {};
+      function sumOdds(n) {
+        if (n === 3 || n === 4 || n === 18 || n === 19) return 42.5;
+        if (n === 5 || n === 6 || n === 16 || n === 17) return 22;
+        if (n === 7 || n === 8 || n === 14 || n === 15) return 14.5;
+        if (n === 9 || n === 10 || n === 12 || n === 13) return 11;
+        return 8.8;
+      }
+      var sh = '<div class="ts-sec"><div class="ts-hd">冠亚和值</div><div class="combo-grid">';
+      for (var sv = 3; sv <= 19; sv++) {
+        var sk = 'sum:' + sv;
+        sh += '<button type="button" class="bet-option combo-cell ' + (isSel(sk) ? 'on' : '') + '" data-bet="' + sk + '" data-label="和值 ' + sv + '" data-odds="' + sumOdds(sv) + '"><span class="combo-name">' + sv + '</span><em class="combo-odds">' + fmtOdds(sumOdds(sv)) + '</em></button>';
+      }
+      sh += '</div></div><div class="ts-sec"><div class="ts-hd">两面</div><div class="combo-grid">' +
+        ['big:大:' + t3.big, 'small:小:' + t3.small, 'odd:单:' + t3.odd, 'even:双:' + t3.even].map(function (x) {
+          var p = x.split(':'); return '<button type="button" class="bet-option combo-cell ' + (isSel('sum:' + p[0]) ? 'on' : '') + '" data-bet="sum:' + p[0] + '" data-label="' + p[1] + '" data-odds="' + p[2] + '"><span class="combo-name">' + p[1] + '</span><em class="combo-odds">' + fmtOdds(p[2]) + '</em></button>';
+        }).join('') + '</div></div>';
+      body = sh;
+    } else if (cat === 'long') {
+      var R4 = window.LH_RACING_ODDS || {}, dOdds = 1.99, hist = [];
+      try { hist = JSON.parse(localStorage.getItem('xc-race-hist-' + id) || '[]'); } catch (e) {}
+      var need = betState.dragonN || 4;
+      var items = [];
+      function pushItem(name, dir, streak) { if (streak >= need) items.push({ name: name, dir: dir, streak: streak }); }
+      if (hist.length) {
+        var ranks = [['第1名', 'r1'], ['第2名', 'r2'], ['第3名', 'r3'], ['第4名', 'r4'], ['第5名', 'r5'], ['第6名', 'r6'], ['第7名', 'r7'], ['第8名', 'r8'], ['第9名', 'r9'], ['第10名', 'r10']];
+        for (var ri = 0; ri < 10; ri++) {
+          var streakBS = 1, baseBS = null, streakOE = 1, baseOE = null;
+          for (var hi = 0; hi < hist.length; hi++) {
+            var vv = parseInt(hist[hi].nums[ri], 10); if (!vv) break;
+            var bs = vv >= 6 ? '大' : '小', oe = vv % 2 ? '单' : '双';
+            if (hi === 0) { baseBS = bs; baseOE = oe; } else { if (bs === baseBS) streakBS++; if (oe === baseOE) streakOE++; }
+          }
+          if (baseBS) pushItem(ranks[ri][0] + ' 大小', baseBS, streakBS);
+          if (baseOE) pushItem(ranks[ri][0] + ' 单双', baseOE, streakOE);
+        }
+        var pairs = [['1V10', 0, 9], ['2V9', 1, 8], ['3V8', 2, 7], ['4V7', 3, 6], ['5V6', 4, 5]];
+        pairs.forEach(function (p) {
+          var st = 1, base = null;
+          for (var hi = 0; hi < hist.length; hi++) {
+            var a = parseInt(hist[hi].nums[p[1]], 10), b = parseInt(hist[hi].nums[p[2]], 10); if (!a || !b) break;
+            var dr = a > b ? '龙' : (a < b ? '虎' : '和');
+            if (hi === 0) base = dr; else if (dr === base) st++;
+          }
+          if (base) pushItem(p[0] + ' 龙虎', base, st);
+        });
+        var stSum = 1, baseSum = null;
+        for (var hi2 = 0; hi2 < hist.length; hi2++) {
+          var smv = (parseInt(hist[hi2].nums[0], 10) || 0) + (parseInt(hist[hi2].nums[1], 10) || 0);
+          var sd = smv >= 12 ? '大' : '小'; if (hi2 === 0) baseSum = sd; else if (sd === baseSum) stSum++;
+        }
+        if (baseSum) pushItem('冠亚和 大小', baseSum, stSum);
+      }
+      var opts = [4, 6, 8, 10, 12].map(function (x) { return '<option value="' + x + '"' + (x === need ? ' selected' : '') + '>长龙连开期数：' + x + '</option>'; }).join('');
+      var list = items.sort(function (a, b) { return b.streak - a.streak; }).map(function (it) {
+        return '<div class="dragon-card"><div class="dragon-hd"><b>' + esc(it.name) + '</b><span class="dragon-streak">连开 <b>' + it.streak + '</b> 期</span></div><div class="dragon-mid"><span class="dragon-dir">' + esc(it.dir) + '</span><em class="dragon-odds">' + fmtOdds(dOdds) + '</em></div><div class="dragon-foot">只读监控 · 不可下注</div></div>';
+      }).join('');
+      body = '<div class="dragon-toolbar"><select data-dragon-n>' + opts + '</select></div>' + (list || '<div class="dragon-empty">暂无（正在积累历史，当前 ' + hist.length + ' 期）</div>');
     } else if (cat === 'combo') {
       var R2 = window.LH_RACING_ODDS || {}, comboOdds = Number(R2.combo) || 42.5, comboHtml = '';
       for (var a1 = 1; a1 <= 9; a1++) {
@@ -1223,10 +1290,11 @@
       var cc = ['#F5A623','#E23A3A','#1FA85C','#1E5FD8','#555555','#1E5FD8','#FFD700'][i] || '#999';
       return '<button type="button" class="race-chip ' + (String(betState.qty) === String(v) ? 'on' : '') + '" data-qty="' + v + '" style="--cc:' + cc + '">' + v + '</button>';
     }).join('');
-    return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + racingHeaderHtml(def, g) +
+    var topHtml = '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + racingHeaderHtml(def, g) +
       '<div class="race-layout"><div class="race-cats">' + RACING_CATS5.map(function (c) {
         return '<button type="button" class="race-cat ' + (cat === c.id ? 'on' : '') + '" data-race-cat="' + c.id + '"><i></i>' + c.name + '</button>';
-      }).join('') + '</div><div class="race-main">' + body + '</div></div>' +
+      }).join('') + '</div><div class="race-main">' + body + '</div></div>';
+    var bottom = cat === 'long' ? '<div class="dragon-note">长龙为只读监控，不支持下注</div>' :
       '<div class="race-picked">已选：<b data-picked-list>—</b></div>' +
       '<div class="bet-hint" data-bet-hint></div>' +
       '<div class="race-closed" data-closed hidden><div><b>已停止投注</b><span>下一期已开盘，投注时请注意期号</span></div><button type="button" data-race-next>知道了</button></div>' +
@@ -1234,6 +1302,7 @@
       '<div class="race-amount"><label>金额：</label><input id="betQty" type="text" inputmode="numeric" value="' + esc(betState.qty) + '"><span class="race-unit">积分</span><button type="button" class="race-quick">快捷金额</button><button type="button" class="race-reset" data-race-reset>重置</button><button type="button" class="race-submit" data-bet-submit>下注</button></div>' +
       '<div class="race-keypad" id="raceKeypad" hidden>' + [1,2,3,4,5,6,7,8,9].map(function (d) { return '<button type="button" data-kp="' + d + '">' + d + '</button>'; }).join('') + '<button type="button" data-kp="del">删除</button><button type="button" data-kp="0">0</button><button type="button" data-kp="ok">确定</button></div>' +
       '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
+    return topHtml + bottom;
   }
   function betPage(id) {
     if (betState.game !== id) { betState.game = id; betState.sel = loadSel(id); }
@@ -1484,6 +1553,9 @@
       var idx = betState.raceOpen.indexOf(rk);
       if (idx >= 0) betState.raceOpen.splice(idx, 1); else betState.raceOpen.push(rk);
       render(true); return;
+    }
+    if (e.target.closest('[data-dragon-n]') || (e.target.tagName === 'SELECT' && e.target.hasAttribute('data-dragon-n'))) {
+      betState.dragonN = parseInt(e.target.value, 10) || 4; render(true); return;
     }
     var rc = e.target.closest('[data-race-cat]');
     if (rc) { betState.raceCat = rc.getAttribute('data-race-cat'); render(true); return; }
