@@ -91,8 +91,10 @@
         async: false
       });
     })();
+    var isMe = path === '/me';
+    var timeoutMs = isMe ? Math.min(10000, Number(CFG.timeoutMs) || 10000) : (Number(CFG.timeoutMs) || 20000);
     var timer = new Promise(function (_, reject) {
-      setTimeout(function () { reject(ApiError(0, '请求超时，请稍后重试')); }, Number(CFG.timeoutMs) || 20000);
+      setTimeout(function () { reject(ApiError(0, isMe ? '服务冷启动超时（10s），请稍后重试' : '请求超时，请稍后重试')); }, timeoutMs);
     });
     return Promise.race([exec, timer]).then(function (r) {
       var code = Number(r && r.responseStatusCode) || 0;
