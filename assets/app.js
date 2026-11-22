@@ -511,6 +511,9 @@
             window.LH_RACING_ODDS.champion = ch;
           }
           if (f.runnerUp) window.LH_RACING_ODDS.runner = f.runnerUp;
+          if (f.sum) window.LH_RACING_ODDS.sum = f.sum;
+          if (f.bs) window.LH_RACING_ODDS.bs = f.bs;
+          if (f.oe) window.LH_RACING_ODDS.oe = f.oe;
           if (f.rank != null) ODDS.rank = Number(f.rank);
         }
         try { console.info('[odds] 使用服务端 /games.oddsByPlay:', JSON.stringify(ob).slice(0, 300)); } catch (e) {}
@@ -1165,10 +1168,22 @@
     var body;
     if (cat === 'first10') body = rankList();
     else if (cat === 'two-side') {
-      var R = window.LH_RACING_ODDS || {}, t = R.twoSide || {};
-      body = '<div class="race-opts">' + [['big','大',t.big],['small','小',t.small],['odd','单',t.odd],['even','双',t.even]].map(function (x) {
-        return '<button type="button" class="bet-option race-opt ' + (isSel('rt-' + x[0]) ? 'on' : '') + '" data-bet="rt-' + x[0] + '" data-label="' + x[1] + '" data-odds="' + x[2] + '"><span>' + x[1] + '</span><em>' + x[2] + '</em></button>';
-      }).join('') + '</div>';
+      var R = window.LH_RACING_ODDS || {};
+      var t = R.sum || R.twoSide || { big: 2.19, small: 1.79, odd: 1.79, even: 2.19 };
+      var bsO = R.bs || { big: 1.99, small: 1.99 }, oeO = R.oe || { odd: 1.99, even: 1.99 };
+      function optCell(key, label, odds) {
+        return '<button type="button" class="bet-option ts-opt ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + label + '" data-odds="' + odds + '"><span>' + label + '</span><em>' + odds + '</em></button>';
+      }
+      var html = '<div class="ts-sec"><div class="ts-hd">冠亚和</div><div class="ts-grid">' +
+        optCell('sum:big', '大', t.big) + optCell('sum:small', '小', t.small) + optCell('sum:odd', '单', t.odd) + optCell('sum:even', '双', t.even) + '</div></div>';
+      // 名次数字：1-5 小、6-10 大；奇偶按号码
+      for (var rk = 1; rk <= 10; rk++) {
+        var sideLabel = '第' + rk + '名';
+        html += '<div class="ts-sec"><div class="ts-hd">' + sideLabel + '</div><div class="ts-grid">' +
+          optCell('r' + rk + ':bs:big', sideLabel + ' 大', bsO.big) + optCell('r' + rk + ':bs:small', sideLabel + ' 小', bsO.small) +
+          optCell('r' + rk + ':oe:odd', sideLabel + ' 单', oeO.odd) + optCell('r' + rk + ':oe:even', sideLabel + ' 双', oeO.even) + '</div></div>';
+      }
+      body = html;
     } else {
       body = '<div class="race-placeholder">' + esc((RACING_CATS5.filter(function (x) { return x.id === cat; })[0] || {}).name || '') + ' · 待开放（冠亚和值 = 第1名+第2名；小≤11，大≥12）</div>';
     }
@@ -1443,6 +1458,8 @@
           var pickIds = selections.map(function (s) {
             var key = String(s.key || '');
             if (/^r\d{1,2}:\d{2}$/.test(key)) return key;              // 赛车名次：r3:07
+            if (/^sum:(big|small|odd|even)$/.test(key)) return key;      // 冠亚和：sum:big
+            if (/^r\d{1,2}:(bs|oe):(big|small|odd|even)$/.test(key)) return key; // 名次大小/单双
             if (key.indexOf('race-') === 0) return key.slice(5);        // 赛车冠军/亚军旧格式
             var m = key.match(/(\d{2})$/);
             return m ? m[1] : String(s.label || s.key);
