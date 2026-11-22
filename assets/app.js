@@ -562,7 +562,7 @@
     rtPoll = setInterval(async function () {
       if (!awUser || document.hidden) return;
       try { await refreshPoints(); var nx = await loadUserBets(); if (JSON.stringify(nx) !== JSON.stringify(bets)) { bets = nx; updateBetsOnly(); } } catch (e) {}
-    }, 30000);
+    }, 8000);
   }
   async function onRealtime(resp) {
     var events = (resp && resp.events) || [];
@@ -1692,6 +1692,7 @@
           } });
           var newPoints = (res && res.user && res.user.points != null) ? parseInt(res.user.points, 10) : ((res && res.points != null) ? parseInt(res.points, 10) : (points - cost));
           if (isFinite(newPoints)) { points = newPoints; awRow.points = newPoints; }
+          try { refreshPointsAndBets(); } catch (e) {}
           setTimeout(function () { try { refreshPointsAndBets(); } catch (e) {} }, 300);
           var bet = (res && res.bet) || {};
           bets.unshift({ id: bet.id || bet.$id || idem, game: betState.game, targetIssue: bet.issue || g.nextIssue, placedIssue: g.last.issue, qty: qty, cost: cost, notes: notes, selections: selections, labels: selections.map(function (s) { return s.label; }).join('、'), status: bet.status || 'pending', payout: Number(bet.payout) || 0, created: Date.now() });
