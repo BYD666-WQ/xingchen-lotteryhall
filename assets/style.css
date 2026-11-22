@@ -1517,3 +1517,15 @@ body.dark-theme:has(#betsBody) .cat-tabs a.on{color:#ff8a8a}
 
 /* 投注页隐藏悬浮签到，避免压号码格 */
 body.bet-mode .float-sign{display:none !important;}
+
+
+/* ==== 2026-11-23 深色：公告条 + 分类 tab（home / 未登录 bets） ==== */
+body.dark-theme .notice{background:#1b1b1b !important;border-bottom-color:#2a2a2a !important;}
+body.dark-theme .notice-track span{color:#eaeaea;}
+body.dark-theme .notice-track span em{color:#EC2829;}
+body.dark-theme .notice-more{color:#b9b9b9;}
+body.dark-theme .notice-ico{background:#EC2829;color:#fff;}
+body.dark-theme .cat-tabs{background:#1b1b1b !important;border-bottom-color:#2a2a2a !important;}
+body.dark-theme .cat-tabs a{color:#eaeaea;}
+body.dark-theme .cat-tabs a.on{color:#EC2829 !important;}
+body.dark-theme .cat-tabs a.on:after{background:#EC2829 !important;}
