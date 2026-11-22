@@ -677,6 +677,7 @@
     authReady = true; updateUserChip(); render(true); startRealtime();
   }
   async function initAuth() {
+    if (!window.Appwrite) { setTimeout(initAuth, 250); return; }
     if (!awAccount) { authReady = true; render(); return; }
     try { var u = await awAccount.get(); await afterAuth(u, u.name || (u.email || '').split('@')[0]); }
     catch (e) { window.__lhInitError = String((e && e.message) || e); stopRealtime(); stopPoll(); awUser = null; awRow = null; points = 0; bets = []; authReady = true; updateRTStatus('关'); updateUserChip(); render(true); }
