@@ -501,7 +501,7 @@
       if (typeof picks === 'string') { try { picks = JSON.parse(picks); } catch (e) { picks = []; } }
       picks = Array.isArray(picks) ? picks : ((picks && picks.selections) || []);
       var stake = Number(r.stake != null ? r.stake : r.cost) || 0;
-      return { id: r.id || r.$id, game: r.gameId || r.game, targetIssue: r.issue || r.targetIssue || '', placedIssue: r.issue || '', qty: r.qty || 1, cost: stake, notes: r.notes || Math.round(stake / 2), selections: picks, labels: picks.map(function (x) { return (typeof x === 'string') ? x : (x.label || x.key); }).join('、'), status: r.status || 'pending', payout: Number(r.payout) || 0, created: r.createdAt || (r.$createdAt ? Date.parse(r.$createdAt) : Date.now()) };
+      return { id: r.id || r.$id, game: r.gameId || r.game, targetIssue: r.issue || r.targetIssue || '', placedIssue: r.issue || '', qty: r.qty || 1, cost: stake, notes: r.notes || Math.round(stake / 2), selections: picks, labels: picks.map(function (x) { return (typeof x === 'string') ? x : (x.label || x.key); }).join('、'), status: r.status || 'pending', payout: Number(r.payout) || 0, created: r.createdAt || (r.$createdAt ? Date.parse(r.$createdAt) : Date.now()), settledAt: r.settledAt || null };
     });
   }
   async function loadGameConfigs() {
@@ -1121,11 +1121,20 @@
     });
     return { html:out, sum:sum };
   }
+  function fmtSettled(ts) {
+    if (!ts) return '';
+    var d = new Date(ts); if (isNaN(d.getTime())) return String(ts).slice(0, 16).replace('T', ' ');
+    var bj = new Date(d.getTime() + 8 * 3600 * 1000);
+    return bj.toISOString().slice(5, 16).replace('T', ' ');
+  }
   function myBetsHtml() {
-    var list = bets.filter(function (b) { return b.status === 'pending'; });
-    return '<div class="my-bets"><div class="my-bets-head"><h2>待开奖注单</h2><span>云端记录 · 账户积分</span></div>' + (list.length ? list.slice(0, 4).map(function (b) {
-      return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span><em class="pending">待开奖</em></div><div class="my-bet-sub">' + b.labels + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分</div></div>';
-    }).join('') : '<div class="my-bet-empty">暂无待开奖注单；结算功能暂未开放</div>') + '</div>';
+    var list = bets.slice().sort(function (a, b) { return (Number(b.created) || 0) - (Number(a.created) || 0); }).slice(0, 6);
+    return '<div class="my-bets"><div class="my-bets-head"><h2>最近注单</h2><span>云端记录 · 账户积分</span></div>' + (list.length ? list.map(function (b) {
+      var settled = b.status === 'settled';
+      var st = settled ? (b.payout > 0 ? '<em class="ok">已结算 · 中 +' + b.payout + '</em>' : '<em class="no">已结算 · 未中</em>') : '<em class="pending">待开奖</em>';
+      var when = settled && b.settledAt ? ' · 结算 ' + fmtSettled(b.settledAt) : '';
+      return '<div class="my-bet"><div class="my-bet-top"><span>第 ' + shortIssue(b.targetIssue) + ' 期</span>' + st + '</div><div class="my-bet-sub">' + esc(b.labels) + ' · ' + b.qty + ' 注/项 · 消耗 ' + b.cost + ' 积分' + when + '</div></div>';
+    }).join('') : '<div class="my-bet-empty">暂无注单</div>') + '</div>';
   }
   function focusSafe() { var a = document.activeElement; return a && /INPUT|TEXTAREA|SELECT/.test(a.tagName); }
   function updateBetsOnly() {
