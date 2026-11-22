@@ -1182,3 +1182,10 @@ body.dark-theme .rr-right .rr-next,body.dark-theme .rr-right .rr-cd{color:#eaeae
 .six-result-head .rr-labels .lbox{height:1.55rem;font-size:0.56rem;line-height:1;white-space:nowrap;overflow:hidden;padding:0 1px !important;}
 .six-result-head .rr-right{min-width:6.4rem;}
 body.dark-theme .six-result-head .rr-nums .nbox{border-right-color:#2a2a2a !important;}
+
+
+/* Phase L21：审计标记配套 + 六合彩号码圆球 */
+.rr-next span{display:block;}
+.six-result-head .rr-nums{justify-content:space-between;gap:0 !important;padding:0 0.2rem;border-bottom:1px solid #e5e5e5;}
+.six-result-head .rr-nums .nbox{flex:0 0 1.9rem !important;width:1.9rem !important;height:1.9rem;border-radius:50% !important;border-right:0 !important;margin:0;}
+body.dark-theme .six-result-head .rr-nums{border-bottom-color:#2a2a2a;}
