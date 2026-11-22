@@ -1493,7 +1493,7 @@ body.dark-theme:has(#betsBody) .cat-tabs a.on{color:#ff8a8a}
 .demo-footer{padding-top:12px !important;padding-bottom:calc(16px + 62px + 12px) !important;}
 
 /* 合并修正：六合彩倒计时收进右栏，消除 400 横向溢出 */
-.six-result-head .rr-cd{font-size:16px !important;letter-spacing:-0.4px;}
+.six-result-head .rr-cd{font-size:16px !important;letter-spacing:-0.8px;}
 
 
 /* Phase L23：赛车名次格一比一参考尺寸 + 内容居中 */
