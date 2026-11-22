@@ -28,7 +28,7 @@
   var RED = [1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46];
   var BLUE = [3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48];
   var KEY = 'Xc9vF2026';
-  var state = { games: {}, config: {}, attrs: {}, win: {}, updated: 0, error: '', loading: false };
+  var state = { games: {}, config: {}, attrs: {}, win: {}, histApi: {}, histLoading: {}, updated: 0, error: '', loading: false };
   var homeTab = 'hot';
   var historyGame = 'newhk';
   var countdownTimer = 0;
@@ -409,7 +409,7 @@
       FAST[id].failed = true;
       if (!state.games[id]) state.games[id] = mockGame(id);
       var cr = currentRoute();
-      if (cr.name === 'bet' && cr.id === id) render(true);
+      if (!soft && cr.name === 'bet' && cr.id === id && !/SDK 加载中/.test(String(e && e.message || e))) render(true);
     });
   }
   function mockGame(id) {
@@ -466,8 +466,8 @@
     var def = DEFS[id]; if (!def) return hallPage();
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
     var g = state.games[id];
-    if (!g && def.mock) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id); }
-    if (!g) { syncFastIssue(id); state.games[id] = mockGame(id); g = state.games[id]; }
+    if (!g && def.mock) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id, true); }
+    if (!g) { syncFastIssue(id, true); state.games[id] = mockGame(id); g = state.games[id]; }
     var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
@@ -483,8 +483,9 @@
   function historyPage() {
     var chips = ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('');
     var g = state.games[historyGame];
-    var rows = (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
-    if (!rows) rows = '<tr><td colspan="4">' + emptyState('正在读取主站数据…') + '</td></tr>';
+    var rows = state.histApi[historyGame] && state.histApi[historyGame].length ? histTableRows(historyGame, state.histApi[historyGame]) : (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
+    if (!rows) rows = '<tr><td colspan="4">' + emptyState('暂无更多历史') + '</td></tr>';
+    setTimeout(function () { try { loadHistoryData(historyGame); } catch (e) {} }, 0);
     return catTabs('history') + '<div class="page-head"><div><div class="page-kicker">RESULTS</div><h1 class="page-title">开奖记录</h1><div class="page-sub">主站真实数据 · 当前可获取 ' + ((g && g.history.length) || 0) + ' 期</div></div><span class="demo-pill">REAL</span></div>' +
       '<div class="chips">' + chips + '</div><div style="padding:0 10px"><div class="table-scroll"><table class="hist"><thead><tr><th>期号</th><th>彩种</th><th>开奖号码</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
       '<div class="more-row"><button class="btn btn-ghost" type="button" data-demo="更多记录为演示入口">加载更多</button></div><div class="mini-note">主站当前可获取近 ' + ((g && g.history.length) || 0) + ' 期；开奖号码与主站一致。</div>';
@@ -1105,8 +1106,8 @@
     var def = DEFS[id]; if (!def) return hallPage();
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
     var g = state.games[id];
-    if (!g && def.mock) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id); }
-    if (!g) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id); }
+    if (!g && def.mock) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id, true); }
+    if (!g) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id, true); }
     var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
@@ -1664,8 +1665,16 @@
     for (var k = 0; k < 5; k++) { var L = vs[k] || 0, R = vs[9 - k] || 0; dragon.push(L === R ? '和' : (L > R ? '龙' : '虎')); }
     return { sum: sum, big: sum >= 12 ? '大' : '小', odd: (sum % 2 === 1) ? '单' : '双', dragon: dragon };
   }
+  function histTableRows(id, rows) {
+    return (rows || []).slice(0, 20).map(function (h) {
+      var nums = (h.nums || []).map(function (x) { return (typeof x === 'object') ? x : { c: String(x) }; });
+      var text = nums.length ? balls(nums, true) : (h.bigSmall || h.parity || '—');
+      return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[id].name + '</td><td>' + text + '</td><td><span class="status">● 已开奖</span></td></tr>';
+    }).join('');
+  }
   function histRows(id) {
     var def = DEFS[id] || {}, list = [];
+    if (state.histApi[id] && state.histApi[id].length) return state.histApi[id].slice(0, 20);
     if (def.mock) { try { list = JSON.parse(localStorage.getItem('xc-race-hist-' + id) || '[]'); } catch (e) {} }
     if (!list.length) { var g = state.games[id]; list = (g && g.history) || []; }
     if (!list.length && state.games[id] && state.games[id].last) list = [state.games[id].last];
@@ -1688,7 +1697,8 @@
       } else if (mode === 'oe') {
         nums.forEach(function (v) { cells += '<span class="hh-cell">' + (v % 2 ? '单' : '双') + '</span>'; });
       } else {
-        if (racing && nums.length >= 2) {
+        if (!nums.length) { cells = '<span class="hh-missing">号码缺失</span>'; }
+        else if (racing && nums.length >= 2) {
           var sum = nums[0] + nums[1];
           cells = '<span class="hh-sum">和值 ' + sum + '</span>';
           for (var k = 0; k < 5 && k < nums.length / 2; k++) {
@@ -1704,6 +1714,24 @@
     return '<div class="hh-tabs">' + tabs.map(function (t) { return '<button type="button" class="hh-tab ' + (mode === t[0] ? 'on' : '') + '" data-hist-mode="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' + body +
       '<div class="hh-more"><a href="#/history">更多历史 ›</a></div>';
   }
+  function loadHistoryData(id) {
+    if (!id || state.histLoading[id] || (state.histApi[id] && state.histApi[id].length)) return;
+    state.histLoading[id] = 1;
+    try {
+      window.LotteryAPI.call('/history/' + encodeURIComponent(id) + '?limit=20', { method: 'GET' }).then(function (d) {
+        var rows = (d && (d.items || d.results || d.history || d.rows)) || [];
+        if (!Array.isArray(rows) && rows && typeof rows === 'object') {
+          rows = Object.keys(rows).map(function (k) { var v = rows[k] || {}; return { issue: v.issue || k, nums: v.nums || v.lastResult || [] }; });
+        }
+        rows = rows.filter(function (h) { return h && h.issue != null && (h.nums || []).length; }).sort(function (a, b) { return Number(b.issue) - Number(a.issue); });
+        if (rows.length) {
+          state.histApi[id] = rows;
+          var box = document.querySelector('.race-history'); if (box) box.innerHTML = histInner(id);
+          try { var tb = document.querySelector('.hist tbody'); if (tb && currentRoute().name === 'history') tb.innerHTML = histTableRows(id, rows); } catch (e) {}
+        }
+      }).catch(function () {});
+    } catch (e) {}
+  }
   function toggleHistory(id) {
     var old = document.querySelector('.race-history');
     if (old) { old.remove(); return; }
@@ -1711,6 +1739,7 @@
     var box = document.createElement('div'); box.className = 'race-history';
     box.innerHTML = histInner(id);
     head.parentNode.insertBefore(box, head.nextSibling);
+    loadHistoryData(id);
   }
   function racingHeaderHtml(def, g) {
     var nums = (g && g.last && g.last.nums) || [];
@@ -2107,6 +2136,7 @@
     clearInterval(countdownTimer); updateCountdowns(); countdownTimer = setInterval(updateCountdowns, 1000);
     updateUserChip();
     startBanner();
+
   }
   function showToast(msg) { var el = $('#toast'); if (!el) return; el.textContent = msg || '演示功能，敬请期待'; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2200); }
   function showModal(msg) { var m = $('#modal'); if (!m) return; $('#modal-body').textContent = msg || '当前为展示站点，不提供真实交易或账户服务。'; m.hidden = false; modalOpen = true; }
@@ -2178,7 +2208,7 @@
     if (e.target.closest('[data-dismiss-reg]')) { try { sessionStorage.removeItem('xcRegZero'); } catch (x) {} regZeroNotice = false; var bn = document.querySelector('[data-reg-banner]'); if (bn) { bn.classList.add('dismissed'); bn.setAttribute('aria-hidden', 'true'); } return; }
     if (e.target.closest('[data-retry-me]')) { initAuth(); return; }
     var retry = e.target.closest('[data-retry]');
-    if (retry) { syncFastIssue(retry.getAttribute('data-retry')); return; }
+    if (retry) { syncFastIssue(retry.getAttribute('data-retry'), true); return; }
     if (e.target.closest('[data-menu-close]')) { closeMenu(); return; }
     var mi = e.target.closest('[data-menu]');
     if (mi) {
@@ -2239,7 +2269,7 @@
     var am = e.target.closest('[data-qty]');
     if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
     if (e.target.closest('#betQty')) { var kp = document.getElementById('raceKeypad'); if (kp) kp.hidden = false; KP_FRESH = true; return; }
-    if (e.target.closest('[data-race-next]')) { var cl = document.querySelector('[data-closed]'); if (cl) cl.hidden = true; syncFastIssue(betState.game); return; }
+    if (e.target.closest('[data-race-next]')) { var cl = document.querySelector('[data-closed]'); if (cl) cl.hidden = true; syncFastIssue(betState.game, true); return; }
     var kb = e.target.closest('[data-kp]');
     if (kb) {
       var key = kb.getAttribute('data-kp'), inp = document.getElementById('betQty');
@@ -2348,7 +2378,8 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeModal(); closeCancelSheet(); } });
   window.addEventListener('hashchange', function () { closeCancelSheet(); render(); });
   if (!location.hash) { try { history.replaceState(null, '', '#/lotteryhall'); } catch (e) { location.hash = '#/lotteryhall'; } }
-  applyTheme(); render(); loadData(true, true); initAuth();
+  applyTheme(); render();
+  loadData(true, true); initAuth();
   // 首屏只渲染一次；后续数据只做局部更新
   var bootWatchdog = setInterval(function () {
     try {
