@@ -1059,3 +1059,36 @@ body.dark-theme .nbox,body.dark-theme .rank-block{border-color:rgba(255,255,255,
 .rr-right{border-left:0;position:relative;}
 .rr-right::before{content:'';position:absolute;left:0;top:-2px;bottom:-4px;width:1px;background:#e5e5e5;}
 body.dark-theme .rr-right::before{background:#444;}
+
+.load-hint{font-size:11px;color:#aaa;margin-top:6px;}
+.load-error{color:#e60012;cursor:pointer;}
+
+
+/* Phase L18：左右两块独立白色卡片（无竖线） */
+.race-result{display:flex;gap:8px;align-items:stretch;padding:8px 12px;background:transparent;overflow:hidden;}
+.race-result::before{content:none !important;}
+.rr-left{flex:1 1 auto;min-width:0;background:#fff;border-radius:8px;padding:8px;box-sizing:border-box;display:flex;flex-direction:column;gap:3px;}
+.rr-right{flex:0 0 max-content;width:auto;min-width:0;background:#fff;border-radius:8px;padding:8px;box-sizing:border-box;border-left:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-start;overflow:visible;}
+.rr-right::before{content:none !important;}
+.rr-issue{text-align:center;width:100%;margin:0;}
+.rr-nums{width:100%;max-width:none;display:flex;gap:2.078px;overflow:hidden;}
+.rr-nums .nbox{flex:0 0 calc((100% - 18.702px)/10);width:calc((100% - 18.702px)/10);max-width:24.94px;height:auto;aspect-ratio:1;min-width:0;}
+.rr-labels{width:100%;max-width:none;}
+.rr-next{font-size:clamp(10px,2.8vw,12px);white-space:nowrap;overflow:visible;}
+.rr-cd{font-size:clamp(15px,4.4vw,20px);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:visible;}
+body.dark-theme .rr-left,body.dark-theme .rr-right{background:#1b1b1b !important;color:#eaeaea !important;}
+body.dark-theme .rr-issue{color:#ff8a8a !important;}
+body.dark-theme .rr-next{color:#aaa !important;}
+
+
+/* Phase L18b：卡片可见分隔与间距 */
+.race-result{background:#F6F6F6;gap:8px;padding:8px 12px;}
+.rr-left{flex:1 1 0;width:auto;min-width:0;background:#fff;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.rr-right{flex:0 0 auto;min-width:0;background:#fff;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+body.dark-theme .race-result{background:#111 !important;}
+body.dark-theme .rr-left,body.dark-theme .rr-right{background:#1b1b1b !important;border-color:#333 !important;box-shadow:none !important;}
+body.dark-theme .rr-right::before{content:none !important;}
+
+
+/* Phase L18c：清除残留相对偏移，保证 8px 间距 */
+.rr-right{position:static !important;right:auto !important;left:auto !important;top:auto !important;bottom:auto !important;}
