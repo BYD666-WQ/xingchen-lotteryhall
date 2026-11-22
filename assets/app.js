@@ -285,8 +285,17 @@
       return '<a class="home-cell" href="#/bet/' + id + '">' + icon + '<span class="home-name">' + esc(name) + '</span></a>';
     }).join('') + '</div>';
   }
+  function markHotIcons() {
+    try {
+      [['#/bet/fast-race-1', 'HOT'], ['#/bet/hk', 'HOT'], ['#/bet/newmo', 'HOT']].forEach(function (p) {
+        document.querySelectorAll('a[href="' + p[0] + '"] .game-circle').forEach(function (c) {
+          if (!c.querySelector('.game-hot')) { var i = document.createElement('i'); i.className = 'game-hot'; i.textContent = p[1]; c.appendChild(i); }
+        });
+      });
+    } catch (e) {}
+  }
   function hallPage() {
-    return zeroPointsBanner() + banner() + notice() + pointsBar() + homeTabsHtml() + homeGridHtml() +
+    return zeroPointsBanner() + banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
       '<div class="mini-note">数据来自主站只读接口 · 每 30 秒自动刷新 · 仅作演示</div>';
   }
   var SUM_SOURCE = 'guanya'; // 'guanya' 冠亚和（第1+第2）| 'total' 10 个号总和
@@ -987,7 +996,7 @@
     return hallGrid18();
   }
   function hallPage() {
-    return zeroPointsBanner() + banner() + notice() + pointsBar() + homeTabsHtml() + homeGridHtml() +
+    return zeroPointsBanner() + banner() + notice() + pointsBar() + quickGrid() + catTabs('lotteryhall') + hotGrid() +
       '<div class="mini-note">数据来自主站只读接口 · 每 30 秒自动刷新 · 仅作演示</div>';
   }
   function mockGame(id) {
@@ -1619,7 +1628,7 @@
     else if (r.name === 'login') view.innerHTML = loginPage();
     else if (r.name === 'rank') { view.innerHTML = rankPage(); loadRankLive(); }
     else view.innerHTML = ROUTES[r.name] ? ROUTES[r.name]() : hallPage();
-    setBottomTab(r.name);
+    setBottomTab(r.name); markHotIcons();
     var ttl = r.name === 'game' ? DEFS[r.id].name + '开奖' : (r.name === 'bet' ? (DEFS[r.id].name + '模拟投注') : (r.name === 'howto' ? '玩法说明' : (r.name === 'login' ? '登录 / 注册' : TITLES[r.name])));
     document.title = ttl + ' · 彩票大厅（演示）';
     if (!keepScroll) {
