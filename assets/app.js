@@ -938,8 +938,8 @@
     var def = DEFS[id]; if (!def) return hallPage();
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
     var g = state.games[id];
-    if (!g && def.mock) { syncFastIssue(id); return loadingCard(def, id); }
-    if (!g) return loadingCard(def, id);
+    if (!g && def.mock) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id); }
+    if (!g) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id); }
     var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
