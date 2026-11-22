@@ -1042,7 +1042,7 @@
     return '<div class="zodiac-grid">' + ZODIACS.map(function (z) {
       var key = prefix + '-' + z;
       var o = (z === '马' && ODDS.horse) ? ODDS.horse : odds;
-      return '<button type="button" class="bet-zodiac ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + z + '肖" data-odds="' + o + '"><span class="zcircle">' + z + '</span><em>' + o + '</em></button>';
+      return '<button type="button" class="bet-zodiac ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + z + '肖" data-odds="' + o + '"><span class="zcircle">' + z + '</span><em>' + fmtOdds(o) + '</em></button>';
     }).join('') + '</div>';
   }
   function numberGrid(prefix, odds, hideZodiac) {
@@ -1051,14 +1051,14 @@
       var c = pad(i), a = attrFor(i), key = prefix + '-' + c, w = a.color === '红' ? 'r' : a.color === '蓝' ? 'b' : 'g';
       var z = hideZodiac ? '' : esc(a.z || '');
       var lab = hideZodiac ? c : (c + ' ' + (a.z || ''));
-      out += '<button type="button" class="bet-num c-' + w + (isSel(key) ? ' on' : '') + '" data-bet="' + key + '" data-label="' + lab + '" data-odds="' + odds + '"><b>' + c + '</b>' + ( hideZodiac ? '' : '<i>' + z + '</i>' ) + '<em>' + odds + '</em></button>';
+      out += '<button type="button" class="bet-num c-' + w + (isSel(key) ? ' on' : '') + '" data-bet="' + key + '" data-label="' + lab + '" data-odds="' + odds + '"><b>' + c + '</b>' + ( hideZodiac ? '' : '<i>' + z + '</i>' ) + '<em>' + fmtOdds(odds) + '</em></button>';
     }
     return '<div class="num-bet-grid">' + out + '</div>';
   }
   function optionGrid(items, prefix) {
     return '<div class="bet-options">' + items.map(function (x) {
       var key = prefix + '-' + x.k;
-      return '<button type="button" class="bet-option ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + esc(x.n) + '" data-odds="' + x.o + '"' + (x.z ? ' data-zodiacs="' + x.z + '"' : '') + '><span>' + esc(x.n) + '</span><em>' + x.o + '</em></button>';
+      return '<button type="button" class="bet-option ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + esc(x.n) + '" data-odds="' + x.o + '"' + (x.z ? ' data-zodiacs="' + x.z + '"' : '') + '><span>' + esc(x.n) + '</span><em>' + fmtOdds(x.o) + '</em></button>';
     }).join('') + '</div>';
   }
   function racingBalls() {
@@ -1089,7 +1089,7 @@
       var ns = groups[z] || [];
       return '<div class="zgroup"><div class="zgroup-h">' + z + '</div><div class="zgroup-nums">' + ns.map(function (n) {
         var key = 'special-n-' + pad(n);
-        return '<button type="button" class="bet-num znum' + (isSel(key) ? ' on' : '') + '" data-bet="' + key + '" data-label="' + pad(n) + '" data-odds="' + odds + '"><b>' + pad(n) + '</b><em>' + odds + '</em></button>';
+        return '<button type="button" class="bet-num znum' + (isSel(key) ? ' on' : '') + '" data-bet="' + key + '" data-label="' + pad(n) + '" data-odds="' + odds + '"><b>' + pad(n) + '</b><em>' + fmtOdds(odds) + '</em></button>';
       }).join('') + '</div></div>';
     }).join('') + '</div>';
   }
@@ -1147,7 +1147,13 @@
   }
   function raceGrid(group) { var h = ''; for (var i = 1; i <= 10; i++) h += raceCell(i, group); return '<div class="rnum-grid">' + h + '</div>'; }
   function rankOdds() { var v = Number(ODDS.rank); return isFinite(v) && v > 0 ? v : 9.98; }
-  function fmtOdds(v) { return (Math.round(v * 100) / 100).toFixed(2); }
+  function fmtOdds(v) {
+    var n = Number(v);
+    if (!isFinite(n)) return String(v == null ? '' : v);
+    var s = n.toFixed(4);
+    if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+    return s;
+  }
   function rankCell(rank, num) {
     var key = 'r' + rank + ':' + pad(num);
     var c = RACING_COLORS[pad(num)] || '#999';
@@ -1224,7 +1230,7 @@
       var t = R.sum || R.twoSide || { big: 2.19, small: 1.79, odd: 1.79, even: 2.19 };
       var bsO = R.bs || { big: 1.99, small: 1.99 }, oeO = R.oe || { odd: 1.99, even: 1.99 };
       function optCell(key, label, odds) {
-        return '<button type="button" class="bet-option ts-opt ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + label + '" data-odds="' + odds + '"><span>' + label + '</span><em>' + odds + '</em></button>';
+        return '<button type="button" class="bet-option ts-opt ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + label + '" data-odds="' + odds + '"><span>' + label + '</span><em>' + fmtOdds(odds) + '</em></button>';
       }
       var html = '<div class="ts-sec"><div class="ts-hd">冠亚和</div><div class="ts-grid">' +
         optCell('sum:big', '大', t.big) + optCell('sum:small', '小', t.small) + optCell('sum:odd', '单', t.odd) + optCell('sum:even', '双', t.even) + '</div></div>';
