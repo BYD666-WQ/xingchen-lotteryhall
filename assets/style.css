@@ -899,3 +899,81 @@ body.race-mode .back-link{display:block;padding:8px 10px;background:#fff;color:#
 .rr-next i{font-size:11px;}
 .rr-cd{font-size:20px;font-weight:700;line-height:1.15;}
 .race-balance{margin-top:3px;padding:8px 10px;}
+
+
+/* Phase L15：窄屏/字体放大自适应头部 */
+.race-result{position:relative;display:flex;align-items:flex-start;gap:0;padding:2px 0 4px 10px;overflow:hidden;}
+.race-result::before{content:'';position:absolute;right:92px;top:0;bottom:0;width:1px;background:#e5e5e5;}
+.rr-left{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;padding-right:8px;}
+.rr-issue{text-align:center;font-size:16px;font-weight:700;line-height:20px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#B00016;}
+.rr-nums{display:flex;gap:2.078px;margin-top:2px;overflow:hidden;}
+.rr-nums .nbox{flex:0 0 calc((100% - 18.702px)/10);max-width:24.94px;width:calc((100% - 18.702px)/10);height:auto;aspect-ratio:1;min-width:0;box-sizing:border-box;}
+.rr-labels{display:flex;gap:5.188px;margin-top:3px;overflow:hidden;}
+.rr-labels .lbox{font-size:clamp(11px,3.2vw,15.6px);min-width:0;overflow:hidden;}
+.rr-labels .lbox.wide{flex:1.6 1 0;font-size:clamp(9px,2.6vw,12px);}
+.rr-right{flex:0 0 92px;width:92px;min-width:0;text-align:right;padding:0 6px 0 0;overflow:hidden;}
+.rr-next{font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rr-next i{font-size:11px;}
+.rr-cd{font-size:clamp(16px,5vw,20px);line-height:1.15;white-space:nowrap;overflow:hidden;font-weight:700;}
+@media (max-width:340px){.rr-right{flex-basis:80px;width:80px;}.race-result::before{right:80px;}.rr-issue{font-size:14px;}}
+
+
+/* Phase L15b：窄屏去掉固定总宽 + 名次号码字重 500 */
+.race-layout,.race-main{min-width:0;}
+.race-main{flex:1 1 auto;width:auto;}
+.rk-body .rnum-grid{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;}
+.rank-cell{width:auto;min-width:0;}
+.rank-cell .rank-block{font-weight:500;}
+.rr-left{padding-right:0;}
+.rr-nums .nbox{font-weight:700;}
+
+
+/* Phase L15c：右侧绝对定位 + 号码区按可用宽度收缩 */
+.race-result{display:block;position:relative;padding:2px 0 4px 10px;overflow:hidden;}
+.rr-left{padding-right:0;}
+.rr-right{position:absolute;top:2px;right:10px;width:92px;flex:none;text-align:right;overflow:hidden;}
+.rr-issue{text-align:center;width:100%;padding:0;margin:0;}
+.rr-nums{display:flex;gap:2.078px;width:calc(100% - 112px);max-width:268.234px;overflow:hidden;}
+.rr-nums .nbox{flex:0 0 calc((100% - 18.702px)/10);width:calc((100% - 18.702px)/10);max-width:24.94px;height:auto;aspect-ratio:1;min-width:0;}
+.rr-labels{width:calc(100% - 112px);max-width:268.234px;}
+@media (max-width:340px){.rr-right{width:80px;}.rr-nums,.rr-labels{width:calc(100% - 100px);}.race-result::before{right:80px;}}
+
+
+/* Phase L15d：标题整行居中 + 竖线到边 */
+.rr-issue{width:100%;margin-left:-5px;text-align:center;}
+.race-result::before{bottom:-1px;}
+
+
+/* Phase L16：等比 rem（390 基准：1rem=16px） + 号码字重 500 */
+html{font-size:clamp(13px, calc(100vw / 390 * 16), 17.64px);}
+.race-head{height:2.8271rem;padding:0;}
+.race-title{font-size:1.17rem;margin-left:0.625rem;}
+.race-mode,.race-help{font-size:0.91rem;}
+.race-result{padding:0.125rem 0 0.25rem 0.625rem;}
+.rr-issue{font-size:1rem;line-height:1.25rem;}
+.rr-nums{gap:0.1299rem;width:calc(100% - 7rem);max-width:16.7646rem;}
+.rr-nums .nbox{flex:0 0 calc((100% - 9*0.1299rem)/10);width:calc((100% - 9*0.1299rem)/10);max-width:1.5596rem;aspect-ratio:1;border-radius:0.13rem;font-size:0.91rem;font-weight:500;}
+.rr-labels{gap:0.3243rem;margin-top:0.1943rem;width:calc(100% - 7rem);max-width:16.7646rem;}
+.rr-labels .lbox{height:1.6191rem;border-radius:0.325rem;font-size:0.975rem;}
+.rr-labels .lbox.wide{flex:1.6 1 0;font-size:0.656rem;}
+.rr-right{width:5.75rem;right:0.625rem;top:0.125rem;}
+.rr-next{font-size:0.75rem;}
+.rr-next i{font-size:0.6875rem;}
+.rr-cd{font-size:clamp(1rem,5vw,1.25rem);}
+.race-result::before{right:5.75rem;}
+.race-cats{width:6.0498rem;flex:0 0 6.0498rem;}
+.race-cat{width:6.0498rem;height:2.6621rem;font-size:1.0075rem;padding-left:0.845rem;gap:0.375rem;}
+.race-cat i{width:0.5195rem;height:0.5195rem;}
+.rk-hd{height:2.1436rem;font-size:0.975rem;padding-left:0.65rem;}
+.rank-cell{height:3.4404rem;padding:0.65rem 0 0.65rem 1.95rem;gap:0.292rem;}
+.rank-cell .rank-block{width:1.88475rem;height:1.88475rem;border-radius:0.13rem;font-size:1.3rem;font-weight:500;}
+.rank-cell .rnum-odds{font-size:1.04rem;font-weight:500;}
+.race-chips{padding:0 0.65rem;}
+.race-chip{width:3.3799rem;height:3.3799rem;font-size:0.78rem;}
+.race-amount{height:2.5996rem;padding:0 0.65rem;}
+.race-amount input{height:2.2041rem;width:5.6484rem;flex:0 0 5.6484rem;font-size:1.04rem;border-radius:0.26rem;padding-left:0.325rem;}
+.race-quick,.race-reset,.race-submit{height:2.2099rem;font-size:0.91rem;border-radius:0.26rem;padding:0 0.91rem;}
+.race-submit{min-width:3.8994rem;}
+.race-foot{height:2.8594rem;font-size:0.91rem;padding:0 0.715rem;}
+.race-balance{margin-top:0.1875rem;padding:0.5rem 0.625rem;}
+.race-balance{font-size:0.8125rem;}
