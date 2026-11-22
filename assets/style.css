@@ -1231,3 +1231,9 @@ body.dark-theme .home-name{color:#eaeaea;}
 .game-glyph{color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.22);}
 .game-hot{position:absolute;top:-4px;right:-8px;background:#FFD54A;color:#E23A3A;font-size:9px;font-weight:700;font-style:normal;padding:1px 5px;border-radius:8px;line-height:1.35;box-shadow:0 1px 2px rgba(0,0,0,.15);}
 body.dark-theme .game-hot{background:#FFD54A;color:#B00016;}
+
+
+/* Phase H3：真 logo 图（44×44 槽位不变） */
+.game-logo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:50%;z-index:3;background:transparent;}
+.game-circle.has-logo{background:transparent !important;box-shadow:none !important;}
+.game-circle.has-logo .game-glyph,.game-circle.has-logo .badge-shine{visibility:hidden;}
