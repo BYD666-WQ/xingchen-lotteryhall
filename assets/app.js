@@ -578,7 +578,7 @@
       if (!mine || String(payload.$id || '') !== mine) { try { console.info('[rt] 忽略非本人 users 事件'); } catch (e) {} return; }
       if (payload.points != null) {
         var v = parseInt(payload.points, 10);
-        if (isFinite(v)) { points = v; awRow.points = v; updatePointsUI(); updateBetBar(); }
+        if (isFinite(v)) { points = v; awRow.points = v; updatePointsUI(); updateUserChip(); updateBetBar(); }
       }
     }
     if (isBets) {
@@ -634,7 +634,7 @@
     try {
       var me = await window.LotteryAPI.call('/me', { method: 'GET' });
       var v = parseInt(me && me.points, 10);
-      if (isFinite(v)) { points = v; awRow.points = v; updatePointsUI(); updateBetBar(); }
+      if (isFinite(v)) { points = v; awRow.points = v; updatePointsUI(); updateUserChip(); updateBetBar(); }
     } catch (e) {}
   }
   async function afterAuth(user, username) {
