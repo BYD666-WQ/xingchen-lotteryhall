@@ -2010,8 +2010,8 @@
 
   var K3_PIPS = { 1:[[50,50]], 2:[[26,26],[74,74]], 3:[[24,24],[50,50],[76,76]], 4:[[26,26],[74,26],[26,74],[74,74]], 5:[[26,26],[74,26],[50,50],[26,74],[74,74]], 6:[[26,24],[74,24],[26,50],[74,50],[26,76],[74,76]] };
   function k3Die(n, cls) {
-    var pips = K3_PIPS[parseInt(n, 10)] || [];
-    return '<span class="k3-die ' + (cls || '') + '" aria-label="' + (pips.length ? n + '点' : '待开奖') + '">' + pips.map(function (p) { return '<i style="left:' + p[0] + '%;top:' + p[1] + '%"></i>'; }).join('') + '</span>';
+    var v = parseInt(n, 10), pips = K3_PIPS[v] || [];
+    return '<span class="k3-die d' + (v || 0) + ' ' + (cls || '') + '" aria-label="' + (pips.length ? v + '点' : '待开奖') + '">' + pips.map(function (p) { return '<i style="left:' + p[0] + '%;top:' + p[1] + '%"></i>'; }).join('') + '</span>';
   }
   function k3Dice(n) { return '<span class="k3-dice3">' + k3Die(n) + k3Die(n) + k3Die(n) + '</span>'; }
   function k3Page(id, def, g) {
