@@ -339,8 +339,8 @@
     var def = DEFS[id]; if (!def) return hallPage();
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
     var g = state.games[id];
-    if (!g && def.mock) { syncFastIssue(id); return loadingCard(def, id); }
-    if (!g) return loadingCard(def, id);
+    if (!g && def.mock) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id); }
+    if (!g) { syncFastIssue(id); state.games[id] = mockGame(id); g = state.games[id]; }
     var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
@@ -1317,13 +1317,51 @@
       '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
     return topHtml + bottom;
   }
+  var SIX_CATS = ['特码','两面','色波','特肖','正码','正特','正码1-6','连码','平特一肖','尾数','合肖','自选不中','连肖','尾数连','龙虎斗','长龙'];
+  var SIX_ZODIAC = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+  function sixBall(n) {
+    var c = colorOf(n), cls = c === '红' ? 'rb' : (c === '蓝' ? 'bb' : 'gb');
+    return '<span class="six-ball ' + cls + '">' + pad(n) + '</span>';
+  }
+  function sixSpecialPage(id, def, g) {
+    var cat = betState.sixCat || '特码';
+    var last = (g && g.last) || { issue: 0, nums: [] };
+    var balls = '', zods = '';
+    (last.nums || []).slice(0, 7).forEach(function (x) { balls += sixBall(parseInt(x.c, 10)); zods += '<i>' + (x.z || '') + '</i>'; });
+    var head = '<div class="six-head"><span class="race-title">' + esc(def.name) + ' »</span><span class="race-mode">信用玩法 ▾</span><span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
+      '<div class="six-result"><div class="six-res-left"><div class="rr-issue">第 ' + shortIssue(last.issue) + ' 期开奖结果</div><div class="six-balls">' + balls + '</div><div class="six-zods">' + zods + '</div></div>' +
+      '<div class="six-res-right"><div class="rr-next">' + (g.nextIssue || last.issue + 1) + ' 期<i>封盘时间 ⏱</i></div><div class="rr-cd" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
+    var cats = SIX_CATS.map(function (c) { return '<button type="button" class="six-cat ' + (cat === c ? 'on' : '') + '" data-six-cat="' + c + '">' + c + '</button>'; }).join('');
+    var main;
+    if (cat === '特码') {
+      var odds = def.specialOdds || 47.3, grid = '';
+      for (var i = 1; i <= 49; i++) {
+        var key = pad(i);
+        grid += '<button type="button" class="six-cell ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + key + '" data-odds="' + odds + '">' + sixBall(i) + '<em class="six-odds">' + fmtOdds(odds) + '</em></button>';
+      }
+      main = '<div class="six-title">特码</div><div class="six-zodiac-strip">' + SIX_ZODIAC.map(function (z) { return '<button type="button" class="six-ztab">' + z + '</button>'; }).join('') + '</div><div class="six-grid">' + grid + '</div>';
+    } else {
+      main = '<div class="six-title">' + esc(cat) + '</div><div class="six-placeholder">' + esc(cat) + ' · 待开放</div>';
+    }
+    var chips = [10,20,50,100,200,500,1000].map(function (v, i) {
+      var cc = ['#F5A623','#E23A3A','#1FA85C','#1E5FD8','#555555','#1E5FD8','#FFD700'][i] || '#999';
+      return '<button type="button" class="race-chip ' + (String(betState.qty) === String(v) ? 'on' : '') + '" data-qty="' + v + '" style="--cc:' + cc + '">' + v + '</button>';
+    }).join('');
+    return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + head +
+      '<div class="six-layout"><div class="six-cats">' + cats + '</div><div class="six-main">' + main + '</div></div>' +
+      '<div class="race-picked">已选：<b data-picked-list>—</b></div><div class="bet-hint" data-bet-hint></div>' +
+      '<div class="race-chips">' + chips + '</div>' +
+      '<div class="race-amount"><label>金额：</label><input id="betQty" type="text" inputmode="numeric" value="' + esc(betState.qty) + '"><span class="race-unit">积分</span><button type="button" class="race-quick">快捷金额</button><button type="button" class="race-reset" data-race-reset>重置</button><button type="button" class="race-submit" data-bet-submit>下注</button></div>' +
+      '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
+  }
   function betPage(id) {
     if (betState.game !== id) { betState.game = id; betState.sel = loadSel(id); }
     var def = DEFS[id] || DEFS.newhk;
     if (def.mock && (!FAST[id] || !FAST[id].data || (Date.now() - (FAST[id].lastTry || 0) > 5500))) syncFastIssue(id);
     var g = state.games[id] || (def.mock && FAST[id] && FAST[id].data ? shapeFast(id, FAST[id].data) : mockGame(id));
-    if (def.mock && !state.games[id]) return loadingCard(def, id);
+    if (def.mock && !state.games[id]) { state.games[id] = mockGame(id); syncFastIssue(id); }
     if (def.racing) return betZeroBanner() + racingPage(id, def, g);
+    if (id === 'newhk' || id === 'newmo' || id === 'hk') return betZeroBanner() + sixSpecialPage(id, def, g);
     if (def.racing && !(def.cats || []).length) { /* racing 用 RACING_CATS */ }
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
     if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState('正在读取 ' + def.name + ' 数据…');
@@ -1569,6 +1607,8 @@
       if (idx >= 0) betState.raceOpen.splice(idx, 1); else betState.raceOpen.push(rk);
       render(true); return;
     }
+    var sc = e.target.closest('[data-six-cat]');
+    if (sc) { betState.sixCat = sc.getAttribute('data-six-cat'); render(true); return; }
     if (e.target.closest('[data-dragon-n]') || (e.target.tagName === 'SELECT' && e.target.hasAttribute('data-dragon-n'))) {
       betState.dragonN = parseInt(e.target.value, 10) || 4; render(true); return;
     }
