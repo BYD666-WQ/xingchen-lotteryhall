@@ -214,7 +214,7 @@
   }
   var HALL18 = [
     { name:'极速赛车', id:'fast-race-1', color:'#4d8fd8', icon:'赛' },
-    { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' },
+    { name:'新香港六合彩', id:'newhk', game:true, color:'#e6a62f', icon:'新' },
     { name:'极速六合彩', id:'fast-mark6-1', color:'#e39b38', icon:'六' },
     { name:'香港六合彩', id:'hk', color:'#d94b62', icon:'香' },
     { name:'新澳门六合彩', id:'newmo', color:'#3d8ed0', icon:'澳' },
@@ -226,12 +226,13 @@
     { name:'极速飞艇', id:'fast-race-2', color:'#5a8fd4', icon:'艇' },
     { name:'幸运飞艇', id:'fast-race-5', color:'#4aa99d', icon:'飞' },
     { name:'北京赛车', id:'fast-race-10', color:'#7b68c8', icon:'北' },
-    { name:'幸运赛车', id:'newhk', color:'#e6a62f', icon:'运' }
+    { name:'幸运赛车', id:'newhk', color:'#e6a62f', icon:'运' },
+    { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' }
   ];
   function hallGrid18() {
     return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">游戏大厅</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid hall18">' + HALL18.map(function (x) {
       if (x.soon) return '<button type="button" class="game-cell soon" data-soon="' + esc(x.name) + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">待接入</span></button>';
-      return '<a class="game-cell" href="#/bet/' + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">' + esc((DEFS[x.id] && DEFS[x.id].period) || '进入') + '</span></a>';
+      return '<a class="game-cell" href="' + (x.game ? '#/game/' : '#/bet/') + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">' + esc((DEFS[x.id] && DEFS[x.id].period) || '进入') + '</span></a>';
     }).join('') + '</div></section>';
   }
   function hotGrid() {
@@ -285,7 +286,7 @@
       return '<a class="home-cell" href="#/bet/' + id + '">' + icon + '<span class="home-name">' + esc(name) + '</span></a>';
     }).join('') + '</div>';
   }
-  var LOGO_MAP = { '极速赛车':'极速赛车.png', '极速时时彩':'极速时时彩.png', '极速六合彩':'极速六合彩.png', '香港六合彩':'香港六合彩.png', '澳门六合彩':'澳门六合彩.png', '新澳门六合彩':'新澳门六合彩.png', '极速快三':'极速快三.png', '极速飞艇':'极速飞艇.png', '幸运飞艇':'幸运飞艇.png', '北京赛车':'北京赛车.png', '幸运赛车':'幸运赛车.png', '极速28':'极速28.png', '幸运28':'幸运28.png', '腾讯分分彩':'腾讯分分彩.png' };
+  var LOGO_MAP = { '新香港六合彩':'香港六合彩.png', '极速赛车':'极速赛车.png', '极速时时彩':'极速时时彩.png', '极速六合彩':'极速六合彩.png', '香港六合彩':'香港六合彩.png', '澳门六合彩':'澳门六合彩.png', '新澳门六合彩':'新澳门六合彩.png', '极速快三':'极速快三.png', '极速飞艇':'极速飞艇.png', '幸运飞艇':'幸运飞艇.png', '北京赛车':'北京赛车.png', '幸运赛车':'幸运赛车.png', '极速28':'极速28.png', '幸运28':'幸运28.png', '腾讯分分彩':'腾讯分分彩.png' };
   var LOGO_HAS_HOT = { '极速赛车':1, '极速时时彩':1, '极速六合彩':1, '澳门六合彩':1, '新澳门六合彩':1, '极速快三':1 };
   function decorateLogos() {
     try {
@@ -297,6 +298,7 @@
         img.className = 'game-logo'; img.alt = ''; img.src = './assets/icons/' + encodeURIComponent(file);
         img.onload = function () {
           circle.classList.add('has-logo'); circle.setAttribute('data-logo', '1');
+          if (name === '新香港六合彩' && !circle.querySelector('.game-new')) { var nx = document.createElement('i'); nx.className = 'game-new'; nx.textContent = '新'; circle.appendChild(nx); }
           if (LOGO_HAS_HOT[name]) { var h = circle.querySelector('.game-hot'); if (h) h.remove(); }
         };
         img.onerror = function () { img.remove(); };
@@ -990,7 +992,7 @@
   }
   var HALL18 = [
     { name:'极速赛车', id:'fast-race-1', color:'#4d8fd8', icon:'赛' },
-    { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' },
+    { name:'新香港六合彩', id:'newhk', game:true, color:'#e6a62f', icon:'新' },
     { name:'极速六合彩', id:'fast-mark6-1', color:'#e39b38', icon:'六' },
     { name:'香港六合彩', id:'hk', color:'#d94b62', icon:'香' },
     { name:'新澳门六合彩', id:'newmo', color:'#3d8ed0', icon:'澳' },
@@ -1002,12 +1004,13 @@
     { name:'极速飞艇', id:'fast-race-2', color:'#5a8fd4', icon:'艇' },
     { name:'幸运飞艇', id:'fast-race-5', color:'#4aa99d', icon:'飞' },
     { name:'北京赛车', id:'fast-race-10', color:'#7b68c8', icon:'北' },
-    { name:'幸运赛车', id:'newhk', color:'#e6a62f', icon:'运' }
+    { name:'幸运赛车', id:'newhk', color:'#e6a62f', icon:'运' },
+    { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' }
   ];
   function hallGrid18() {
     return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">游戏大厅</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid hall18">' + HALL18.map(function (x) {
       if (x.soon) return '<button type="button" class="game-cell soon" data-soon="' + esc(x.name) + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">待接入</span></button>';
-      return '<a class="game-cell" href="#/bet/' + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">' + esc((DEFS[x.id] && DEFS[x.id].period) || '进入') + '</span></a>';
+      return '<a class="game-cell" href="' + (x.game ? '#/game/' : '#/bet/') + x.id + '"><span class="game-circle" style="--gc:' + x.color + '"><span class="game-glyph">' + esc(x.icon) + '</span></span><span class="game-name">' + esc(x.name) + '</span><span class="game-issue">' + esc((DEFS[x.id] && DEFS[x.id].period) || '进入') + '</span></a>';
     }).join('') + '</div></section>';
   }
   function hotGrid() {
