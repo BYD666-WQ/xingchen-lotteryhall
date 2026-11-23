@@ -1699,3 +1699,5 @@ body.dark-theme .k3-cd{color:#ff6b6b !important;}
 
 .rr-right .rr-next span[data-audit="time-row"]:first-child{font-size:15.6px !important;}
 @media (max-width:360px){.rr-right .rr-next span[data-audit="time-row"]:first-child{font-size:14px !important;}}
+
+.ball.plus{width:16px !important;height:25px !important;font-size:18px !important;line-height:25px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;color:#999 !important;background:transparent !important;box-shadow:none !important;}
