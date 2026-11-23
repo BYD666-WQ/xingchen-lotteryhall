@@ -69,7 +69,7 @@
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
   function pad(n) { return String(n).padStart(2, '0'); }
-  function shortIssue(v) { if (v && typeof v === 'object') v = v.issueLabel || v.label || v.issue; var s = String(v == null ? '' : v).replace(/\s*期\s*$/, ''); return s.length >= 7 ? s : s.slice(-3); }
+  function shortIssue(v) { if (v && typeof v === 'object') v = v.issueLabel || v.issue; var s = String(v == null ? '' : v).replace(/\s*期\s*$/, ''); return s.length >= 7 ? s : s.slice(-3); }
   function colorOf(n) { n = parseInt(n, 10); if (RED.indexOf(n) >= 0) return '红'; if (BLUE.indexOf(n) >= 0) return '蓝'; return '绿'; }
   function waveClass(n) { var c = colorOf(n); return c === '红' ? 'r' : (c === '蓝' ? 'b' : 'g'); }
   function normBall(x) {
@@ -359,7 +359,7 @@
     return '<div class="win-closed" data-win-banner="' + id + '"><b>' + winCloseText(id) + '</b><span data-win-cd>--:--</span></div>';
   }
   function syncIssueWindow(id) {
-    return window.LotteryAPI.call('/issues/' + encodeURIComponent(id), { method: 'GET' }).then(function (d) {
+    return window.LotteryAPI.call('/issues/' + encodeURIComponent(id) + '?t=' + Date.now(), { method: 'GET' }).then(function (d) {
       var w = d && (d.window || d.windowInfo);
       if (!w) return;
       var prev = JSON.stringify(state.win[id] || null), next = JSON.stringify(w);
@@ -381,7 +381,12 @@
         else { var col = nums[i].color || colorOf(v); boxes[i].style.background = col === '红' ? '#E23A3A' : (col === '蓝' ? '#1F6FEB' : '#1FA85C'); }
       }
       var title = root.querySelector('[data-audit="title"]');
-      if (title) title.textContent = '第 ' + shortIssue(g.last.issue) + ' 期开奖结果';
+      var fd = FAST[id] && FAST[id].data;
+      var lastLab = (fd && fd.lastResult && (fd.lastResult.issueLabel || fd.lastResult.issue)) || (g.last && g.last.issueLabel) || (g.last && g.last.issue);
+      var nextLab = g.nextIssueLabel || (fd && (fd.issueLabel || fd.nextIssueLabel)) || g.nextIssue;
+      if (title) title.textContent = '第 ' + shortIssue(lastLab) + ' 期开奖结果';
+      var nextSpan = root.querySelector('.rr-next span');
+      if (nextSpan && nextLab) nextSpan.textContent = shortIssue(nextLab) + ' 期';
       var labels = root.querySelectorAll('[data-audit="label"]');
       if (DEFS[id] && DEFS[id].racing) {
         var sm = raceSummary(nums);
@@ -394,11 +399,12 @@
   }
   function syncFastIssue(id, soft) {
     try { console.info('[fast] sync ' + id); } catch (e) {}
-    var def = DEFS[id]; if (!def || !def.mock) { try { console.info('[fast] skip ' + id + ' mock=' + (def && def.mock)); } catch (e) {} return Promise.resolve(); }
+    var def = DEFS[id]; if (!def || !(def.mock || def.racing || /^fast-/.test(id))) { try { console.info('[fast] skip ' + id); } catch (e) {} return Promise.resolve(); }
     FAST[id] = FAST[id] || {};
     FAST[id].lastTry = Date.now();
     return window.LotteryAPI.call('/issues/' + encodeURIComponent(id), { method: 'GET' }).then(function (d) {
       FAST[id].data = d; state.games[id] = shapeFast(id, d);
+      try { var _cr = currentRoute(); if ((_cr.name === 'bet' || _cr.name === 'game') && _cr.id === id && !FAST[id].didRender) { FAST[id].didRender = 1; render(true); } } catch (e) {}
       if (d && d.window) state.win[id] = d.window;
       try {
         var key = 'xc-race-hist-' + id, hist = JSON.parse(localStorage.getItem(key) || '[]');
@@ -420,6 +426,8 @@
       try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e) {}
     }).catch(function (e) {
       console.warn('[fast] /issues 失败，回退本地 mock：' + String(e && (e.stack || e.message) || e));
+      FAST[id].sdkRetry = (FAST[id].sdkRetry || 0) + 1;
+      if (FAST[id].sdkRetry <= 30) { setTimeout(function () { try { syncFastIssue(id, true); } catch (x) {} }, 2000); return; }
       FAST[id].failed = true;
       if (!state.games[id]) state.games[id] = mockGame(id);
       var cr = currentRoute();
@@ -428,10 +436,9 @@
   }
   function mockGame(id) {
     var def = DEFS[id]; if (!def || !def.mock) return null;
-    var sec = def.periodSeconds || 60, now = Date.now();
-    var idx = Math.floor(now / 1000 / sec), issue = 100000 + (idx % 900000);
-    var nextIssue = issue + 1;
+    var issue = 0, nextIssue = 0;
     function makeNums(n) {
+      return [];
       var nums = [], used = {};
       for (var k = 0; k < 7; k++) {
         var v = ((n * 37 + k * 53 + 7) % 49) + 1;
@@ -909,7 +916,7 @@
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
   function pad(n) { return String(n).padStart(2, '0'); }
-  function shortIssue(v) { return String(v == null ? '' : v).slice(-3); }
+  function shortIssue(v) { if (v && typeof v === 'object') v = v.issueLabel || v.issue; var s = String(v == null ? '' : v).replace(/\s*期\s*$/, ''); return s.length >= 7 ? s : s.slice(-3); }
   function colorOf(n) { n = parseInt(n, 10); if (RED.indexOf(n) >= 0) return '红'; if (BLUE.indexOf(n) >= 0) return '蓝'; return '绿'; }
   function waveClass(n) { var c = colorOf(n); return c === '红' ? 'r' : (c === '蓝' ? 'b' : 'g'); }
   function normBall(x) {
@@ -1782,9 +1789,9 @@
       var c = (raw >= 1 && raw <= 10) ? raw : (i + 1);
       boxes += '<span class="nbox" data-audit="num" style="--rc:' + (RACING_COLORS[pad(c)] || '#999') + '">' + (has ? pad(c) : '—') + '</span>';
     }
-    var lastRaw = (g && g.last && g.last.issue) || 1000001, nextRaw = (g && g.nextIssue) || (lastRaw + 1);
-    var lastLabel = (g && g.last && (g.last.issueLabel || g.last.label)) || lastRaw;
-    var nextLabel = (g && (g.nextIssueLabel || g.nextLabel)) || nextRaw;
+    var lastRaw = (g && g.last && g.last.issue) || 0, nextRaw = (g && g.nextIssue) || 0;
+    var lastLabel = (g && g.last && g.last.issueLabel) || (lastRaw ? lastRaw : '——');
+    var nextLabel = (g && (g.nextIssueLabel || g.nextLabel)) || (nextRaw ? nextRaw : '——');
     var sm = raceSummary(has ? nums : []);
     var dragons = has ? sm.dragon.map(function (d) { return '<span class="lbox" data-audit="label">' + d + '</span>'; }).join('') : '<span class="lbox">—</span>';
     var labelRow = '<div class="rr-labels"><span class="lbox wide" data-audit="label">和值 ' + (has ? sm.sum : '—') + '</span><span class="lbox" data-audit="label">' + (has ? sm.big : '—') + '</span><span class="lbox" data-audit="label">' + (has ? sm.odd : '—') + '</span>' + dragons + '</div>';
@@ -2281,7 +2288,8 @@
     var closed = winClosed(betState.game);
     var insuff = (points <= 0) || (notes > 0 && cost > points);
     var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = closed ? winCloseText(betState.game) : (insuff ? (points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）') : ''); hint.classList.toggle('show', closed || insuff); }
-    var submit = $('[data-bet-submit]'); if (submit) { submit.disabled = closed || insuff || betSubmitting; submit.textContent = closed ? '已停售（时段结束）' : (betSubmitting ? '投注中…' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注')); }
+    var _g = state.games[betState.game]; var noReal = !_g || !_g.server || !_g.last || !_g.last.issue;
+    var submit = $('[data-bet-submit]'); if (submit) { submit.disabled = closed || insuff || betSubmitting || noReal; submit.textContent = closed ? '已停售（时段结束）' : (betSubmitting ? '投注中…' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注')); }
     updatePointsUI();
   }
   document.addEventListener('input', function (e) {
@@ -2488,8 +2496,11 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeModal(); closeCancelSheet(); } });
   window.addEventListener('hashchange', function () { closeCancelSheet(); render(); });
   if (!location.hash) { try { history.replaceState(null, '', '#/lotteryhall'); } catch (e) { location.hash = '#/lotteryhall'; } }
-  applyTheme(); render();
-  loadData(true, true); initAuth();
+  applyTheme();
+  (async function () {
+    try { if (typeof ensureAppwrite === 'function') await ensureAppwrite(8000); } catch (e) {}
+    render(); loadData(true, true); initAuth();
+  })();
   // 首屏只渲染一次；后续数据只做局部更新
   var bootWatchdog = setInterval(function () {
     try {
