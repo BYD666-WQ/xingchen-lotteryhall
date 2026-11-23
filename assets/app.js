@@ -69,7 +69,7 @@
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
   function pad(n) { return String(n).padStart(2, '0'); }
-  function shortIssue(v) { return String(v == null ? '' : v).slice(-3); }
+  function shortIssue(v) { if (v && typeof v === 'object') v = v.issueLabel || v.label || v.issue; var s = String(v == null ? '' : v); return s.length >= 7 ? s : s.slice(-3); }
   function colorOf(n) { n = parseInt(n, 10); if (RED.indexOf(n) >= 0) return '红'; if (BLUE.indexOf(n) >= 0) return '蓝'; return '绿'; }
   function waveClass(n) { var c = colorOf(n); return c === '红' ? 'r' : (c === '蓝' ? 'b' : 'g'); }
   function normBall(x) {
@@ -335,8 +335,9 @@
     var nums = (d && d.lastResult && d.lastResult.nums) || [];
     nums = nums.map(function (x) { return (typeof x === 'object') ? { c: String(x.c || ''), z: x.z || '' } : { c: String(x), z: '' }; });
     var g = {
-      last: { issue: (d && d.lastResult && d.lastResult.issue) || ((d && d.issue) ? d.issue - 1 : 0), nums: nums },
+      last: { issue: (d && d.lastResult && d.lastResult.issue) || ((d && d.issue) ? d.issue - 1 : 0), issueLabel: (d && d.lastResult && (d.lastResult.issueLabel || d.lastResult.label)) || null, nums: nums },
       nextIssue: (d && d.issue) || 0,
+      nextIssueLabel: (d && (d.issueLabel || d.nextIssueLabel)) || null,
       mockNext: d && d.closeAt ? Date.parse(d.closeAt) : 0,
       periodSec: (d && d.periodSec) || 60,
       periodSeconds: (d && d.periodSec) || 60,
@@ -1953,15 +1954,16 @@
     (last.nums || []).slice(0, 7).forEach(function (x, idx) {
       var n = parseInt(x.c, 10), col = x.color || colorOf(n);
       var hex = col === '红' ? '#E23A3A' : (col === '蓝' ? '#1F6FEB' : '#1FA85C');
+      if (idx === 6) balls += '<span class="six-plus">+</span>';
       balls += '<span class="nbox six-nbox" data-audit="num"' + (idx === 6 ? ' special' : '') + '" style="background:' + hex + '">' + pad(n) + '</span>';
       zods += '<span class="lbox six-lbox" data-audit="label">' + (x.z || '') + '·' + col + '</span>';
     });
     var head = '<div class="six-head"><span class="race-title">' + esc(def.name) + ' »</span><span class="race-mode">信用玩法 ▾</span><span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
       '<div class="race-result six-result-head" data-audit="head-wrap"><div class="rr-left">' +
-      '<div class="rr-issue" data-audit="title" data-hist-toggle="' + id + '">第 ' + shortIssue(last.issue) + ' 期开奖结果 <i class="hist-arrow">▾</i></div>' +
+      '<div class="rr-issue" data-audit="title" data-hist-toggle="' + id + '">第 ' + shortIssue(last.issueLabel || last.issue) + ' 期开奖结果 <i class="hist-arrow">▾</i></div>' +
       '<div class="rr-nums six-rr-nums">' + balls + '</div>' +
       '<div class="rr-labels six-rr-labels">' + zods + '</div></div>' +
-      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + ((g && g.nextIssue) || last.issue + 1) + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
+      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + ((g && (g.nextIssueLabel || g.nextIssue)) || last.issue + 1) + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
     var cats = SIX_CATS.map(function (c) { return '<button type="button" class="six-cat ' + (cat === c ? 'on' : '') + '" data-six-cat="' + c + '">' + c + '</button>'; }).join('');
     var main;
     if (cat === '特码') {
