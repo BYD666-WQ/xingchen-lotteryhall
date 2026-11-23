@@ -1674,3 +1674,15 @@ body.dark-theme .hist th,body.dark-theme .hist td{background:#1b1b1b !important;
 /* K3 dice: fixed colors independent of theme */
 .k3-die{filter:none !important;background-blend-mode:normal;color-scheme:light;}
 .k3-die i{filter:none !important;background-blend-mode:normal;}
+
+/* K3 结果条改白底（顶部品牌红条不动） */
+.k3-result{background:#fff !important;border-top:0 !important;border-bottom:1px solid #eee !important;color:#333 !important;}
+.k3-result .k3-sum b,.k3-result .k3-next b,.k3-result .k3-next strong{color:#333 !important;}
+.k3-result .k3-tags i{background:#f7f7f7 !important;color:#333 !important;border:1px solid #eee !important;}
+.k3-cd{color:#EC2829 !important;font-style:normal;}
+body.dark-theme .k3-result{background:#1b1b1b !important;border-bottom-color:#2a2a2a !important;color:#eaeaea !important;}
+body.dark-theme .k3-result .k3-sum b,body.dark-theme .k3-result .k3-next b,body.dark-theme .k3-result .k3-next strong{color:#eaeaea !important;}
+body.dark-theme .k3-result .k3-tags i{background:#2a2a2a !important;color:#eaeaea !important;border-color:#333 !important;}
+body.dark-theme .k3-cd{color:#ff6b6b !important;}
+
+.k3-head-top{background:#EC2829 !important;}
