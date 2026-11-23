@@ -1686,3 +1686,16 @@ body.dark-theme .k3-result .k3-tags i{background:#2a2a2a !important;color:#eaeae
 body.dark-theme .k3-cd{color:#ff6b6b !important;}
 
 .k3-head-top{background:#EC2829 !important;}
+
+/* 赛车头部期号：左右同字号，右栏按7位预留 */
+.rr-issue{font-size:15.6px !important;font-weight:800 !important;line-height:1.12 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.rr-right{width:120px !important;min-width:120px !important;flex:0 0 120px !important;}
+.rr-next span{display:block !important;white-space:nowrap !important;font-size:15.6px !important;font-weight:800 !important;line-height:1.12 !important;}
+.rr-next i{font-size:11px !important;font-weight:600 !important;}
+@media (max-width:360px){.rr-right{width:112px !important;min-width:112px !important;flex-basis:112px !important;}.rr-issue,.rr-next span{font-size:14px !important;}}
+
+.rr-right .rr-next span[data-audit="time-row"]{display:block !important;font-size:15.6px !important;font-weight:800 !important;line-height:1.12 !important;white-space:nowrap !important;}
+@media (max-width:360px){.rr-right .rr-next span[data-audit="time-row"]{font-size:14px !important;}}
+
+.rr-right .rr-next span[data-audit="time-row"]:first-child{font-size:15.6px !important;}
+@media (max-width:360px){.rr-right .rr-next span[data-audit="time-row"]:first-child{font-size:14px !important;}}
