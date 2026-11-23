@@ -22,6 +22,12 @@ window.LH_RACING_ODDS = {
   runner: { big: 1.99, small: 1.99, odd: 1.99, even: 1.99 }
 };
 window.LH_GAMES = [
+  { id:'fast-airship-5', name:'幸运飞艇5分', provider:'快开', enabled:true, mock:true, period:'5分钟', periodSec:300, icon:'艇', color:'#4aa99d', drawKey:'mock', racing:true },
+  { id:'fast-bjrace', name:'北京赛车', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'北', color:'#7b68c8', drawKey:'mock', racing:true },
+  { id:'fast-luckyrace', name:'幸运赛车', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'运', color:'#e6a62f', drawKey:'mock', racing:true },
+  { id:'fast-ship10', name:'澳洲幸运10', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'澳', color:'#5a8fd4', drawKey:'mock', racing:true },
+  { id:'fast-tensc', name:'极速时时彩', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'时', color:'#5a7bd4', drawKey:'mock', racing:true },
+  { id:'fast-txffc', name:'腾讯分分彩', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'分', color:'#687bd0', drawKey:'mock', racing:true },
   { id:'newhk', name:'新香港', provider:'主站', enabled:true, dataSource:'manual-draw.json', icon:'新', color:'#e6a62f', drawKey:'newhk', desc:'每日 21:34 · 主站新香港', hideZodiac:true, specialOdds:47.3 },
   { id:'newmo', name:'新澳', provider:'主站', enabled:true, dataSource:'draw.json#Macau', icon:'澳', color:'#3d8ed0', drawKey:'newmo', desc:'每日 21:30 · 主站新澳', hideZodiac:true, specialOdds:47.3, zodiacOdds:48.8 },
   { id:'hk', name:'香港', provider:'主站', enabled:true, dataSource:'draw.json#HongKong', icon:'香', color:'#d94b62', drawKey:'hk', desc:'周日 21:30 · 主站香港', specialOdds:47.3 },
