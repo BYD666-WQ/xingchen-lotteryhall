@@ -69,7 +69,7 @@
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
   function pad(n) { return String(n).padStart(2, '0'); }
-  function shortIssue(v) { if (v && typeof v === 'object') v = v.issueLabel || v.label || v.issue; var s = String(v == null ? '' : v); return s.length >= 7 ? s : s.slice(-3); }
+  function shortIssue(v) { if (v && typeof v === 'object') v = v.issueLabel || v.label || v.issue; var s = String(v == null ? '' : v).replace(/\s*期\s*$/, ''); return s.length >= 7 ? s : s.slice(-3); }
   function colorOf(n) { n = parseInt(n, 10); if (RED.indexOf(n) >= 0) return '红'; if (BLUE.indexOf(n) >= 0) return '蓝'; return '绿'; }
   function waveClass(n) { var c = colorOf(n); return c === '红' ? 'r' : (c === '蓝' ? 'b' : 'g'); }
   function normBall(x) {
@@ -335,9 +335,9 @@
     var nums = (d && d.lastResult && d.lastResult.nums) || [];
     nums = nums.map(function (x) { return (typeof x === 'object') ? { c: String(x.c || ''), z: x.z || '' } : { c: String(x), z: '' }; });
     var g = {
-      last: { issue: (d && d.lastResult && d.lastResult.issue) || ((d && d.issue) ? d.issue - 1 : 0), issueLabel: (d && d.lastResult && (d.lastResult.issueLabel || d.lastResult.label)) || null, nums: nums },
+      last: { issue: (d && d.lastResult && d.lastResult.issue) || ((d && d.issue) ? d.issue - 1 : 0), issueLabel: (d && d.lastResult && (d.lastResult.issueLabel || d.lastResult.label)) ? String(d.lastResult.issueLabel || d.lastResult.label).replace(/\s*期\s*$/, '') : null, nums: nums },
       nextIssue: (d && d.issue) || 0,
-      nextIssueLabel: (d && (d.issueLabel || d.nextIssueLabel)) || null,
+      nextIssueLabel: (d && (d.issueLabel || d.nextIssueLabel)) ? String(d.issueLabel || d.nextIssueLabel).replace(/\s*期\s*$/, '') : null,
       mockNext: d && d.closeAt ? Date.parse(d.closeAt) : 0,
       periodSec: (d && d.periodSec) || 60,
       periodSeconds: (d && d.periodSec) || 60,
