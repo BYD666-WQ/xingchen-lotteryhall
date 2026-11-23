@@ -1781,7 +1781,9 @@
       var c = (raw >= 1 && raw <= 10) ? raw : (i + 1);
       boxes += '<span class="nbox" data-audit="num" style="--rc:' + (RACING_COLORS[pad(c)] || '#999') + '">' + (has ? pad(c) : '—') + '</span>';
     }
-    var last = (g && g.last && g.last.issue) || 1000001, next = (g && g.nextIssue) || (last + 1);
+    var lastRaw = (g && g.last && g.last.issue) || 1000001, nextRaw = (g && g.nextIssue) || (lastRaw + 1);
+    var lastLabel = (g && g.last && (g.last.issueLabel || g.last.label)) || lastRaw;
+    var nextLabel = (g && (g.nextIssueLabel || g.nextLabel)) || nextRaw;
     var sm = raceSummary(has ? nums : []);
     var dragons = has ? sm.dragon.map(function (d) { return '<span class="lbox" data-audit="label">' + d + '</span>'; }).join('') : '<span class="lbox">—</span>';
     var labelRow = '<div class="rr-labels"><span class="lbox wide" data-audit="label">和值 ' + (has ? sm.sum : '—') + '</span><span class="lbox" data-audit="label">' + (has ? sm.big : '—') + '</span><span class="lbox" data-audit="label">' + (has ? sm.odd : '—') + '</span>' + dragons + '</div>';
@@ -1789,9 +1791,9 @@
       '<span class="race-title">' + esc(def.raceTitle || def.name || '极速赛车') + ' »</span>' +
       '<span class="race-mode">信用玩法 ▾</span>' +
       '<span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
-      '<div class="race-result" data-audit="head-wrap"><div class="rr-left"><div class="rr-issue" data-audit="title" data-hist-toggle="' + def.id + '">第 ' + last + ' 期开奖结果 <i class="hist-arrow">▾</i></div>' +
+      '<div class="race-result" data-audit="head-wrap"><div class="rr-left"><div class="rr-issue" data-audit="title" data-hist-toggle="' + def.id + '">第 ' + lastLabel + ' 期开奖结果 <i class="hist-arrow">▾</i></div>' +
       '<div class="rr-nums">' + boxes + '</div>' + labelRow + '</div>' +
-      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + next + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
+      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + nextLabel + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
       '<div class="race-balance"><span>余额：<b>' + (parseInt(points, 10) || 0) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
   }
   function menuHtml() {
