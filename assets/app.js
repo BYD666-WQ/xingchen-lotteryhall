@@ -2043,8 +2043,8 @@
       var tGrid = '';
       for (var ti = 0; ti <= 9; ti++) {
         var tKey = 'tail:' + ti;
-        var to = tailObj ? Number(tailObj[String(ti)]) : (ti === 0 ? 2.12 : 1.8);
-        if (!isFinite(to) || to <= 0) to = ti === 0 ? 2.12 : 1.8;
+        var to = tailObj ? Number(tailObj[String(ti)]) : (ti === 0 ? 2.0 : 1.8);
+        if (!isFinite(to) || to <= 0) to = ti === 0 ? 2.0 : 1.8;
         var tb = '';
         for (var tn = 1; tn <= 49; tn++) if (tn % 10 === ti) tb += sixBall(tn);
         tGrid += '<button type="button" class="six-tail-row ' + (isSel(tKey) ? 'on' : '') + '" data-bet="' + tKey + '" data-label="' + (ti === 0 ? '0尾' : ti + '尾') + '" data-odds="' + to + '"><span class="six-tail-left"><b>' + ti + '尾</b><em>' + fmtOdds(to) + '</em></span><span class="six-tail-balls">' + tb + '</span></button>';
