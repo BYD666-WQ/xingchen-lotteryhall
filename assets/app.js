@@ -1324,7 +1324,7 @@
     if (cat === 'two-side') return '<div class="bet-content-head"><div><h2>两面</h2><p>大小 / 单双 / 合单合双 / 尾数大小</p></div>' + betHelp('two-side') + '</div>' + optionGrid([{k:'big',n:'大',o:'1.96'},{k:'small',n:'小',o:'1.96'},{k:'odd',n:'单',o:'1.96'},{k:'even',n:'双',o:'1.96'},{k:'sum-odd',n:'合单',o:'1.96'},{k:'sum-even',n:'合双',o:'1.96'},{k:'tail-big',n:'尾大',o:'1.96'},{k:'tail-small',n:'尾小',o:'1.96'}], 'two');
     if (cat === 'color') { var cwo = sixColorOdds(betState.game); return '<div class="bet-content-head"><div><h2>色波</h2><p>特码波色三选一</p></div>' + betHelp('color') + '</div>' + optionGrid([{k:'r',n:'红波',o:fmtOdds(cwo.red)},{k:'b',n:'蓝波',o:fmtOdds(cwo.blue)},{k:'g',n:'绿波',o:fmtOdds(cwo.green)}], 'color'); };
     if (cat === 'regular6') return '<div class="bet-content-head"><div><h2>正码 1-6</h2><p>按位置结算</p></div>' + betHelp('regular') + '</div>' + optionGrid([{k:'1',n:'正码一',o:'7.8'},{k:'2',n:'正码二',o:'7.8'},{k:'3',n:'正码三',o:'7.8'},{k:'4',n:'正码四',o:'7.8'},{k:'5',n:'正码五',o:'7.8'},{k:'6',n:'正码六',o:'7.8'}], 'reg6');
-    if (cat === 'tail') return '<div class="bet-content-head"><div><h2>尾数</h2><p>预测特码尾数 0–9</p></div></div>' + optionGrid([{k:'0',n:'尾0',o:'9.8'},{k:'1',n:'尾1',o:'9.8'},{k:'2',n:'尾2',o:'9.8'},{k:'3',n:'尾3',o:'9.8'},{k:'4',n:'尾4',o:'9.8'},{k:'5',n:'尾5',o:'9.8'},{k:'6',n:'尾6',o:'9.8'},{k:'7',n:'尾7',o:'9.8'},{k:'8',n:'尾8',o:'9.8'},{k:'9',n:'尾9',o:'9.8'}], 'tail');
+    if (cat === 'tail') return '<div class="bet-content-head"><div><h2>平特尾</h2><p>预测特码尾数 0–9</p></div></div>' + optionGrid([{k:'0',n:'尾0',o:'9.8'},{k:'1',n:'尾1',o:'9.8'},{k:'2',n:'尾2',o:'9.8'},{k:'3',n:'尾3',o:'9.8'},{k:'4',n:'尾4',o:'9.8'},{k:'5',n:'尾5',o:'9.8'},{k:'6',n:'尾6',o:'9.8'},{k:'7',n:'尾7',o:'9.8'},{k:'8',n:'尾8',o:'9.8'},{k:'9',n:'尾9',o:'9.8'}], 'tail');
     if (cat === 'combo-he') return '<div class="bet-content-head"><div><h2>合肖</h2><p>组合生肖命中即中</p></div></div>' + optionGrid([{k:'a',n:'鼠+牛+虎',o:'3.2',z:'鼠,牛,虎'},{k:'b',n:'兔+龙+蛇',o:'3.2',z:'兔,龙,蛇'},{k:'c',n:'马+羊+猴',o:'3.2',z:'马,羊,猴'},{k:'d',n:'鸡+狗+猪',o:'3.2',z:'鸡,狗,猪'}], 'he');
     if (cat === 'regular') return '<div class="bet-content-head"><div><h2>正码 1-6</h2><p>选择正码位置，按该位置开奖号码结算</p></div>' + betHelp('regular') + '</div>' + optionGrid([{k:'1',n:'正码一',o:'7.8'},{k:'2',n:'正码二',o:'7.8'},{k:'3',n:'正码三',o:'7.8'},{k:'4',n:'正码四',o:'7.8'},{k:'5',n:'正码五',o:'7.8'},{k:'6',n:'正码六',o:'7.8'}], 'reg');
     if (cat === 'miss') return '<div class="bet-content-head"><div><h2>自选不中</h2><p>选一个号码，7 个开奖号码都不包含它即中</p></div>' + betHelp('miss') + '</div>' + numberGrid('miss-n', ODDS.miss);
@@ -1969,7 +1969,7 @@
     return out;
   }
   var SIX_ODDS = { colorWave: { red: 2.7, blue: 2.8, green: 2.8 }, specialZodiac: { horse: 9.5, other: 11.7 }, flatZodiac: { horse: 1.8, other: 2 } };
-  var SIX_CATS = ['特码','两面','色波','特肖','正码','正特','正码1-6','连码','平特一肖','尾数','合肖','自选不中','连肖','尾数连','龙虎斗','长龙'];
+  var SIX_CATS = ['特码','两面','色波','特肖','正码','正特','正码1-6','连码','平特一肖','平特尾','合肖','自选不中','连肖','尾数连','龙虎斗','长龙'];
   var SIX_ZODIAC = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
   function sixBall(n) {
     var c = colorOf(n), cls = c === '红' ? 'rb' : (c === '蓝' ? 'bb' : 'gb');
@@ -1977,6 +1977,7 @@
   }
   function sixSpecialPage(id, def, g) {
     var cat = betState.sixCat || '特码';
+    if (cat === '尾数') cat = '平特尾';
     var last = (g && g.last) || { issue: 0, nums: [] };
     var balls = '', zods = '';
     (last.nums || []).slice(0, 7).forEach(function (x, idx) {
@@ -2036,17 +2037,19 @@
         nGrid += '<button type="button" class="six-cell ' + (isSel(nKey) ? 'on' : '') + '" data-bet="' + nKey + '" data-label="' + pad(ni) + '" data-odds="' + no + '">' + sixBall(ni) + '<em class="six-odds">' + fmtOdds(no) + '</em></button>';
       }
       main = '<div class="six-title">' + cat + '</div><div class="six-grid">' + nGrid + '</div>';
-    } else if (cat === '尾数') {
+    } else if (cat === '平特尾') {
       var tob = window.LH_ODDS_BY_PLAY || {};
-      var to = Number(tob.tail);
-      if (!isFinite(to) || to <= 0) to = Number(SIX_ODDS.tail);
-      if (!isFinite(to) || to <= 0) to = 2.0; /* TODO: /games.oddsByPlay.tail 字段待 hacker 补 */
+      var tailObj = (tob.tail && typeof tob.tail === 'object') ? tob.tail : null;
       var tGrid = '';
       for (var ti = 0; ti <= 9; ti++) {
         var tKey = 'tail:' + ti;
-        tGrid += '<button type="button" class="six-tail-cell ' + (isSel(tKey) ? 'on' : '') + '" data-bet="' + tKey + '" data-label="尾 ' + ti + '" data-odds="' + to + '"><b>' + ti + '</b><em>' + fmtOdds(to) + '</em><small>尾 ' + ti + '</small></button>';
+        var to = tailObj ? Number(tailObj[String(ti)]) : (ti === 0 ? 2.12 : 1.8);
+        if (!isFinite(to) || to <= 0) to = ti === 0 ? 2.12 : 1.8;
+        var tb = '';
+        for (var tn = 1; tn <= 49; tn++) if (tn % 10 === ti) tb += sixBall(tn);
+        tGrid += '<button type="button" class="six-tail-row ' + (isSel(tKey) ? 'on' : '') + '" data-bet="' + tKey + '" data-label="' + (ti === 0 ? '0尾' : ti + '尾') + '" data-odds="' + to + '"><span class="six-tail-left"><b>' + ti + '尾</b><em>' + fmtOdds(to) + '</em></span><span class="six-tail-balls">' + tb + '</span></button>';
       }
-      main = '<div class="six-title">尾数</div><div class="six-tail-grid">' + tGrid + '</div>';
+      main = '<div class="six-title">平特尾</div><div class="six-tail-list">' + tGrid + '</div>';
     } else {
       main = '<div class="six-title">' + esc(cat) + '</div><div class="six-empty"><b>待开放</b><span>该玩法暂未开放</span></div>';
     }
