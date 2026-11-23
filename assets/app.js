@@ -397,6 +397,26 @@
       }
     } catch (e) {}
   }
+  var DAILY_SYNC = {};
+  function syncDailyIssue(id) {
+    if (!/^(hk|newmo|newhk)$/.test(id) || DAILY_SYNC[id]) return;
+    DAILY_SYNC[id] = 1;
+    try {
+      window.LotteryAPI.call('/issues/' + encodeURIComponent(id) + '?t=' + Date.now(), { method: 'GET' }).then(function (d) {
+        if (!d || !d.lastResult) { DAILY_SYNC[id] = 0; return; }
+        var g = state.games[id] || (state.games[id] = { last: {}, history: [] });
+        var lr = d.lastResult || {};
+        g.last = g.last || {};
+        g.last.issue = d.issue || lr.issue;
+        g.last.issueLabel = String(d.issueLabel || lr.issueLabel || lr.label || lr.issue || d.issue || '').replace(/\s*期\s*$/, '');
+        g.last.nums = (lr.nums || []).map(function (x) { return (typeof x === 'object') ? x : { c: String(x), z: '' }; });
+        g.nextIssue = d.issue;
+        g.nextIssueLabel = String(d.issueLabel || d.nextIssueLabel || '').replace(/\s*期\s*$/, '');
+        g.server = true;
+        if (currentRoute().id === id) updateFastHeader(id);
+      }).catch(function () { DAILY_SYNC[id] = 0; });
+    } catch (e) { DAILY_SYNC[id] = 0; }
+  }
   function syncFastIssue(id, soft) {
     try { console.info('[fast] sync ' + id); } catch (e) {}
     var def = DEFS[id]; if (!def || !(def.mock || def.racing || /^fast-/.test(id))) { try { console.info('[fast] skip ' + id); } catch (e) {} return Promise.resolve(); }
@@ -483,6 +503,7 @@
     return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-last card"><div class="data-empty" data-loading>正在读取 ' + esc(def.name) + ' 数据…<div class="load-hint">首次加载可能较慢，最长等待 20 秒</div></div></div>';
   }
   function gamePage(id) {
+    if (/^(hk|newmo|newhk)$/.test(id)) syncDailyIssue(id);
     try { console.info('[gp] ' + id + ' mock=' + (DEFS[id] && DEFS[id].mock)); } catch (e) {}
     var def = DEFS[id]; if (!def) return hallPage();
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
@@ -2059,7 +2080,7 @@
       '<div class="k3-result"><span class="k3-res-dice">' + (has ? raw.map(function (n) { return k3Die(n); }).join('') : k3Die('') + k3Die('') + k3Die('')) + '</span>' +
       '<span class="k3-sum">和值<b>' + (has ? sum : '—') + '</b></span>' +
       '<span class="k3-tags">' + (bigSmall ? '<i>' + bigSmall + '</i>' : '') + (oe ? '<i>' + oe + '</i>' : '') + '</span>' +
-      '<span class="k3-next"><b>下一期 ' + esc((g && g.nextIssue) || '—') + '</b><strong>封盘 ⏱ <em class="k3-cd">' + countdownText(g) + '</em></strong></span></div></div>';
+      '<span class="k3-next"><b>下一期 ' + esc((g && (g.nextIssueLabel || g.nextIssue)) || '—') + '</b><strong>封盘 ⏱ <em class="k3-cd">' + countdownText(g) + '</em></strong></span></div></div>';
     var cats = [['tri','全骰、围骰'],['sum','点数'],['long','长龙']].map(function (x) {
       return '<button type="button" class="k3-cat ' + (cat === x[0] ? 'on' : '') + '" data-k3-cat="' + x[0] + '">' + x[1] + '</button>';
     }).join('');
@@ -2094,6 +2115,7 @@
   }
 
   function betPage(id) {
+    if (/^(hk|newmo|newhk)$/.test(id)) syncDailyIssue(id);
     if (betState.game !== id) { betState.game = id; betState.sel = loadSel(id); }
     var def = DEFS[id] || DEFS.newhk;
     if (def.mock && (!FAST[id] || !FAST[id].data || (Date.now() - (FAST[id].lastTry || 0) > 5500))) syncFastIssue(id, true);
