@@ -10,6 +10,12 @@
     { id:'newhk', name:'新港', provider:'主站', enabled:true, icon:'港', color:'#e6a62f', drawKey:'newhk', desc:'每日 21:34 · 主站新港' },
     { id:'newmo', name:'新澳', provider:'主站', enabled:true, icon:'澳', color:'#3d8ed0', drawKey:'newmo', desc:'每日 21:30 · 主站新澳' },
     { id:'hk', name:'香港', provider:'主站', enabled:true, icon:'香', color:'#d94b62', drawKey:'hk', desc:'周日 21:30 · 主站香港' },
+    { id:'fast-airship-5', name:'幸运飞艇5分', provider:'快开', enabled:true, mock:true, period:'5分钟', periodSec:300, icon:'艇', color:'#4aa99d', drawKey:'mock', racing:true },
+    { id:'fast-bjrace', name:'北京赛车', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'北', color:'#7b68c8', drawKey:'mock', racing:true },
+    { id:'fast-luckyrace', name:'幸运赛车', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'运', color:'#e6a62f', drawKey:'mock', racing:true },
+    { id:'fast-ship10', name:'澳洲幸运10', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'澳', color:'#5a8fd4', drawKey:'mock', racing:true },
+    { id:'fast-tensc', name:'极速时时彩', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'时', color:'#5a7bd4', drawKey:'mock', racing:true },
+    { id:'fast-txffc', name:'腾讯分分彩', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'分', color:'#687bd0', drawKey:'mock', racing:true },
     { id:'fast-race-1', name:'1分钟赛车', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'1', color:'#4d8fd8', drawKey:'mock', racing:true },
     { id:'fast-race-2', name:'2分钟赛车', provider:'快开', enabled:true, mock:true, period:'2分钟', periodSec:120, icon:'2', color:'#5a7bd4', drawKey:'mock', racing:true },
     { id:'fast-race-5', name:'5分钟赛车', provider:'快开', enabled:true, mock:true, period:'5分钟', periodSec:300, icon:'5', color:'#687bd0', drawKey:'mock', racing:true },
@@ -223,14 +229,14 @@
     { name:'新澳门六合彩', id:'newmo', color:'#3d8ed0', icon:'澳' },
     { name:'澳门六合彩', soon:true, color:'#4aa99d', icon:'门' },
     { name:'极速快三', id:'fast-k3', color:'#d45f82', icon:'快' },
-    { name:'腾讯分分彩', soon:true, color:'#687bd0', icon:'分' },
+    { name:'腾讯分分彩', id:'fast-txffc', color:'#687bd0', icon:'分' },
     { name:'极速28', soon:true, color:'#d08a3f', icon:'28' },
     { name:'幸运28', soon:true, color:'#c9a23f', icon:'幸' },
-    { name:'极速飞艇', id:'fast-race-2', color:'#5a8fd4', icon:'艇' },
-    { name:'幸运飞艇', id:'fast-race-5', color:'#4aa99d', icon:'飞' },
-    { name:'北京赛车', id:'fast-race-10', color:'#7b68c8', icon:'北' },
-    { name:'幸运赛车', id:'newhk', game:true, color:'#e6a62f', icon:'运' },
-    { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' }
+    { name:'澳洲幸运10', id:'fast-ship10', color:'#5a8fd4', icon:'澳' },
+    { name:'幸运飞艇', id:'fast-airship-5', color:'#4aa99d', icon:'飞' },
+    { name:'北京赛车', id:'fast-bjrace', color:'#7b68c8', icon:'北' },
+    { name:'幸运赛车', id:'fast-luckyrace', color:'#e6a62f', icon:'运' },
+    { name:'极速时时彩', id:'fast-tensc', color:'#5a7bd4', icon:'时' }
   ];
   function hallGrid18() {
     return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">游戏大厅</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid hall18">' + HALL18.map(function (x) {
@@ -675,7 +681,12 @@
         if (ob.oneZodiac != null) ODDS.oneZodiac = Number(ob.oneZodiac);
         if (ob.flatZodiac != null) ODDS.specialZodiac = Number(ob.flatZodiac && ob.flatZodiac.default != null ? ob.flatZodiac.default : ob.flatZodiac);
         if (ob.horse != null) ODDS.horse = Number(ob.horse);
-        if (ob.colorWave != null) SIX_ODDS.colorWave = Number(ob.colorWave);
+        if (ob.colorWave != null) {
+          if (typeof ob.colorWave === 'object') {
+            SIX_ODDS.colorWave = { red: Number(ob.colorWave.red) || 2.7, blue: Number(ob.colorWave.blue) || 2.8, green: Number(ob.colorWave.green) || 2.8 };
+          } else { var cwv = Number(ob.colorWave) || 2.7; SIX_ODDS.colorWave = { red: cwv, blue: cwv, green: cwv }; }
+        }
+        if (ob.colorWaveByGame && typeof ob.colorWaveByGame === 'object') { COLOR_WAVE_BY_GAME = ob.colorWaveByGame; }
         if (ob.regular != null) SIX_ODDS.regular = Number(ob.regular);
         if (ob.zhengte != null) SIX_ODDS.zhengte = Number(ob.zhengte);
         if (ob.tail != null) SIX_ODDS.tail = Number(ob.tail);
@@ -1057,14 +1068,14 @@
     { name:'新澳门六合彩', id:'newmo', color:'#3d8ed0', icon:'澳' },
     { name:'澳门六合彩', soon:true, color:'#4aa99d', icon:'门' },
     { name:'极速快三', id:'fast-k3', color:'#d45f82', icon:'快' },
-    { name:'腾讯分分彩', soon:true, color:'#687bd0', icon:'分' },
+    { name:'腾讯分分彩', id:'fast-txffc', color:'#687bd0', icon:'分' },
     { name:'极速28', soon:true, color:'#d08a3f', icon:'28' },
     { name:'幸运28', soon:true, color:'#c9a23f', icon:'幸' },
-    { name:'极速飞艇', id:'fast-race-2', color:'#5a8fd4', icon:'艇' },
-    { name:'幸运飞艇', id:'fast-race-5', color:'#4aa99d', icon:'飞' },
-    { name:'北京赛车', id:'fast-race-10', color:'#7b68c8', icon:'北' },
-    { name:'幸运赛车', id:'newhk', game:true, color:'#e6a62f', icon:'运' },
-    { name:'极速时时彩', soon:true, color:'#5a7bd4', icon:'时' }
+    { name:'澳洲幸运10', id:'fast-ship10', color:'#5a8fd4', icon:'澳' },
+    { name:'幸运飞艇', id:'fast-airship-5', color:'#4aa99d', icon:'飞' },
+    { name:'北京赛车', id:'fast-bjrace', color:'#7b68c8', icon:'北' },
+    { name:'幸运赛车', id:'fast-luckyrace', color:'#e6a62f', icon:'运' },
+    { name:'极速时时彩', id:'fast-tensc', color:'#5a7bd4', icon:'时' }
   ];
   function hallGrid18() {
     return '<section class="hot-section"><div class="hot-head"><h2 class="hot-title">游戏大厅</h2><a class="hot-more" href="#/history">全部 ›</a></div><div class="hot-grid hall18">' + HALL18.map(function (x) {
@@ -1215,7 +1226,7 @@
   function isSel(k) { return !!betState.sel[k]; }
   function selectedCount() { return Object.keys(betState.sel).length; }
   function totalNotes() { var q = parseInt(betState.qty, 10); return (isFinite(q) && q > 0) ? selectedCount() * q : 0; }
-  function totalCost() { return totalNotes() * 2; }
+  function totalCost() { return totalNotes(); }
   function betHelp(cat) { return '<a class="help-link" href="#/howto/' + cat + '" aria-label="玩法说明">?</a>'; }
   function zodiacGrid(prefix, odds) {
     return '<div class="zodiac-grid">' + ZODIACS.map(function (z) {
@@ -1282,7 +1293,7 @@
     if (cat === 'one-zodiac') return '<div class="bet-content-head"><div><h2>一肖</h2><p>一肖 / 平特肖 ' + ODDS.oneZodiac + ' 倍 · 马 ' + (ODDS.horse || 1.8) + ' 倍</p></div>' + betHelp('one-zodiac') + '</div>' + zodiacGrid('one-z', ODDS.oneZodiac);
     if (cat === 'special-zodiac') return '<div class="bet-content-head"><div><h2>特肖</h2><p>只判断特码生肖，选一个生肖</p></div>' + betHelp('special-zodiac') + '</div>' + zodiacGrid('spz-z', zo);
     if (cat === 'two-side') return '<div class="bet-content-head"><div><h2>两面</h2><p>大小 / 单双 / 合单合双 / 尾数大小</p></div>' + betHelp('two-side') + '</div>' + optionGrid([{k:'big',n:'大',o:'1.96'},{k:'small',n:'小',o:'1.96'},{k:'odd',n:'单',o:'1.96'},{k:'even',n:'双',o:'1.96'},{k:'sum-odd',n:'合单',o:'1.96'},{k:'sum-even',n:'合双',o:'1.96'},{k:'tail-big',n:'尾大',o:'1.96'},{k:'tail-small',n:'尾小',o:'1.96'}], 'two');
-    if (cat === 'color') return '<div class="bet-content-head"><div><h2>色波</h2><p>特码波色三选一</p></div>' + betHelp('color') + '</div>' + optionGrid([{k:'r',n:'红波',o:'2.8'},{k:'b',n:'蓝波',o:'2.8'},{k:'g',n:'绿波',o:'2.8'}], 'color');
+    if (cat === 'color') { var cwo = sixColorOdds(gameId); return '<div class="bet-content-head"><div><h2>色波</h2><p>特码波色三选一</p></div>' + betHelp('color') + '</div>' + optionGrid([{k:'r',n:'红波',o:fmtOdds(cwo.red)},{k:'b',n:'蓝波',o:fmtOdds(cwo.blue)},{k:'g',n:'绿波',o:fmtOdds(cwo.green)}], 'color'); };
     if (cat === 'regular6') return '<div class="bet-content-head"><div><h2>正码 1-6</h2><p>按位置结算</p></div>' + betHelp('regular') + '</div>' + optionGrid([{k:'1',n:'正码一',o:'7.8'},{k:'2',n:'正码二',o:'7.8'},{k:'3',n:'正码三',o:'7.8'},{k:'4',n:'正码四',o:'7.8'},{k:'5',n:'正码五',o:'7.8'},{k:'6',n:'正码六',o:'7.8'}], 'reg6');
     if (cat === 'tail') return '<div class="bet-content-head"><div><h2>尾数</h2><p>预测特码尾数 0–9</p></div></div>' + optionGrid([{k:'0',n:'尾0',o:'9.8'},{k:'1',n:'尾1',o:'9.8'},{k:'2',n:'尾2',o:'9.8'},{k:'3',n:'尾3',o:'9.8'},{k:'4',n:'尾4',o:'9.8'},{k:'5',n:'尾5',o:'9.8'},{k:'6',n:'尾6',o:'9.8'},{k:'7',n:'尾7',o:'9.8'},{k:'8',n:'尾8',o:'9.8'},{k:'9',n:'尾9',o:'9.8'}], 'tail');
     if (cat === 'combo-he') return '<div class="bet-content-head"><div><h2>合肖</h2><p>组合生肖命中即中</p></div></div>' + optionGrid([{k:'a',n:'鼠+牛+虎',o:'3.2',z:'鼠,牛,虎'},{k:'b',n:'兔+龙+蛇',o:'3.2',z:'兔,龙,蛇'},{k:'c',n:'马+羊+猴',o:'3.2',z:'马,羊,猴'},{k:'d',n:'鸡+狗+猪',o:'3.2',z:'鸡,狗,猪'}], 'he');
@@ -1343,7 +1354,7 @@
     else if ((m = /^sum:(big|small|odd|even)$/i.exec(p))) { label = '冠亚和 ' + ({ big: '大', small: '小', odd: '单', even: '双' })[m[1].toLowerCase()]; odds = betNumOr((R.sum || {})[m[1].toLowerCase()], 1.99); }
     else if ((m = /^sum:(\d{1,2})$/i.exec(p))) { label = '冠亚和 ' + Number(m[1]); odds = betNumOr((R.sumExact || {})[Number(m[1])], 1.99); }
     else if ((m = /^combo:(\d{1,2})_(\d{1,2})$/i.exec(p))) { label = '冠亚组合 ' + pad(m[1]) + '_' + pad(m[2]); odds = betNumOr(R.combo, 42.5); }
-    else if ((m = /^color:(red|blue|green)$/i.exec(p))) { label = '色波 ' + ({ red: '红', blue: '蓝', green: '绿' })[m[1].toLowerCase()]; odds = betNumOr(O.colorWave, 2.8); }
+    else if ((m = /^color:(red|blue|green)$/i.exec(p))) { label = '色波 ' + ({ red: '红', blue: '蓝', green: '绿' })[m[1].toLowerCase()]; odds = betNumOr(sixColorOdds(gameId)[m[1].toLowerCase()], 2.7); }
     else if ((m = /^zodiac:([\u4e00-\u9fa5])$/.exec(p))) { label = '特肖 ' + m[1]; odds = betPairOdds(O.specialZodiac, m[1], 4.9); }
     else if ((m = /^flat:([\u4e00-\u9fa5])$/.exec(p))) { label = '平特一肖 ' + m[1]; odds = betPairOdds(O.flatZodiac, m[1], 2); }
     else if ((m = /^tail:(\d)$/i.exec(p))) { label = '尾数 ' + m[1]; odds = betNumOr(O.tail, 9.8); }
@@ -1775,7 +1786,7 @@
     var dragons = has ? sm.dragon.map(function (d) { return '<span class="lbox" data-audit="label">' + d + '</span>'; }).join('') : '<span class="lbox">—</span>';
     var labelRow = '<div class="rr-labels"><span class="lbox wide" data-audit="label">和值 ' + (has ? sm.sum : '—') + '</span><span class="lbox" data-audit="label">' + (has ? sm.big : '—') + '</span><span class="lbox" data-audit="label">' + (has ? sm.odd : '—') + '</span>' + dragons + '</div>';
     return '<div class="race-head">' +
-      '<span class="race-title">' + esc(def.raceTitle || '极速赛车') + ' »</span>' +
+      '<span class="race-title">' + esc(def.raceTitle || def.name || '极速赛车') + ' »</span>' +
       '<span class="race-mode">信用玩法 ▾</span>' +
       '<span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
       '<div class="race-result" data-audit="head-wrap"><div class="rr-left"><div class="rr-issue" data-audit="title" data-hist-toggle="' + def.id + '">第 ' + last + ' 期开奖结果 <i class="hist-arrow">▾</i></div>' +
@@ -1916,7 +1927,17 @@
       '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
     return topHtml + bottom;
   }
-  var SIX_ODDS = { colorWave: 2.7, specialZodiac: { horse: 9.5, other: 11.7 }, flatZodiac: { horse: 1.8, other: 2 } };
+  var COLOR_WAVE_BY_GAME = {};
+  function sixColorOdds(gameId) {
+    var out = { red: 2.7, blue: 2.8, green: 2.8 };
+    var base = SIX_ODDS && SIX_ODDS.colorWave;
+    if (base && typeof base === 'object') { out.red = Number(base.red) || out.red; out.blue = Number(base.blue) || out.blue; out.green = Number(base.green) || out.green; }
+    else if (base) { var v = Number(base) || 2.7; out = { red: v, blue: v, green: v }; }
+    var g = COLOR_WAVE_BY_GAME && COLOR_WAVE_BY_GAME[gameId];
+    if (g && typeof g === 'object') { if (g.red != null) out.red = Number(g.red); if (g.blue != null) out.blue = Number(g.blue); if (g.green != null) out.green = Number(g.green); }
+    return out;
+  }
+  var SIX_ODDS = { colorWave: { red: 2.7, blue: 2.8, green: 2.8 }, specialZodiac: { horse: 9.5, other: 11.7 }, flatZodiac: { horse: 1.8, other: 2 } };
   var SIX_CATS = ['特码','两面','色波','特肖','正码','正特','正码1-6','连码','平特一肖','尾数','合肖','自选不中','连肖','尾数连','龙虎斗','长龙'];
   var SIX_ZODIAC = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
   function sixBall(n) {
@@ -1966,8 +1987,9 @@
         return '<button type="button" class="six-opt ' + (isSel('flat:' + z) ? 'on' : '') + '" data-bet="flat:' + z + '" data-label="' + z + '" data-odds="' + fo + '"><span>' + z + '</span><em>' + fmtOdds(fo) + '</em></button>';
       }).join('') + '</div>';
     } else if (cat === '色波') {
-      var o3 = SIX_ODDS.colorWave;
+      var cw = sixColorOdds(gameId);
       main = '<div class="six-title">色波</div><div class="six-opts">' + [['红波','red'],['蓝波','blue'],['绿波','green']].map(function (z) {
+        var o3 = cw[z[1]];
         return '<button type="button" class="six-opt ' + (isSel('color:' + z[1]) ? 'on' : '') + '" data-bet="color:' + z[1] + '" data-label="' + z[0] + '" data-odds="' + o3 + '"><span>' + z[0] + '</span><em>' + fmtOdds(o3) + '</em></button>';
       }).join('') + '</div>';
     } else if (cat === '正码' || cat === '正特') {
@@ -2026,7 +2048,7 @@
       '<div class="k3-result"><span class="k3-res-dice">' + (has ? raw.map(function (n) { return k3Die(n); }).join('') : k3Die('') + k3Die('') + k3Die('')) + '</span>' +
       '<span class="k3-sum">和值<b>' + (has ? sum : '—') + '</b></span>' +
       '<span class="k3-tags">' + (bigSmall ? '<i>' + bigSmall + '</i>' : '') + (oe ? '<i>' + oe + '</i>' : '') + '</span>' +
-      '<span class="k3-next"><b>下一期 ' + esc((g && g.nextIssue) || '—') + '</b><strong>封盘 ⏱ ' + countdownText(g) + '</strong></span></div></div>';
+      '<span class="k3-next"><b>下一期 ' + esc((g && g.nextIssue) || '—') + '</b><strong>封盘 ⏱ <em class="k3-cd">' + countdownText(g) + '</em></strong></span></div></div>';
     var cats = [['tri','全骰、围骰'],['sum','点数'],['long','长龙']].map(function (x) {
       return '<button type="button" class="k3-cat ' + (cat === x[0] ? 'on' : '') + '" data-k3-cat="' + x[0] + '">' + x[1] + '</button>';
     }).join('');
@@ -2082,7 +2104,7 @@
     if (validCats.indexOf(cat) < 0) cat = def.racing ? 'two-side' : 'special';
     betState.cat = cat;
     var qty = parseInt(betState.qty, 10) || 1;
-    var cost = totalNotes() * 2;
+    var cost = totalNotes();
     var gc = gameConfigs[id];
     var cfgNote = gc ? '<div class="bet-cfg">开奖配置：' + (gc.mode === 'manual' ? '手动 ' + (gc.forcedResult || '') : '随机') + ' · 难度 ' + (gc.difficulty === 'easy' ? '易' : gc.difficulty === 'hard' ? '难' : '中') + '</div>' : '';
     var my = myBetsHtml();
@@ -2244,7 +2266,7 @@
   }
   function settleBets() { /* 云端结算未开放，注单保持 pending；不再本地结算 */ }
   function updateBetBar() {
-    var notes = totalNotes(), cost = notes * 2;
+    var notes = totalNotes(), cost = notes;
     $$('[data-bet-count]').forEach(function (el) { el.textContent = notes; });
     $$('[data-bet-cost]').forEach(function (el) { el.textContent = cost; });
     var picks = [];
@@ -2391,7 +2413,7 @@
       var qty = parseInt(betState.qty, 10);
       if (!nodes.length) { showToast('请先选择玩法'); return; }
       if (!qty || qty < 1) { showToast('请输入注数'); return; }
-      var notes = nodes.length * qty, cost = notes * 2;
+      var notes = nodes.length * qty, cost = notes;
       var g = state.games[betState.game] || mockGame(betState.game);
       if (!g) { showToast('彩种数据未就绪'); return; }
 
