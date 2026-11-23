@@ -1703,3 +1703,13 @@ body.dark-theme .k3-cd{color:#ff6b6b !important;}
 .ball.plus{width:16px !important;height:25px !important;font-size:18px !important;line-height:25px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;color:#999 !important;background:transparent !important;box-shadow:none !important;}
 
 .six-plus{display:inline-flex;align-items:center;justify-content:center;width:14px;height:25px;color:#999;font-size:18px;line-height:25px;vertical-align:middle;}
+
+/* 平特尾 10 行：左尾号+赔率，右波色球 */
+.six-tail-list{background:#fff;}
+.six-tail-row{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:54px;padding:0 8px;background:#fff;border:0;border-bottom:1px solid #eee;box-sizing:border-box;color:#333;text-align:left;}
+.six-tail-row.on{background:#f1f1f1;}
+.six-tail-left{display:flex;align-items:baseline;gap:6px;flex:0 0 auto;}
+.six-tail-left b{font-size:18px;font-weight:800;}
+.six-tail-left em{font-style:normal;font-size:13px;color:#666;}
+.six-tail-balls{display:flex;align-items:center;gap:3px;flex-wrap:nowrap;}
+.six-tail-balls .six-ball{width:24px;height:24px;line-height:24px;font-size:10px;}
