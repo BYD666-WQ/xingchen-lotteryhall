@@ -34,7 +34,7 @@
   var RED = [1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46];
   var BLUE = [3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48];
   var KEY = 'Xc9vF2026';
-  var state = { games: {}, config: {}, attrs: {}, win: {}, histApi: {}, histLoading: {}, noticeDismissed: {}, updated: 0, error: '', loading: false };
+  var state = { games: {}, config: {}, attrs: {}, win: {}, histApi: {}, histLoading: {}, noticeDismissed: {}, closedPrev: {}, closedDismissed: {}, closedShown: {}, updated: 0, error: '', loading: false };
   function noticeHash(s) { var h = 0; for (var i = 0; i < String(s).length; i++) { h = ((h << 5) - h + String(s).charCodeAt(i)) | 0; } return 'n' + ((h >>> 0).toString(36)); }
   function noticeIsDismissed(id) { if (state.noticeDismissed[id]) return true; try { return localStorage.getItem('noticeDismissed:' + id) === '1'; } catch (e) { return false; } }
   function dismissNotice(id) { if (!id) return; state.noticeDismissed[id] = true; try { localStorage.setItem('noticeDismissed:' + id, '1'); } catch (e) {} }
@@ -393,7 +393,7 @@
         var vals = ['和值 ' + sm.sum, sm.big, sm.odd].concat(sm.dragon);
         for (var j = 0; j < labels.length && j < vals.length; j++) labels[j].textContent = vals[j];
       } else {
-        for (var k = 0; k < labels.length && k < nums.length; k++) labels[k].textContent = (nums[k].z || '') + '·' + (nums[k].color || colorOf(parseInt(nums[k].c, 10)));
+        for (var k = 0; k < labels.length && k < nums.length; k++) labels[k].textContent = nums[k].z || '';
       }
     } catch (e) {}
   }
@@ -1985,7 +1985,7 @@
       var hex = col === '红' ? '#E23A3A' : (col === '蓝' ? '#1F6FEB' : '#1FA85C');
       if (idx === 6) balls += '<span class="six-plus">+</span>';
       balls += '<span class="nbox six-nbox" data-audit="num"' + (idx === 6 ? ' special' : '') + '" style="background:' + hex + '">' + pad(n) + '</span>';
-      zods += '<span class="lbox six-lbox" data-audit="label">' + (x.z || '') + '·' + col + '</span>';
+      zods += '<span class="lbox six-lbox" data-audit="label">' + (x.z || '') + '</span>';
     });
     var head = '<div class="six-head"><span class="race-title">' + esc(def.name) + ' »</span><span class="race-mode">信用玩法 ▾</span><span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
       '<div class="race-result six-result-head" data-audit="head-wrap"><div class="rr-left">' +
@@ -2183,6 +2183,16 @@
     return { name: ROUTES[parts[0]] ? parts[0] : 'lotteryhall', id: null };
   }
   function setBottomTab(name) { var tab = name === 'game' ? 'lotteryhall' : name; $$('.bottomtab a').forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-tab') === tab); }); }
+  function closedNoticeKey() {
+    var cd = document.querySelector('[data-race-cd]');
+    var at = cd ? Number(cd.getAttribute('data-close')) || 0 : 0;
+    var g = state.games[betState.game] || {};
+    return String(betState.game) + '|' + Math.round(at / 1000) + '|' + noticeHash('closed');
+  }
+  function closedNoticeDismissed(key) {
+    if (state.closedDismissed[key]) return true;
+    try { return localStorage.getItem('closedNoticeDismissed:' + key) === '1'; } catch (e) { return false; }
+  }
   function updateCountdowns() {
     try {
       var cdEl = document.querySelector('[data-race-cd]');
@@ -2193,7 +2203,16 @@
         // 封盘窗口：显示遮罩 + 禁用下注
         var closed = !!(closeAt && Date.now() >= closeAt);
         var closedEl = document.querySelector('[data-closed]');
-        if (closedEl) closedEl.hidden = !closed;
+        var gkey = closedNoticeKey();
+        var wasClosed = !!state.closedPrev[betState.game];
+        state.closedPrev[betState.game] = closed;
+        var edgeClosed = closed && !wasClosed;
+        if (!closed) state.closedShown[betState.game] = false;
+        if (edgeClosed) state.closedShown[betState.game] = true;
+        if (closedEl) {
+          var wantHidden = !(closed && state.closedShown[betState.game] && !closedNoticeDismissed(gkey));
+          if (closedEl.hidden !== wantHidden) closedEl.hidden = wantHidden;
+        }
         var subBtn = document.querySelector('[data-bet-submit]');
         if (subBtn) {
           var noPts = (parseInt(points, 10) || 0) <= 0;
@@ -2325,6 +2344,10 @@
     }
   });
   document.addEventListener('click', function (e) {
+    var histBlock = e.target.closest('.race-result, .six-result-head');
+    if (histBlock && !e.target.closest('.race-history')) {
+      var hr = currentRoute(); if (hr && (hr.name === 'bet' || hr.name === 'game') && hr.id) { toggleHistory(hr.id); return; }
+    }
     var histToggle = e.target.closest('[data-hist-toggle]');
     if (histToggle) { toggleHistory(histToggle.getAttribute('data-hist-toggle')); return; }
     var histModeBtn = e.target.closest('[data-hist-mode]');
@@ -2409,7 +2432,12 @@
     var am = e.target.closest('[data-qty]');
     if (am) { betState.qty = am.getAttribute('data-qty'); updateBetBar(); return; }
     if (e.target.closest('#betQty')) { var kp = document.getElementById('raceKeypad'); if (kp) kp.hidden = false; KP_FRESH = true; return; }
-    if (e.target.closest('[data-race-next]')) { var cl = document.querySelector('[data-closed]'); if (cl) cl.hidden = true; syncFastIssue(betState.game, true); return; }
+    if (e.target.closest('[data-race-next]')) {
+        var cl = document.querySelector('[data-closed]'); if (cl) cl.hidden = true;
+        var ck = closedNoticeKey(); state.closedDismissed[ck] = true;
+        try { localStorage.setItem('closedNoticeDismissed:' + ck, '1'); } catch (x) {}
+        syncFastIssue(betState.game, true); return;
+      }
     var kb = e.target.closest('[data-kp]');
     if (kb) {
       var key = kb.getAttribute('data-kp'), inp = document.getElementById('betQty');
