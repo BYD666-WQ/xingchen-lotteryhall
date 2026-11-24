@@ -1985,7 +1985,7 @@
       var hex = col === '红' ? '#E23A3A' : (col === '蓝' ? '#1F6FEB' : '#1FA85C');
       if (idx === 6) balls += '<span class="six-plus">+</span>';
       balls += '<span class="nbox six-nbox" data-audit="num"' + (idx === 6 ? ' special' : '') + '" style="background:' + hex + '">' + pad(n) + '</span>';
-      zods += '<span class="lbox six-lbox" data-audit="label">' + (x.z || '') + '</span>';
+      zods += '<span class="lbox six-lbox" data-audit="label">' + (x.z || attrFor(n).z || '') + '</span>';
     });
     var head = '<div class="six-head"><span class="race-title">' + esc(def.name) + ' »</span><span class="race-mode">信用玩法 ▾</span><span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
       '<div class="race-result six-result-head" data-audit="head-wrap"><div class="rr-left">' +
