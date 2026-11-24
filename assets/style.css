@@ -1114,7 +1114,7 @@ body.dark-theme .rr-right::before{content:none !important;}
 .six-cat.on{background:#EC2829;color:#fff;}
 .six-main{flex:1;min-width:0;width:19.013rem;background:#FBF9F9;}
 .six-title{height:2.144rem;display:flex;align-items:center;justify-content:center;font-size:.975rem;color:#333;background:#FBF9F9;border-bottom:1px solid #EC2829;}
-.six-zodiac-strip{display:flex;overflow-x:auto;width:100%;background:#fff;border-bottom:1px solid #EC2829;}
+.six-zodiac-strip{display:flex;overflow-x:auto;overflow-y:hidden;width:100%;background:#fff;border-bottom:1px solid #EC2829;-webkit-overflow-scrolling:touch;scrollbar-width:thin;position:relative;}
 .six-ztab{flex:0 0 3.899rem;width:3.899rem;height:2.6rem;font-size:1.43rem;color:#333;background:#fff;border:0;border-right:1px solid #f2f2f2;}
 .six-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:#fff;}
 .six-cell{height:3.378rem;display:flex;align-items:center;gap:.292rem;padding-left:.325rem;background:#fff;border:0;border-right:1px solid #EC2829;border-bottom:1px solid #EC2829;min-width:0;}
