@@ -658,7 +658,7 @@
   function emailFor(name) { var s = String(name || '').toLowerCase().replace(/[^a-z0-9._-]/g, ''); if (!s) s = 'u' + Array.from(String(name || 'user')).map(function (c) { return c.codePointAt(0).toString(36); }).join('').slice(0, 20); return s + '@lottery-demo.com'; }
   function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.name || '玩家', id:awUser.$id, email:awUser.email } : null; }
   function saveAccounts() {}
-  function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? ('积分 ' + (parseInt(points, 10) || 0)) : '登录/注册'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
+  function updateUserChip() { var b = $('#userChip'); if (!b) return; var u = currentUser(); b.textContent = u ? ('积分 ' + fmtPoints(points)) : '登录/注册'; b.setAttribute('data-auth', u ? 'user' : 'login'); }
   function friendlyError(e) {
     var raw = (e && (e.message || e.type || '')) || '';
     var code = (e && (e.code || e.type)) || '';
@@ -1248,9 +1248,9 @@
   function pointsBar() {
     var u = currentUser();
     if (!u) return '<div class="points-bar guest"><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/howto">玩法说明</a></div>';
-    return '<div class="points-bar"><span>账户积分</span><b data-points-value>' + points + '</b><span class="rt-status' + (rtState.degraded ? ' degraded' : '') + '" data-rt-status>实时:' + rtState.s + '</span><a class="points-help" href="#/howto">玩法说明</a></div>';
+    return '<div class="points-bar"><span>账户积分</span><b data-points-value>' + fmtPoints(points) + '</b><span class="rt-status' + (rtState.degraded ? ' degraded' : '') + '" data-rt-status>实时:' + rtState.s + '</span><a class="points-help" href="#/howto">玩法说明</a></div>';
   }
-  function updatePointsUI() { $$('[data-points-value]').forEach(function (el) { el.textContent = points; }); }
+  function updatePointsUI() { $('[data-points-value]').forEach(function (el) { el.textContent = fmtPoints(points); }); }
   function attrFor(n) { return state.attrs[parseInt(n,10)] || { z:'', color:colorOf(n) }; }
   function isSel(k) { return !!betState.sel[k]; }
   function selectedCount() { return Object.keys(betState.sel).length; }
@@ -1356,7 +1356,8 @@
   var BET_NOTE_COST = 2;
 
   function betNumOr(v, d) { var n = Number(v); return isFinite(n) && n > 0 ? n : d; }
-  function betMoney(n) { var v = Number(n) || 0; return v.toLocaleString('en-US'); }
+  function fmtPoints(n) { var v = Number(n); if (!isFinite(v)) v = 0; v = Math.round(v * 100) / 100; var s = v.toFixed(2).replace(/\.?0+$/, ''); return s === '-0' ? '0' : s; }
+  function betMoney(n) { return fmtPoints(n); }
   function betGameName(id) { var d = DEFS[id]; return (d && d.name) || id || '未知彩种'; }
   function betGameGlyph(id) { var n = String(betGameName(id)); return n.length > 1 ? n.slice(-1) : n; }
   function betGameColor(id) { var d = DEFS[id]; return (d && d.color) || '#EC2829'; }
@@ -2322,8 +2323,8 @@
   function settleBets() { /* 云端结算未开放，注单保持 pending；不再本地结算 */ }
   function updateBetBar() {
     var notes = totalNotes(), cost = notes;
-    $$('[data-bet-count]').forEach(function (el) { el.textContent = notes; });
-    $$('[data-bet-cost]').forEach(function (el) { el.textContent = cost; });
+    $('[data-bet-count]').forEach(function (el) { el.textContent = fmtPoints(notes); });
+    $('[data-bet-cost]').forEach(function (el) { el.textContent = fmtPoints(cost); });
     var picks = [];
     Object.keys(betState.sel || {}).forEach(function (k) { picks.push(betState.sel[k] || k); });
     $$('[data-picked-list]').forEach(function (el) { el.textContent = picks.length ? picks.join(' ') : '—'; });
@@ -2331,7 +2332,7 @@
     $$('.amount-chip').forEach(function (b) { b.classList.toggle('on', String(b.getAttribute('data-qty')) === String(betState.qty)); });
     var closed = winClosed(betState.game);
     var insuff = (points <= 0) || (notes > 0 && cost > points);
-    var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = closed ? winCloseText(betState.game) : (insuff ? (points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '）') : ''); hint.classList.toggle('show', closed || insuff); }
+    var hint = $('[data-bet-hint]'); if (hint) { hint.textContent = closed ? winCloseText(betState.game) : (insuff ? (points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + fmtPoints(points) + '，需要 ' + fmtPoints(cost) + '）') : ''); hint.classList.toggle('show', closed || insuff); }
     var _g = state.games[betState.game]; var noReal = !_g || !_g.server || !_g.last || !_g.last.issue;
     var submit = $('[data-bet-submit]'); if (submit) { submit.disabled = closed || insuff || betSubmitting || noReal; submit.textContent = closed ? '已停售（时段结束）' : (betSubmitting ? '投注中…' : ((document.body.classList.contains('race-mode')) ? '下注' : '立即投注')); }
     updatePointsUI();
@@ -2490,7 +2491,7 @@
           if (points <= 0 || cost > points) {
             betSubmitting = false; updateBetBar();
             var zh = document.querySelector('[data-bet-hint]');
-            if (zh) { zh.textContent = points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + points + '，需要 ' + cost + '），请联系管理员加分'; zh.classList.add('show'); }
+            if (zh) { zh.textContent = points <= 0 ? '积分不足，请联系管理员加分后再投注' : '积分不足，无法投注（当前 ' + fmtPoints(points) + '，需要 ' + fmtPoints(cost) + '），请联系管理员加分'; zh.classList.add('show'); }
             return;
           }
           // 只传号码（Function 结算按开奖号码匹配）；生肖/两面等取 label 文本
@@ -2524,7 +2525,7 @@
           var bet = (res && res.bet) || {};
           bets.unshift({ id: bet.id || bet.$id || idem, game: betState.game, targetIssue: bet.issue || g.nextIssue, placedIssue: g.last.issue, qty: qty, cost: cost, notes: notes, selections: selections, labels: selections.map(function (s) { return s.label; }).join('、'), status: bet.status || 'pending', payout: Number(bet.payout) || 0, created: Date.now() });
           betState.sel = {}; betState.qty = '1'; betSubmitting = false; updateBetBar(); render(true);
-          showModal('投注已记录，账户积分已扣减 ' + cost + ' 分。演示站点 · 不构成任何投注建议。');
+          showModal('投注已记录，账户积分已扣减 ' + fmtPoints(cost) + ' 分。演示站点 · 不构成任何投注建议。');
         } catch (err) {
           betSubmitting = false; updateBetBar();
           showModal(String((err && err.message) || '网络异常，请重试').slice(0, 120));
