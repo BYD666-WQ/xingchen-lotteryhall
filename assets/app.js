@@ -385,6 +385,8 @@
       var lastLab = (fd && fd.lastResult && (fd.lastResult.issueLabel || fd.lastResult.issue)) || (g.last && g.last.issueLabel) || (g.last && g.last.issue);
       var nextLab = g.nextIssueLabel || (fd && (fd.issueLabel || fd.nextIssueLabel)) || g.nextIssue;
       if (title) title.textContent = '第 ' + shortIssue(lastLab) + ' 期开奖结果';
+      var sixCd = root.querySelector('[data-cd]');
+      if (sixCd && g.mockNext) sixCd.textContent = countdownText(g);
       var nextSpan = root.querySelector('.rr-next span');
       if (nextSpan && nextLab) nextSpan.textContent = shortIssue(nextLab) + ' 期';
       var cdNow = root.querySelector('[data-race-cd]');
@@ -409,14 +411,32 @@
         var g = state.games[id] || (state.games[id] = { last: {}, history: [] });
         var lr = d.lastResult || {};
         g.last = g.last || {};
-        g.last.issue = d.issue || lr.issue;
-        g.last.issueLabel = String(d.issueLabel || lr.issueLabel || lr.label || lr.issue || d.issue || '').replace(/\s*期\s*$/, '');
-        g.last.nums = (lr.nums || []).map(function (x) { return (typeof x === 'object') ? x : { c: String(x), z: '' }; });
+        g.last.issue = lr.issue || d.drawableIssue;
+        g.last.issueLabel = String(lr.issueLabel || lr.label || lr.issue || d.drawableIssue || '').replace(/\s*期\s*$/, '');
+        g.last.nums = (lr.nums || []).map(function (x) { return (typeof x === 'object') ? x : { c: String(x), z: zodiacOfNumber(x) }; });
         g.nextIssue = d.issue;
         g.nextIssueLabel = String(d.issueLabel || d.nextIssueLabel || '').replace(/\s*期\s*$/, '');
+        g.mockNext = d.closeAt ? Date.parse(d.closeAt) : 0;
+        if (!g.last.nums.length) {
+          window.LotteryAPI.call('/history/' + encodeURIComponent(id) + '?limit=2&t=' + Date.now(), { method: 'GET' }).then(function (h) {
+            var it = (h && h.items || [])[0];
+            if (it && currentRoute().id === id) {
+              g.last.issue = it.issue; g.last.issueLabel = String(it.issueLabel || it.issue);
+              g.last.nums = (it.nums || []).map(function (x) { return { c: String(x), z: zodiacOfNumber(x) }; });
+              if (!DAILY_SYNC.rendered) { DAILY_SYNC.rendered = 1; try { render(true); } catch (e) {} }
+              else updateFastHeader(id);
+            }
+          }).catch(function () {});
+        }
         g.server = true;
-        if (currentRoute().id === id) updateFastHeader(id);
-      }).catch(function () { DAILY_SYNC[id] = 0; });
+        if (currentRoute().id === id) {
+          if (!DAILY_SYNC.rendered) { DAILY_SYNC.rendered = 1; try { render(true); } catch (e) {} }
+          else updateFastHeader(id);
+        }
+      }).catch(function () {
+        DAILY_SYNC[id] = 0;
+        if ((DAILY_SYNC.tries = (DAILY_SYNC.tries || 0) + 1) <= 30) setTimeout(function () { DAILY_SYNC.rendered = 0; syncDailyIssue(id); }, 2000);
+      });
     } catch (e) { DAILY_SYNC[id] = 0; }
   }
   function syncFastIssue(id, soft) {
@@ -1977,6 +1997,7 @@
   var SIX_ODDS = { colorWave: { red: 2.7, blue: 2.8, green: 2.8 }, specialZodiac: { horse: 9.5, other: 11.7 }, flatZodiac: { horse: 1.8, other: 2 } };
   var SIX_CATS = ['特码','两面','色波','特肖','正码','正特','正码1-6','连码','平特一肖','平特尾','合肖','自选不中','连肖','尾数连','龙虎斗','长龙'];
   var SIX_ZODIAC = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+  function zodiacOfNumber(n) { var seq = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊']; var i = ((parseInt(n, 10) || 1) - 1) % 12; return seq[(i + 12) % 12]; }
   function sixBall(n) {
     var c = colorOf(n), cls = c === '红' ? 'rb' : (c === '蓝' ? 'bb' : 'gb');
     return '<span class="six-ball ' + cls + '">' + pad(n) + '</span>';
@@ -1991,11 +2012,11 @@
       var hex = col === '红' ? '#E23A3A' : (col === '蓝' ? '#1F6FEB' : '#1FA85C');
       if (idx === 6) balls += '<span class="six-plus">+</span>';
       balls += '<span class="nbox six-nbox" data-audit="num"' + (idx === 6 ? ' special' : '') + '" style="background:' + hex + '">' + pad(n) + '</span>';
-      zods += '<span class="lbox six-lbox" data-audit="label">' + (x.z || attrFor(n).z || '') + '</span>';
+      zods += '<span class="lbox six-lbox" data-audit="label">' + (x.z || zodiacOfNumber(n) || attrFor(n).z || '') + '</span>';
     });
     var head = '<div class="six-head"><span class="race-title">' + esc(def.name) + ' »</span><span class="race-mode">信用玩法 ▾</span><span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
       '<div class="race-result six-result-head" data-audit="head-wrap"><div class="rr-left">' +
-      '<div class="rr-issue" data-audit="title" data-hist-toggle="' + id + '">第 ' + shortIssue(last.issueLabel || last.issue) + ' 期开奖结果 <i class="hist-arrow">▾</i></div>' +
+      '<div class="rr-issue" data-audit="title" data-hist-toggle="' + id + '">' + (/^(hk|newmo|newhk)$/.test(id) ? '上期 ' : '第 ') + shortIssue(last.issueLabel || last.issue) + ' 期开奖结果 <i class="hist-arrow">▾</i></div>' +
       '<div class="rr-nums six-rr-nums">' + balls + '</div>' +
       '<div class="rr-labels six-rr-labels">' + zods + '</div></div>' +
       '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + ((g && (g.nextIssueLabel || g.nextIssue)) || last.issue + 1) + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
@@ -2006,7 +2027,7 @@
       var zf = betState.sixZodiac || '';
       for (var i = 1; i <= 49; i++) {
         var key = pad(i);
-        if (zf && attrFor(i).z !== zf) continue;
+        if (zf && (attrFor(i).z || zodiacOfNumber(i)) !== zf) continue;
         grid += '<button type="button" class="six-cell ' + (isSel(key) ? 'on' : '') + '" data-bet="' + key + '" data-label="' + key + '" data-odds="' + odds + '">' + sixBall(i) + '<em class="six-odds">' + fmtOdds(odds) + '</em></button>';
       }
       main = '<div class="six-title">特码</div><div class="six-zodiac-strip">' + SIX_ZODIAC.map(function (z) { return '<button type="button" class="six-ztab ' + (zf === z ? 'on' : '') + '" data-six-zodiac="' + z + '">' + z + '</button>'; }).join('') + '</div><div class="six-grid">' + grid + '</div>';
@@ -2231,6 +2252,17 @@
         // 到期后每 5s 拉 /issues
         // 期号/号码刷新交给统一 pollTick（避免多定时器）
         if (closeAt) { var hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60), ss = left % 60; cdEl.textContent = ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2) + ':' + ('0' + ss).slice(-2); }
+      }
+      var dailyCd = document.querySelector('[data-cd]');
+      if (dailyCd) {
+        var dg = state.games[betState.game] || {};
+        var at = Number(dg.mockNext) || 0;
+        if (!at) dailyCd.textContent = '——';
+        else {
+          var dl = Math.max(0, Math.round((at - Date.now()) / 1000));
+          var dh = Math.floor(dl / 3600), dm = Math.floor((dl % 3600) / 60), ds = dl % 60;
+          dailyCd.textContent = ('0' + dh).slice(-2) + ':' + ('0' + dm).slice(-2) + ':' + ('0' + ds).slice(-2);
+        }
       }
       var wEls = document.querySelectorAll('[data-win-cd]');
       if (wEls.length) {
