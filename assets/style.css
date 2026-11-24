@@ -1713,3 +1713,6 @@ body.dark-theme .k3-cd{color:#ff6b6b !important;}
 .six-tail-left em{font-style:normal;font-size:13px;color:#666;}
 .six-tail-balls{display:flex;align-items:center;gap:3px;flex-wrap:nowrap;}
 .six-tail-balls .six-ball{width:24px;height:24px;line-height:24px;font-size:10px;}
+
+.race-result,.six-result-head{cursor:pointer;}
+.race-history{cursor:default;}
