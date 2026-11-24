@@ -387,6 +387,8 @@
       if (title) title.textContent = '第 ' + shortIssue(lastLab) + ' 期开奖结果';
       var nextSpan = root.querySelector('.rr-next span');
       if (nextSpan && nextLab) nextSpan.textContent = shortIssue(nextLab) + ' 期';
+      var cdNow = root.querySelector('[data-race-cd]');
+      if (cdNow && g.mockNext) cdNow.setAttribute('data-close', String(g.mockNext));
       var labels = root.querySelectorAll('[data-audit="label"]');
       if (DEFS[id] && DEFS[id].racing) {
         var sm = raceSummary(nums);
@@ -423,7 +425,10 @@
     FAST[id] = FAST[id] || {};
     FAST[id].lastTry = Date.now();
     return window.LotteryAPI.call('/issues/' + encodeURIComponent(id), { method: 'GET' }).then(function (d) {
-      FAST[id].data = d; state.games[id] = shapeFast(id, d);
+      FAST[id].data = d;
+      var _prev = state.games[id];
+      state.games[id] = shapeFast(id, d);
+      if (_prev && _prev.nextIssue === state.games[id].nextIssue && _prev.mockNext) state.games[id].mockNext = _prev.mockNext;
       try { var _cr = currentRoute(); if ((_cr.name === 'bet' || _cr.name === 'game') && _cr.id === id && !FAST[id].didRender) { FAST[id].didRender = 1; render(true); } } catch (e) {}
       if (d && d.window) state.win[id] = d.window;
       try {
@@ -474,9 +479,9 @@
       for (var z = 0; z < 10; z++) { var n2 = ((idx * 7 + z * 3 + 1) % 10) + 1; while (raceNums.some(function (x) { return x.c === pad(n2); })) n2 = (n2 % 10) + 1; raceNums.push({ c: pad(n2), z: raceZod ? '' : '' }); }
       raceNums = raceNums.map(function (x) { var v = parseInt(x.c, 10); return { c: pad(v), z: (attrFor(v) && attrFor(v).z) || '' }; });
       history[0].nums = raceNums;
-      return { last:{ issue:issue, nums:raceNums }, nextIssue:nextIssue, history:history, mockNext:(idx + 1) * sec * 1000, timeCfg:{ time:def.period || '1分钟' } };
+      return { last:{ issue:issue, nums:raceNums }, nextIssue:nextIssue, history:history, mockNext:0, timeCfg:{ time:def.period || '1分钟' } };
     }
-    return { last:{ issue:issue, nums:history[0].nums }, nextIssue:nextIssue, history:history, mockNext:(idx + 1) * sec * 1000, timeCfg:{ time:def.period || '1分钟', hour:0, minute:0, days:[0,1,2,3,4,5,6] } };
+    return { last:{ issue:issue, nums:history[0].nums }, nextIssue:nextIssue, history:history, mockNext:0, timeCfg:{ time:def.period || '1分钟', hour:0, minute:0, days:[0,1,2,3,4,5,6] } };
   }
   function gameCell(id) {
     var def = DEFS[id];
@@ -1250,7 +1255,7 @@
     if (!u) return '<div class="points-bar guest"><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/howto">玩法说明</a></div>';
     return '<div class="points-bar"><span>账户积分</span><b data-points-value>' + fmtPoints(points) + '</b><span class="rt-status' + (rtState.degraded ? ' degraded' : '') + '" data-rt-status>实时:' + rtState.s + '</span><a class="points-help" href="#/howto">玩法说明</a></div>';
   }
-  function updatePointsUI() { $('[data-points-value]').forEach(function (el) { el.textContent = fmtPoints(points); }); }
+  function updatePointsUI() { $$('[data-points-value]').forEach(function (el) { el.textContent = fmtPoints(points); }); }
   function attrFor(n) { return state.attrs[parseInt(n,10)] || { z:'', color:colorOf(n) }; }
   function isSel(k) { return !!betState.sel[k]; }
   function selectedCount() { return Object.keys(betState.sel).length; }
@@ -2198,11 +2203,13 @@
     try {
       var cdEl = document.querySelector('[data-race-cd]');
       if (cdEl) {
-        var d = DEFS[betState.game] || {}; var closeAt = Number(cdEl.getAttribute('data-close')) || 0;
-        var sec = Number(d.periodSec || d.periodSeconds) || 60;
-        var left = closeAt > Date.now() ? Math.round((closeAt - Date.now()) / 1000) : (sec - (Math.floor(Date.now() / 1000) % sec));
-        // 封盘窗口：显示遮罩 + 禁用下注
+        var closeAt = Number(cdEl.getAttribute('data-close')) || 0;
+        var left = closeAt ? Math.max(0, Math.round((closeAt - Date.now()) / 1000)) : 0;
+        // 封盘窗口：显示遮罩 + 禁用下注（无 closeAt 不进入停售）
         var closed = !!(closeAt && Date.now() >= closeAt);
+        if (!closeAt) {
+          cdEl.textContent = '——';
+        }
         var closedEl = document.querySelector('[data-closed]');
         var gkey = closedNoticeKey();
         var wasClosed = !!state.closedPrev[betState.game];
@@ -2223,8 +2230,7 @@
         }
         // 到期后每 5s 拉 /issues
         // 期号/号码刷新交给统一 pollTick（避免多定时器）
-        var hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60), ss = left % 60;
-        cdEl.textContent = ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2) + ':' + ('0' + ss).slice(-2);
+        if (closeAt) { var hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60), ss = left % 60; cdEl.textContent = ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2) + ':' + ('0' + ss).slice(-2); }
       }
       var wEls = document.querySelectorAll('[data-win-cd]');
       if (wEls.length) {
@@ -2323,8 +2329,8 @@
   function settleBets() { /* 云端结算未开放，注单保持 pending；不再本地结算 */ }
   function updateBetBar() {
     var notes = totalNotes(), cost = notes;
-    $('[data-bet-count]').forEach(function (el) { el.textContent = fmtPoints(notes); });
-    $('[data-bet-cost]').forEach(function (el) { el.textContent = fmtPoints(cost); });
+    $$('[data-bet-count]').forEach(function (el) { el.textContent = fmtPoints(notes); });
+    $$('[data-bet-cost]').forEach(function (el) { el.textContent = fmtPoints(cost); });
     var picks = [];
     Object.keys(betState.sel || {}).forEach(function (k) { picks.push(betState.sel[k] || k); });
     $$('[data-picked-list]').forEach(function (el) { el.textContent = picks.length ? picks.join(' ') : '—'; });
