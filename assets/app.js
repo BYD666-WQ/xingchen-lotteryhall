@@ -2377,7 +2377,7 @@
   }
   document.addEventListener('input', function (e) {
     if (e.target && e.target.id === 'betQty') {
-      betState.qty = String(e.target.value || '').replace(/[^\d]/g, '') || '1';
+      betState.qty = String(e.target.value || '').replace(/[^\d.]/g, '');
       e.target.value = betState.qty;
       updateBetBar();
     }
@@ -2514,9 +2514,9 @@
       if (betSubmitting) return;
       if (!currentUser()) { AUTH_NEXT = '#/bet/' + (betState.game || 'newhk'); location.hash = '#/login'; return; }
       var nodes = $$('[data-bet].on');
-      var qty = parseInt(betState.qty, 10);
+      var qty = parseFloat(betState.qty);
       if (!nodes.length) { showToast('请先选择玩法'); return; }
-      if (!qty || qty < 1) { showToast('请输入注数'); return; }
+      if (!String(betState.qty == null ? '' : betState.qty).trim() || !isFinite(qty) || qty < 1) { showToast('请输入投注金额'); return; }
       var notes = nodes.length * qty, cost = notes;
       var g = state.games[betState.game] || mockGame(betState.game);
       if (!g) { showToast('彩种数据未就绪'); return; }
