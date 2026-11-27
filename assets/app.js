@@ -250,6 +250,7 @@
   }
   function zeroPointsBanner() {
     var seen = false; try { seen = sessionStorage.getItem('xcRegZero') === '1'; } catch (e) {}
+    if (!currentUser) return '<div class="reg-zero-banner">请先登录后投注</div>';
     if ((parseInt(points, 10) || 0) <= 0) {
       var txt = (regZeroNotice || seen) ? '账号已创建，当前积分 0，请联系管理员加分' : '积分不足，请联系管理员加分后再投注';
       var nid = noticeHash('reg:' + txt), off = noticeIsDismissed(nid);
