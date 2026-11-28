@@ -1716,3 +1716,11 @@ body.dark-theme .k3-cd{color:#ff6b6b !important;}
 
 .race-result,.six-result-head{cursor:pointer;}
 .race-history{cursor:default;}
+
+/* 新后端账号 chip：余额 + 邮箱（超长省略，title 给全量） */
+.user-chip{display:inline-flex!important;align-items:center;gap:4px;max-width:150px!important;overflow:hidden}
+.user-chip .uc-bal{font-weight:800;font-variant-numeric:tabular-nums}
+.user-chip .uc-sep{font-style:normal;opacity:.6}
+.user-chip .uc-mail{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:96px;font-weight:400;opacity:.92}
+@media(max-width:360px){.user-chip{max-width:112px!important}.user-chip .uc-mail{max-width:58px}}
+@media(max-width:340px){.user-chip{max-width:100px!important}.user-chip .uc-mail{max-width:46px}}
