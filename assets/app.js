@@ -2172,7 +2172,7 @@
   }
   function loginPage() {
     var register = authMode === 'register';
-    return '<div class="auth-page"><div class="auth-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></div><div class="page-kicker">LUCKY HALL ACCOUNT</div><h1 class="auth-title">' + (register ? '注册演示账号' : '登录幸运大厅') + '</h1><p class="auth-sub">新后端账号；仅用于本演示站，不涉及真实支付。</p>' +
+    return '<div class="auth-page"><div class="auth-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></div><div class="page-kicker">LUCKY HALL ACCOUNT</div><h1 class="auth-title">' + (register ? '注册演示账号' : '登录幸运大厅') + '</h1><p class="auth-sub">新后端账号 · 用户名登录；仅用于本演示站，不涉及真实支付。</p>' +
       '<div class="auth-tabs"><button type="button" class="' + (!register ? 'on' : '') + '" data-auth-mode="login">登录</button><button type="button" class="' + (register ? 'on' : '') + '" data-auth-mode="register">注册</button></div>' +
       '<form id="authForm" class="auth-form"><label>用户名<input id="authUser" type="text" autocomplete="username" maxlength="20" placeholder="3–20 位字母/数字/下划线"></label><label>密码<input id="authPass" type="password" autocomplete="' + (register ? 'new-password' : 'current-password') + '" maxlength="72" placeholder="至少 8 位"></label>' + (register ? '<label>确认密码<input id="authPass2" type="password" autocomplete="new-password" maxlength="72" placeholder="再输入一次密码"></label>' : '') + '<div id="authError" class="auth-error"></div><button class="auth-submit" type="submit">' + (register ? '注册并登录' : '登录') + '</button></form>' +
       '<div class="auth-tip">账号与余额由新后端管理，仅用于本演示站；请勿使用真实密码。<br>登录后可查看余额与投注记录。</div><a class="auth-back" href="#/lotteryhall">先逛逛大厅 →</a></div>';
