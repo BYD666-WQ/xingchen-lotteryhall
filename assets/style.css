@@ -1724,3 +1724,6 @@ body.dark-theme .k3-cd{color:#ff6b6b !important;}
 .user-chip .uc-mail{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:96px;font-weight:400;opacity:.92}
 @media(max-width:360px){.user-chip{max-width:112px!important}.user-chip .uc-mail{max-width:58px}}
 @media(max-width:340px){.user-chip{max-width:100px!important}.user-chip .uc-mail{max-width:46px}}
+
+/* 注册：确认密码不一致时按钮禁用态 */
+.auth-submit[disabled]{opacity:.55;pointer-events:none;cursor:not-allowed}

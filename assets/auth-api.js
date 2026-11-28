@@ -2,7 +2,7 @@
  * 替代 Appwrite Account：注册 / 登录 / me / 本地 token。
  * 后端：https://198.13.51.135.sslip.io（CORS: *，HTTPS）
  * 约定：register → 201 {ok,user}；login → 200 {ok,token,user}；me → 200 {ok,user}
- *      user = {id,email,balance,created_at}
+ *      user = {id,username,email,balance,created_at}
  */
 (function () {
   'use strict';
@@ -23,6 +23,9 @@
     UNKNOWN_GAME: '该彩种暂不支持投注',
     EMAIL_EXISTS: '该邮箱已注册',
     INVALID_EMAIL: '邮箱格式不正确',
+    USERNAME_TAKEN: '该用户名已被占用',
+    INVALID_USERNAME: '用户名需 3-20 位字母/数字/下划线',
+    USERNAME_REQUIRED: '请输入用户名',
     INVALID_PASSWORD: '密码需 8-72 位',
     INVALID_CREDENTIALS: '邮箱或密码不正确',
     WINDOW_CLOSED: '该期已封盘，无法投注'
@@ -73,11 +76,11 @@
     setToken: setToken,
     clear: clear,
     isLoggedIn: function () { return !!getToken(); },
-    register: function (email, password) {
-      return request('/api/register', { method: 'POST', body: { email: email, password: password } });
+    register: function (username, password) {
+      return request('/api/register', { method: 'POST', body: { username: username, password: password } });
     },
-    login: async function (email, password) {
-      var d = await request('/api/login', { method: 'POST', body: { email: email, password: password } });
+    login: async function (username, password) {
+      var d = await request('/api/login', { method: 'POST', body: { username: username, password: password } });
       if (d && d.token) setToken(d.token);
       return d;
     },

@@ -693,14 +693,14 @@
     return s.slice(0, 24);
   }
   function emailFor(name) { var s = String(name || '').toLowerCase().replace(/[^a-z0-9._-]/g, ''); if (!s) s = 'u' + Array.from(String(name || 'user')).map(function (c) { return c.codePointAt(0).toString(36); }).join('').slice(0, 20); return s + '@lottery-demo.com'; }
-  function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.email || '', id:awUser.$id, email:awUser.email || '' } : null; }
+  function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.name || awUser.email || '', id:awUser.$id, email:awUser.email || '' } : null; }
   function saveAccounts() {}
   function updateUserChip() {
     var b = $('#userChip'); if (!b) return;
     var u = currentUser();
     if (u) {
-      b.innerHTML = '<b class="uc-bal">' + esc(fmtPoints(points)) + '</b><i class="uc-sep">·</i><span class="uc-mail">' + esc(u.email) + '</span>';
-      b.title = u.email + ' · 余额 ' + fmtPoints(points);
+      b.innerHTML = '<b class="uc-bal">' + esc(fmtPoints(points)) + '</b><i class="uc-sep">·</i><span class="uc-mail">' + esc(u.username) + '</span>';
+      b.title = u.username + ' · 余额 ' + fmtPoints(points);
     } else { b.textContent = '登录/注册'; b.title = ''; }
     b.setAttribute('data-auth', u ? 'user' : 'login');
   }
@@ -826,9 +826,9 @@
     } catch (e) { if (e && e.status === 401) expireSession('登录已过期，请重新登录'); }
   }
   function applyUser(u) {
-    var email = String((u && u.email) || '');
-    awUser = { $id: (u && u.id) || '', email: email, name: email };
-    awRow = { $id: (u && u.id) || '', username: email, points: parseInt(u && u.balance, 10) || 0 };
+    var uname = String((u && (u.username || u.email)) || '');
+    awUser = { $id: (u && u.id) || '', email: String((u && u.email) || ''), name: uname };
+    awRow = { $id: (u && u.id) || '', username: uname, points: parseInt(u && u.balance, 10) || 0 };
     points = awRow.points;
   }
   function expireSession(msg) {
@@ -855,39 +855,40 @@
       else { authReady = true; window.__lhInitError = (e && e.message) || '账户数据加载失败'; updateUserChip(); render(true); }
     }
   }
-  function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim()); }
+  function validUsername(v) { return /^[A-Za-z0-9_]{3,20}$/.test(String(v || '').trim()); }
   function authErrorMessage(e) {
     var s = e && e.status, code = String((e && e.code) || '').toUpperCase(), msg = String((e && e.message) || '');
-    if (s === 401) return '邮箱或密码不正确';
-    if (s === 409 || code.indexOf('EXIST') >= 0) return '该邮箱已注册，请直接登录';
+    if (s === 401) return '用户名或密码不正确';
+    if (code === 'USERNAME_TAKEN' || s === 409) return '该用户名已被占用，请换一个';
     if (s === 429) return '操作太频繁，请稍后再试';
-    if (s === 422) return msg || '邮箱或密码格式不正确';
+    if (s === 422) return msg || '用户名或密码格式不正确';
     if (s === 0 || !s) return msg || '网络连接失败，请检查网络后重试';
     return msg || '操作失败，请重试';
   }
-  async function loginUser(email, pass) {
+  async function loginUser(uname, pass) {
     if (authBusy) return '';
-    email = String(email || '').trim(); pass = String(pass || '');
-    if (!validEmail(email)) return '请输入正确的邮箱地址';
+    uname = String(uname || '').trim(); pass = String(pass || '');
+    if (!validUsername(uname)) return '用户名需 3-20 位字母/数字/下划线';
     if (pass.length < 8) return '密码至少 8 位';
     if (!window.LHAuth) return '网络组件未加载，请刷新页面';
     authBusy = true;
     try {
-      var d = await window.LHAuth.login(email, pass);
+      var d = await window.LHAuth.login(uname, pass);
       await afterAuth(d && (d.user || d));
       return '';
     } catch (e) { return authErrorMessage(e); } finally { authBusy = false; }
   }
-  async function registerUser(email, pass) {
+  async function registerUser(uname, pass, pass2) {
     if (authBusy) return '';
-    email = String(email || '').trim(); pass = String(pass || '');
-    if (!validEmail(email)) return '请输入正确的邮箱地址';
+    uname = String(uname || '').trim(); pass = String(pass || ''); pass2 = String(pass2 == null ? pass : pass2);
+    if (!validUsername(uname)) return '用户名需 3-20 位字母/数字/下划线';
     if (pass.length < 8) return '密码至少 8 位';
+    if (pass !== pass2) return '两次密码不一致';
     if (!window.LHAuth) return '网络组件未加载，请刷新页面';
     authBusy = true;
     try {
-      await window.LHAuth.register(email, pass);
-      var d = await window.LHAuth.login(email, pass);
+      await window.LHAuth.register(uname, pass);
+      var d = await window.LHAuth.login(uname, pass);
       await afterAuth(d && (d.user || d));
       return '';
     } catch (e) { return authErrorMessage(e); } finally { authBusy = false; }
@@ -2173,7 +2174,7 @@
     var register = authMode === 'register';
     return '<div class="auth-page"><div class="auth-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-logo"></use></svg></div><div class="page-kicker">LUCKY HALL ACCOUNT</div><h1 class="auth-title">' + (register ? '注册演示账号' : '登录幸运大厅') + '</h1><p class="auth-sub">新后端账号；仅用于本演示站，不涉及真实支付。</p>' +
       '<div class="auth-tabs"><button type="button" class="' + (!register ? 'on' : '') + '" data-auth-mode="login">登录</button><button type="button" class="' + (register ? 'on' : '') + '" data-auth-mode="register">注册</button></div>' +
-      '<form id="authForm" class="auth-form"><label>邮箱<input id="authUser" type="email" inputmode="email" autocomplete="email" maxlength="64" placeholder="you@example.com"></label><label>密码<input id="authPass" type="password" autocomplete="current-password" maxlength="30" placeholder="至少 8 位"></label><div id="authError" class="auth-error"></div><button class="auth-submit" type="submit">' + (register ? '注册并登录' : '登录') + '</button></form>' +
+      '<form id="authForm" class="auth-form"><label>用户名<input id="authUser" type="text" autocomplete="username" maxlength="20" placeholder="3–20 位字母/数字/下划线"></label><label>密码<input id="authPass" type="password" autocomplete="' + (register ? 'new-password' : 'current-password') + '" maxlength="72" placeholder="至少 8 位"></label>' + (register ? '<label>确认密码<input id="authPass2" type="password" autocomplete="new-password" maxlength="72" placeholder="再输入一次密码"></label>' : '') + '<div id="authError" class="auth-error"></div><button class="auth-submit" type="submit">' + (register ? '注册并登录' : '登录') + '</button></form>' +
       '<div class="auth-tip">账号与余额由新后端管理，仅用于本演示站；请勿使用真实密码。<br>登录后可查看余额与投注记录。</div><a class="auth-back" href="#/lotteryhall">先逛逛大厅 →</a></div>';
   }
   function soonPage(title, note) { return '<div class="page-head"><div><div class="page-kicker">COMING SOON</div><h1 class="page-title">' + title + '</h1><div class="page-sub">' + note + '</div></div></div><div class="data-empty" style="padding:40px 20px">该板块为演示占位，待接入后开放。</div>'; }
@@ -2368,6 +2369,19 @@
       betState.qty = String(e.target.value || '').replace(/[^\d.]/g, '');
       e.target.value = betState.qty;
       updateBetBar();
+    }
+    if (e.target && (e.target.id === 'authPass' || e.target.id === 'authPass2')) {
+      var p1 = document.getElementById('authPass'), p2 = document.getElementById('authPass2');
+      if (!p2) return;
+      var box = document.getElementById('authError'), btn = document.querySelector('.auth-submit');
+      var mismatch = !!(p1 && p1.value && p2.value && p1.value !== p2.value);
+      if (mismatch) {
+        if (btn) btn.disabled = true;
+        if (box && !/正在/.test(box.textContent || '')) box.textContent = '两次密码不一致';
+      } else {
+        if (btn) btn.disabled = false;
+        if (box && box.textContent === '两次密码不一致') box.textContent = '';
+      }
     }
   });
   document.addEventListener('click', function (e) {
@@ -2569,9 +2583,11 @@
     e.preventDefault();
     var wasRegister = authMode === 'register';
     var box = $('#authError'); if (box) box.textContent = wasRegister ? '正在注册…' : '正在登录…';
-    var err = wasRegister ? await registerUser($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value) : await loginUser($('#authUser') && $('#authUser').value, $('#authPass') && $('#authPass').value);
+    var uEl = $('#authUser'), pEl = $('#authPass'), p2El = $('#authPass2');
+    if (wasRegister && pEl && p2El && pEl.value !== p2El.value) { if (box) box.textContent = '两次密码不一致'; return; }
+    var err = wasRegister ? await registerUser(uEl && uEl.value, pEl && pEl.value, p2El && p2El.value) : await loginUser(uEl && uEl.value, pEl && pEl.value);
     if (err) { if (box) box.innerHTML = err; return; }
-    var next = AUTH_NEXT || '#/lotteryhall'; AUTH_NEXT = '#/lotteryhall';
+    var next = wasRegister ? '#/lotteryhall' : (AUTH_NEXT || '#/lotteryhall'); AUTH_NEXT = '#/lotteryhall';
     if (wasRegister) { regZeroNotice = true; try { sessionStorage.setItem('xcRegZero', '1'); } catch (e) {} }
     location.hash = next; updateUserChip();
     showToast(wasRegister ? '注册成功，已登录 · 当前余额 0' : '登录成功，余额已同步');
