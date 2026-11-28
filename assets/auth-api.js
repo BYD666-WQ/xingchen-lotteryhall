@@ -87,6 +87,8 @@
     placeBet: function (bet) { return request('/api/bets', { method: 'POST', body: bet }); },
     issue: function (game) { return request('/api/issues?game=' + encodeURIComponent(game), { method: 'GET' }); },
     cancelBet: function (id) { return request('/api/bets/' + encodeURIComponent(id) + '/cancel', { method: 'POST' }); },
+    results: function (game, limit) { return request('/api/results?game=' + encodeURIComponent(game) + '&limit=' + (limit || 12), { method: 'GET' }); },
+    leaderboard: function (limit) { return request('/api/leaderboard?limit=' + (limit || 20), { method: 'GET' }); },
     logout: function () { clear(); }
   };
 

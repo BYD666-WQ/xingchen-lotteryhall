@@ -442,37 +442,39 @@
       });
     } catch (e) { DAILY_SYNC[id] = 0; }
   }
-  function syncFastIssue(id, soft) {
+  function syncFastIssue(id, soft, force) {
     var def = DEFS[id];
     if (!def || !(def.mock || def.racing || /^fast-/.test(id))) return Promise.resolve();
     FAST[id] = FAST[id] || {};
+    if (SSE.es && !force && state.games[id]) return Promise.resolve(); // SSE 连接中由事件驱动
+    if (soft && !force && FAST[id].syncedAt && Date.now() - FAST[id].syncedAt < 9000) return Promise.resolve();
     FAST[id].lastTry = Date.now();
     if (!window.LHAuth) return Promise.resolve();
-    return window.LHAuth.issue(id).then(function (d) {
-      var cur = d && d.issues && d.issues[0];
-      var nxt = d && d.issues && d.issues[1];
+    return Promise.all([window.LHAuth.issue(id), window.LHAuth.results(id, 12)]).then(function (arr) {
+      var d0 = arr[0], rs = arr[1];
+      var cur = d0 && d0.issues && d0.issues[0], nxt = d0 && d0.issues && d0.issues[1];
       if (!cur || !cur.issue) throw new Error('NO_ISSUE');
-      var g = mockGame(id) || {};
-      g.server = true;
-      g.nextIssue = cur.issue;
-      g.mockNext = cur.closeAt ? Date.parse(cur.closeAt) : 0;
-      if (g.last) {
-        var prev = String(Number(cur.issue) - 1);
-        if (/^\d+$/.test(prev)) g.last.issue = prev;
-      }
+      var rows = (rs && rs.results) || [];
+      var lastRow = rows[0] || null;
+      var d = { issue: cur.issue, closeAt: cur.closeAt, periodSec: d0.intervalSec || 0, lastResult: lastRow ? { issue: lastRow.issue, nums: lastRow.nums } : null };
+      var g = shapeFast(id, d);
+      function toBalls(arr) { return (arr || []).map(function (x) { var c = pad(x); return { c: c, z: zodiacOfNumber(c) || '', color: colorOf(c) }; }); }
+      if (lastRow) { g.last.nums = toBalls(lastRow.nums); g.last.issue = lastRow.issue; }
+      if (rows.length) g.history = rows.map(function (r) { return { issue: r.issue, nums: toBalls(r.nums) }; });
       state.games[id] = g;
       state.win[id] = { open: cur.status !== 'closed', startAt: cur.openAt || null, endAt: cur.closeAt || null, nextOpenAt: (nxt && nxt.openAt) || null, issue: cur.issue, degraded: false };
       FAST[id].degraded = false;
+      FAST[id].syncedAt = Date.now();
       var cr = currentRoute();
       if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) {
-        try { if (soft) updateFastHeader(id); else render(true); } catch (e) {}
+        try { if (soft) updateFastHeader(id); else render(true); } catch (e1) {}
       }
-      try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e) {}
+      try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e2) {}
     }).catch(function (e) {
       FAST[id].failed = true;
       if (!state.games[id]) state.games[id] = mockGame(id);
       state.win[id] = Object.assign({}, state.win[id] || {}, { degraded: true });
-      if (!FAST[id].degradedToast) { FAST[id].degradedToast = 1; try { showToast('实时期号获取失败，已回退本地模拟'); } catch (x) {} }
+      if (!FAST[id].degradedToast) { FAST[id].degradedToast = 1; try { showToast('实时数据获取失败，已回退本地模拟'); } catch (x) {} }
       var cr = currentRoute();
       if (!soft && cr.name === 'bet' && cr.id === id) { try { render(true); } catch (e2) {} }
     });
@@ -577,22 +579,23 @@
   function rankPage() {
     return catTabs('rank') + '<div class="page-head"><div><div class="page-kicker">LEADERBOARD</div><h1 class="page-title">高手排行</h1><div class="page-sub">实时统计 · 结算注单</div></div><span class="demo-pill">LIVE</span></div>' +
       '<div id="rank-live" class="rank-list"><div class="data-empty" style="padding:30px 16px">加载中…</div></div>' +
-      '<div class="mini-note">按已结算注单统计：注数 / 命中 / 命中率 / 最近连中。</div>';
+      '<div class="mini-note">真实统计：结算单数 / 胜场 / 命中率 / 盈亏。</div>';
   }
   function loadRankLive() {
     var box = document.getElementById('rank-live'); if (!box) return;
-    if (!RANK_READY) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">排行榜数据迁移中，暂不可用</div>'; return; }
     box.innerHTML = '<div class="data-empty" style="padding:30px 16px">加载中…</div>';
-    Promise.resolve().then(function () { return window.LotteryAPI.call('/rank?limit=20', { method: 'GET' }); }).then(function (res) {
-      var rows = (res && (res.rank || res.rows)) || [];
-      if (!rows.length) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无排行数据</div>'; return; }
+    if (!window.LHAuth) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无数据</div>'; return; }
+    window.LHAuth.leaderboard(20).then(function (res) {
+      var rows = (res && res.leaderboard) || [];
+      if (!rows.length) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无数据</div>'; return; }
       box.innerHTML = rows.slice(0, 20).map(function (r, i) {
-        var name = esc(String(r.username || '玩家'));
-        var rate = Number(r.rate);
-        var rateTxt = isFinite(rate) ? (rate <= 1 ? (rate * 100).toFixed(1) : rate.toFixed(1)) + '%' : '—';
-        return '<div class="rank-row"><span class="rank-no">' + (i + 1) + '</span><span class="avatar">' + esc(name.slice(0, 1)) + '</span><div class="rank-info"><b>' + name + '</b><span>注数 ' + (r.bets || 0) + ' · 命中 ' + (r.hits || 0) + '</span></div><div class="rank-val"><b>' + rateTxt + '</b><span>连中 ' + (r.streak || 0) + '</span></div></div>';
+        var name = esc(String(r.email || '玩家'));
+        var settled = Number(r.settled) || 0, wins = Number(r.wins) || 0, net = Number(r.net) || 0;
+        var rateTxt = settled ? (Math.round(wins / settled * 1000) / 10).toFixed(1) + '%' : '—';
+        var netTxt = (net > 0 ? '+' : '') + net;
+        return '<div class="rank-row"><span class="rank-no">' + (i + 1) + '</span><span class="avatar">' + esc(name.slice(0, 1)) + '</span><div class="rank-info"><b>' + name + '</b><span>结算 ' + settled + ' · 胜 ' + wins + '</span></div><div class="rank-val"><b>' + rateTxt + '</b><span>盈亏 ' + netTxt + '</span></div></div>';
       }).join('');
-    }).catch(function (e) { try{console.warn('[rank] load failed',e&&e.message);}catch(x){} box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无排行数据</div>'; });
+    }).catch(function () { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无数据</div>'; });
   }
   function rankPageLegacy() {
     var top = RANKS.slice(0, 3);
@@ -706,7 +709,8 @@
       if (!isFinite(t)) t = Date.now();
       var prev = bets.filter(function (x) { return String(x.id) === String(r.id); })[0];
       var cat = r.cancelled_at || (prev && prev.cancelledAt) || null;
-      return { id: r.id, game: r.game, targetIssue: r.issue, placedIssue: r.issue, qty: 1, cost: amount, notes: 0, selections: picks, picksText: '', labels: '', status: r.status || 'pending', payout: 0, profit: 0, created: t, settledAt: null, cancelledAt: cat };
+      var pay = Number(r.payout) || 0;
+      return { id: r.id, game: r.game, targetIssue: r.issue, placedIssue: r.issue, qty: 1, cost: amount, notes: 0, selections: picks, picksText: '', labels: '', status: r.status || 'pending', payout: pay, profit: (r.status === 'settled' || r.status === 'win') ? pay - amount : 0, created: t, settledAt: r.settled_at || null, cancelledAt: cat };
     });
   }
   async function loadGameConfigs() {
@@ -730,6 +734,59 @@
     rtLive = false;
   }
   // Phase 1：新后端暂无实时推送，状态固定为「关」；余额靠 /api/me 与轮询刷新。
+  // 实时：EventSource（SSE）优先；连不上自动降级为 15s 轮询 /api/issues
+  var SSE = { es: null, game: '', fallback: null, degraded: false, errs: 0, degradedShown: false };
+  function sseStop() {
+    if (SSE.es) { try { SSE.es.close(); } catch (e) {} SSE.es = null; }
+    if (SSE.fallback) { clearInterval(SSE.fallback); SSE.fallback = null; }
+    SSE.game = ''; SSE.errs = 0; SSE.degraded = false;
+  }
+  function sseConnect(game) {
+    if (!game || !window.EventSource || !window.LHAuth || !/^fast-/.test(game)) { sseStop(); updateRTStatus('关'); return; }
+    if (SSE.es && SSE.game === game) return;
+    sseStop(); SSE.game = game;
+    try { SSE.es = new EventSource(window.LHAuth.base + '/api/stream?game=' + encodeURIComponent(game)); }
+    catch (e) { sseFallback(game); return; }
+    SSE.es.addEventListener('issue', function (ev) {
+      var d = null; try { d = JSON.parse(ev.data); } catch (e) {}
+      if (!d || !d.current) return;
+      applyStreamIssue(game, d);
+      SSE.errs = 0; SSE.degraded = false;
+      updateRTStatus('SSE');
+      try { syncFastIssue(game, true, true); } catch (e) {}
+    });
+    SSE.es.onerror = function () {
+      SSE.errs++;
+      if (SSE.errs >= 2 || (SSE.es && SSE.es.readyState === 2)) {
+        try { if (SSE.es) SSE.es.close(); } catch (e) {}
+        SSE.es = null;
+        sseFallback(game);
+      }
+    };
+  }
+  function applyStreamIssue(game, d) {
+    var cur = d.current || {}, nxt = d.next || {};
+    var g = state.games[game];
+    var changed = !g || String(g.nextIssue) !== String(cur.issue);
+    if (g) { g.nextIssue = cur.issue || g.nextIssue; g.mockNext = cur.closeAt ? Date.parse(cur.closeAt) : g.mockNext; }
+    state.win[game] = { open: true, endAt: cur.closeAt || null, nextOpenAt: nxt.openAt || null, issue: cur.issue, degraded: false };
+    var cr = currentRoute();
+    if (changed && (cr.name === 'bet' || cr.name === 'game') && cr.id === game) { try { render(true); } catch (e) {} }
+  }
+  function sseFallback(game) {
+    if (!game) return;
+    SSE.degraded = true;
+    updateRTStatus('降级', true);
+    if (!SSE.degradedShown) { SSE.degradedShown = true; try { showToast('实时连接失败，已降级'); } catch (e) {} }
+    if (!SSE.fallback) {
+      SSE.fallback = setInterval(function () {
+        window.LHAuth.issue(game).then(function (d) {
+          var c = d && d.issues && d.issues[0];
+          if (c) applyStreamIssue(game, { current: c, next: (d.issues || [])[1] });
+        }).catch(function () {});
+      }, 15000);
+    }
+  }
   function startRealtime() { updateRTStatus('关'); }
   var regZeroNotice = false;
   async function refreshPoints() {
@@ -1310,6 +1367,8 @@
   }
   function betStatusMeta(b) {
     if (b.status === 'cancelled') return { cls: 'cancel', text: '已撤单' };
+    if (b.status === 'win') return { cls: 'win', text: '已中奖' };
+    if (b.status === 'lose') return { cls: 'lose', text: '未中奖' };
     if (b.status === 'settled') return Number(b.payout) > 0 ? { cls: 'win', text: '已中奖' } : { cls: 'lose', text: '未中奖' };
     return { cls: 'pending', text: '待结算' };
   }
@@ -2179,6 +2238,7 @@
       try { console.error('[render]', err); } catch (e) {}
     }
     setBottomTab(r.name); markHotIcons(); decorateLogos();
+    try { sseConnect((r.name === 'bet' || r.name === 'game') ? r.id : ''); } catch (e) {}
     var ttl = r.name === 'game' ? DEFS[r.id].name + '开奖' : (r.name === 'bet' ? (DEFS[r.id].name + '模拟投注') : (r.name === 'howto' ? '玩法说明' : (r.name === 'login' ? '登录 / 注册' : TITLES[r.name])));
     document.title = ttl + ' · 彩票大厅（演示）';
     if (!keepScroll) {
