@@ -212,7 +212,11 @@
     return '<div class="boot-skel"><div class="bsk-line w40"></div><div class="bsk-hero"></div><div class="bsk-grid">' + cards + '</div></div>';
   }
   function bootToBalls(arr) {
-    return (arr || []).map(function (x) { var c = pad(x); return { c: c, z: zodiacOfNumber(c) || '', color: colorOf(c) }; });
+    return (arr || []).map(function (x) {
+      var v = (x && typeof x === 'object') ? (x.c != null ? x.c : x.num) : x;
+      var c = pad(v);
+      return { c: c, z: (x && x.z) || zodiacOfNumber(c) || '', color: (x && x.color) || colorOf(c) };
+    }).filter(function (b) { return b.c && b.c !== 'NaN'; });
   }
   function applyBootstrap(j, stale) {
     var data = j && j.data ? j.data : (j || {});
