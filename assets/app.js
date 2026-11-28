@@ -276,7 +276,7 @@
   function zeroPointsBanner() {
     var seen = false; try { seen = sessionStorage.getItem('xcRegZero') === '1'; } catch (e) {}
     if (!currentUser()) return '<div class="reg-zero-banner">请先登录后投注 · <a href="#/login">去登录</a></div>';
-    if ((parseInt(points, 10) || 0) <= 0) {
+    if (Number(points) <= 0) {
       var txt = (regZeroNotice || seen) ? '账号已创建，当前余额 0，暂无法投注' : '余额不足，暂无法投注';
       var nid = noticeHash('reg:' + txt), off = noticeIsDismissed(nid);
       return '<div class="reg-zero-banner' + (off ? ' dismissed' : '') + '" data-reg-banner data-notice-id="' + nid + '"' + (off ? ' aria-hidden="true"' : '') + '>' + txt + '<button type="button" data-dismiss-reg>知道了</button></div>';
@@ -285,7 +285,7 @@
   }
   function betZeroBanner() {
     if (!currentUser()) return '<div class="reg-zero-banner bet-zero">未登录 · 可浏览赔率，<a href="#/login">登录后投注</a></div>';
-    if ((parseInt(points, 10) || 0) > 0) return '';
+    if (Number(points) > 0) return '';
     return '<div class="reg-zero-banner bet-zero">余额不足，暂无法投注</div>';
   }
   var HOME_TABS = [
@@ -619,7 +619,7 @@
         var name = esc(String(r.email || '玩家'));
         var settled = Number(r.settled) || 0, wins = Number(r.wins) || 0, net = Number(r.net) || 0;
         var rateTxt = settled ? (Math.round(wins / settled * 1000) / 10).toFixed(1) + '%' : '—';
-        var netTxt = (net > 0 ? '+' : '') + net;
+        var netTxt = (net > 0 ? '+' : '') + fmtPoints(net);
         return '<div class="rank-row"><span class="rank-no">' + (i + 1) + '</span><span class="avatar">' + esc(name.slice(0, 1)) + '</span><div class="rank-info"><b>' + name + '</b><span>结算 ' + settled + ' · 胜 ' + wins + '</span></div><div class="rank-val"><b>' + rateTxt + '</b><span>盈亏 ' + netTxt + '</span></div></div>';
       }).join('');
     }).catch(function () { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无数据</div>'; });
@@ -829,7 +829,8 @@
   function applyUser(u) {
     var uname = String((u && (u.username || u.email)) || '');
     awUser = { $id: (u && u.id) || '', email: String((u && u.email) || ''), name: uname };
-    awRow = { $id: (u && u.id) || '', username: uname, points: parseInt(u && u.balance, 10) || 0 };
+    var bal = Number(u && u.balance);
+    awRow = { $id: (u && u.id) || '', username: uname, points: isFinite(bal) ? bal : 0 };
     points = awRow.points;
   }
   function expireSession(msg) {
@@ -1837,7 +1838,7 @@
       '<div class="race-result" data-audit="head-wrap"><div class="rr-left"><div class="rr-issue" data-audit="title" data-hist-toggle="' + def.id + '">第 ' + lastLabel + ' 期开奖结果 <i class="hist-arrow">▾</i></div>' +
       '<div class="rr-nums">' + boxes + '</div>' + labelRow + '</div>' +
       '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + nextLabel + ' 期</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-race-cd data-close="' + ((g && g.mockNext) || 0) + '">00:00:04</div></div></div>' +
-      '<div class="race-balance"><span>余额：<b>' + (parseInt(points, 10) || 0) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
+      '<div class="race-balance"><span>余额：<b>' + fmtPoints(points) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
   }
   function menuHtml() {
     return ['投注记录: bets','玩法说明: howto','历史开奖: history','出码排行: rank','切换主题: theme','音效切换: sound','开奖网: open'].map(function (x) {
@@ -2252,7 +2253,7 @@
         }
         var subBtn = document.querySelector('[data-bet-submit]');
         if (subBtn) {
-          var noPts = (parseInt(points, 10) || 0) <= 0;
+          var noPts = Number(points) <= 0;
           var winOff = winClosed(betState.game);
           var guestBtn = !currentUser();
           // 未登录/余额不足都保持可点：未登录跳登录，余额不足由后端 400 给明确文案
