@@ -1799,8 +1799,10 @@
         return { issue: r.issue, nums: (r.nums || []).map(function (x) { var c = pad(x); return { c: c, z: zodiacOfNumber(c) || '', color: colorOf(c) }; }) };
       });
       var box = document.querySelector('.race-history'); if (box) box.innerHTML = histInner(id);
+      var k3box = document.querySelector('.k3-history'); if (k3box) k3box.innerHTML = k3HistHtml(id);
     }).catch(function () {
       var box = document.querySelector('.race-history'); if (box) box.innerHTML = '<div class="hh-empty">暂无历史数据</div>';
+      var k3box = document.querySelector('.k3-history'); if (k3box) k3box.innerHTML = '<div class="k3-hist-empty">暂无历史数据</div>';
     }).then(function () { state.histLoading[id] = 0; });
   }
   function toggleHistory(id) {
@@ -2096,7 +2098,7 @@
       '<div class="k3-result"><span class="k3-res-dice">' + (has ? raw.map(function (n) { return k3Die(n); }).join('') : k3Die('') + k3Die('') + k3Die('')) + '</span>' +
       '<span class="k3-sum">和值<b>' + (has ? sum : '—') + '</b></span>' +
       '<span class="k3-tags">' + (bigSmall ? '<i>' + bigSmall + '</i>' : '') + (oe ? '<i>' + oe + '</i>' : '') + '</span>' +
-      '<span class="k3-next"><b>下一期 ' + esc((g && (g.nextIssueLabel || g.nextIssue)) || '—') + '</b><strong>封盘 ⏱ <em class="k3-cd">' + countdownText(g) + '</em></strong></span></div></div>';
+      '<span class="k3-next"><b>下一期 ' + esc((g && (g.nextIssueLabel || g.nextIssue)) || '—') + '</b><strong>封盘 ⏱ <em class="k3-cd" data-k3-cd="' + esc(id) + '">' + countdownText(g) + '</em></strong></span></div></div>';
     var cats = [['tri','全骰、围骰'],['sum','点数'],['long','长龙']].map(function (x) {
       return '<button type="button" class="k3-cat ' + (cat === x[0] ? 'on' : '') + '" data-k3-cat="' + x[0] + '">' + x[1] + '</button>';
     }).join('');
@@ -2130,6 +2132,26 @@
       '<div class="k3-layout"><div class="k3-cats">' + cats + '</div><div class="k3-main">' + body + '</div></div>' + bottom;
   }
 
+  function k3HistHtml(id) {
+    var g = state.games[id] || {}, rows = (g.history || []).slice(0, 10);
+    if (!rows.length) return '<div class="k3-hist-empty">暂无历史数据</div>';
+    return '<div class="k3-hist-hd">历史开奖 · 近 ' + rows.length + ' 期</div>' + rows.map(function (h) {
+      var n = (h.nums || []).slice(0, 3).map(function (x) { return parseInt(x && x.c != null ? x.c : x, 10); });
+      if (n.length < 3) return '';
+      var s = n[0] + n[1] + n[2];
+      return '<div class="k3-hist-row"><span class="k3-hist-issue">' + esc(String(h.issue)) + ' 期</span><span class="k3-hist-dice">' + n.map(function (v) { return k3Die(v); }).join('') + '</span><span class="k3-hist-sum">和值 <b>' + s + '</b> · ' + (s >= 11 ? '大' : '小') + ' · ' + (s % 2 ? '单' : '双') + '</span></div>';
+    }).join('');
+  }
+  function toggleK3History(id) {
+    var old = document.querySelector('.k3-history');
+    if (old) { old.remove(); return; }
+    var head = document.querySelector('.k3-head'); if (!head) return;
+    var box = document.createElement('div');
+    box.className = 'k3-history';
+    box.innerHTML = k3HistHtml(id);
+    head.parentNode.insertBefore(box, head.nextSibling);
+    loadHistoryData(id);
+  }
   function betPage(id) {
     if (/^(hk|newmo|newhk)$/.test(id)) syncDailyIssue(id);
     if (betState.game !== id) { betState.game = id; betState.sel = loadSel(id); }
@@ -2240,6 +2262,16 @@
         // 到期后每 5s 拉 /issues
         // 期号/号码刷新交给统一 pollTick（避免多定时器）
         if (closeAt) { var hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60), ss = left % 60; cdEl.textContent = ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2) + ':' + ('0' + ss).slice(-2); }
+      }
+      var k3cd = document.querySelector('[data-k3-cd]');
+      if (k3cd) {
+        var kid = k3cd.getAttribute('data-k3-cd'), kg = state.games[kid] || {};
+        var kat = Number(kg.mockNext) || 0;
+        if (!kat && state.win[kid] && state.win[kid].endAt) kat = Date.parse(state.win[kid].endAt) || 0;
+        if (kat) {
+          var kl = Math.max(0, Math.round((kat - Date.now()) / 1000));
+          k3cd.textContent = ('0' + Math.floor(kl / 3600)).slice(-2) + ':' + ('0' + Math.floor((kl % 3600) / 60)).slice(-2) + ':' + ('0' + (kl % 60)).slice(-2);
+        } else { k3cd.textContent = '——'; }
       }
       var dailyCd = document.querySelector('[data-cd]');
       if (dailyCd) {
@@ -2391,6 +2423,8 @@
     }
   });
   document.addEventListener('click', function (e) {
+    var k3Block = e.target.closest('.k3-result');
+    if (k3Block) { var k3r = currentRoute(); if (k3r && k3r.id) { toggleK3History(k3r.id); return; } }
     var histBlock = e.target.closest('.race-result, .six-result-head');
     if (histBlock && !e.target.closest('.race-history')) {
       var hr = currentRoute(); if (hr && (hr.name === 'bet' || hr.name === 'game') && hr.id) { toggleHistory(hr.id); return; }
