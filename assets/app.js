@@ -491,6 +491,7 @@
       state.win[id] = { open: cur.status !== 'closed', startAt: cur.openAt || null, endAt: cur.closeAt || null, nextOpenAt: (nxt && nxt.openAt) || null, issue: cur.issue, degraded: false };
       FAST[id].degraded = false;
       FAST[id].syncedAt = Date.now();
+      try { localStorage.removeItem('xc-race-hist-' + id); } catch (e) {}
       var cr = currentRoute();
       if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) {
         try { if (soft) updateFastHeader(id); else render(true); } catch (e1) {}
@@ -563,7 +564,7 @@
     if (!g) { syncFastIssue(id, true); state.games[id] = mockGame(id); g = state.games[id]; }
     var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
-    var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
+    var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + esc(String(h.issue)) + ' 期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
     return zeroTip + '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
       '<section class="detail-head"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><div><div class="page-kicker">' + def.name + ' · 实时数据</div><h1 class="page-title">' + def.name + '开奖</h1><div class="page-sub">' + esc(def.desc) + '</div></div></section>' +
       '<div class="detail-actions"><a class="action-btn action-primary" href="#/bet/' + id + '">立即投注</a><a class="action-btn action-ghost" href="#/howto">玩法说明</a></div>' +
@@ -576,7 +577,7 @@
   function historyPage() {
     var chips = ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('');
     var g = state.games[historyGame];
-    var rows = state.histApi[historyGame] && state.histApi[historyGame].length ? histTableRows(historyGame, state.histApi[historyGame]) : (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
+    var rows = state.histApi[historyGame] && state.histApi[historyGame].length ? histTableRows(historyGame, state.histApi[historyGame]) : (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + esc(String(h.issue)) + ' 期</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
     if (!rows) rows = '<tr><td colspan="4">' + emptyState('暂无数据') + '</td></tr>';
     setTimeout(function () { try { loadHistoryData(historyGame); } catch (e) {} }, 0);
     return catTabs('history') + '<div class="page-head"><div><div class="page-kicker">RESULTS</div><h1 class="page-title">开奖记录</h1><div class="page-sub">主站真实数据 · 当前可获取 ' + ((g && g.history.length) || 0) + ' 期</div></div><span class="demo-pill">REAL</span></div>' +
@@ -1167,7 +1168,7 @@
     if (!g) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id, true); }
     var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
-    var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + shortIssue(h.issue) + '期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
+    var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + esc(String(h.issue)) + ' 期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
     return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
       '<section class="detail-head"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><div><div class="page-kicker">' + def.name + ' · 实时数据</div><h1 class="page-title">' + def.name + '开奖</h1><div class="page-sub">' + esc(def.desc) + '</div></div></section>' +
       '<div class="detail-actions"><a class="action-btn action-primary" href="#/bet/' + id + '">立即投注</a><a class="action-btn action-ghost" href="#/howto">玩法说明</a></div>' +
@@ -1180,7 +1181,7 @@
   function historyPage() {
     var chips = ORDER.map(function (id) { return '<button class="chip ' + (historyGame === id ? 'on' : '') + '" type="button" data-history-game="' + id + '">' + DEFS[id].name + '</button>'; }).join('');
     var g = state.games[historyGame];
-    var rows = (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
+    var rows = (g && g.history || []).slice(0, 20).map(function (h) { return '<tr><td class="iss">' + esc(String(h.issue)) + ' 期</td><td>' + DEFS[historyGame].name + '</td><td>' + balls(h.nums, true) + '</td><td><span class="status">● 已开奖</span></td></tr>'; }).join('');
     if (!rows) rows = '<tr><td colspan="4">' + emptyState('暂无数据') + '</td></tr>';
     return catTabs('history') + '<div class="page-head"><div><div class="page-kicker">RESULTS</div><h1 class="page-title">开奖记录</h1><div class="page-sub">主站真实数据 · 当前可获取 ' + ((g && g.history.length) || 0) + ' 期</div></div><span class="demo-pill">REAL</span></div>' +
       '<div class="chips">' + chips + '</div><div style="padding:0 10px"><div class="table-scroll"><table class="hist"><thead><tr><th>期号</th><th>彩种</th><th>开奖号码</th><th>状态</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
@@ -1735,16 +1736,23 @@
     return (rows || []).slice(0, 20).map(function (h) {
       var nums = (h.nums || []).map(function (x) { return (typeof x === 'object') ? x : { c: String(x) }; });
       var text = nums.length ? balls(nums, true) : (h.bigSmall || h.parity || '—');
-      return '<tr><td class="iss">' + shortIssue(h.issue) + '</td><td>' + DEFS[id].name + '</td><td>' + text + '</td><td><span class="status">● 已开奖</span></td></tr>';
+      return '<tr><td class="iss">' + esc(String(h.issue)) + ' 期</td><td>' + DEFS[id].name + '</td><td>' + text + '</td><td><span class="status">● 已开奖</span></td></tr>';
     }).join('');
   }
   function histRows(id) {
-    var def = DEFS[id] || {}, list = [];
+    var def = DEFS[id] || {}, g = state.games[id];
+    // 快开彩种：只认 /api/results 写入的 g.history，不读 localStorage / 旧 /history 接口
+    if (def.mock || /^fast-/.test(String(id))) {
+      var list = (g && g.history) || [];
+      list = list.filter(function (h) { return h && /^\d{6,}$/.test(String(h.issue)) && (h.nums || []).length; });
+      list.sort(function (a, b) { return Number(b.issue) - Number(a.issue); });
+      return list.slice(0, 20);
+    }
+    var daily = [];
     if (state.histApi[id] && state.histApi[id].length) return state.histApi[id].slice(0, 20);
-    if (def.mock) { try { list = JSON.parse(localStorage.getItem('xc-race-hist-' + id) || '[]'); } catch (e) {} }
-    if (!list.length) { var g = state.games[id]; list = (g && g.history) || []; }
-    if (!list.length && state.games[id] && state.games[id].last) list = [state.games[id].last];
-    return list.slice(0, 15);
+    if (!daily.length) daily = (g && g.history) || [];
+    if (!daily.length && g && g.last) daily = [g.last];
+    return daily.slice(0, 20);
   }
   function histInner(id) {
     var mode = window.__histMode || 'num', def = DEFS[id] || {}, racing = !!def.racing;
@@ -1775,28 +1783,25 @@
           cells = '<span class="hh-sum">和值 ' + (nums[0] || 0) + '+' + (nums[1] || 0) + '</span><span class="hh-dragon">特码 ' + pad(nums[6] || 0) + '</span>';
         }
       }
-      return '<div class="hh-row' + (ri % 2 ? ' alt' : '') + '"><span class="hh-issue">' + shortIssue(h.issue) + '期</span><span class="hh-cells">' + cells + '</span></div>';
-    }).join('') || '<div class="hh-empty">暂无历史（本期开奖后开始积累）</div>';
+      return '<div class="hh-row' + (ri % 2 ? ' alt' : '') + '"><span class="hh-issue">' + esc(String(h.issue)) + ' 期</span><span class="hh-cells">' + cells + '</span></div>';
+    }).join('') || '<div class="hh-empty">暂无历史数据</div>';
     return '<div class="hh-tabs">' + tabs.map(function (t) { return '<button type="button" class="hh-tab ' + (mode === t[0] ? 'on' : '') + '" data-hist-mode="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' + body +
       '<div class="hh-more"><a href="#/history">更多历史 ›</a></div>';
   }
   function loadHistoryData(id) {
-    if (!id || state.histLoading[id] || (state.histApi[id] && state.histApi[id].length)) return;
+    if (!id || state.histLoading[id]) return;
     state.histLoading[id] = 1;
-    try {
-      window.LotteryAPI.call('/history/' + encodeURIComponent(id) + '?limit=20', { method: 'GET' }).then(function (d) {
-        var rows = (d && (d.items || d.results || d.history || d.rows)) || [];
-        if (!Array.isArray(rows) && rows && typeof rows === 'object') {
-          rows = Object.keys(rows).map(function (k) { var v = rows[k] || {}; return { issue: v.issue || k, nums: v.nums || v.lastResult || [] }; });
-        }
-        rows = rows.filter(function (h) { return h && h.issue != null && (h.nums || []).length; }).sort(function (a, b) { return Number(b.issue) - Number(a.issue); });
-        if (rows.length) {
-          state.histApi[id] = rows;
-          var box = document.querySelector('.race-history'); if (box) box.innerHTML = histInner(id);
-          try { var tb = document.querySelector('.hist tbody'); if (tb && currentRoute().name === 'history') tb.innerHTML = histTableRows(id, rows); } catch (e) {}
-        }
-      }).catch(function () {});
-    } catch (e) {}
+    if (!window.LHAuth) { state.histLoading[id] = 0; return; }
+    window.LHAuth.results(id, 20).then(function (d) {
+      var rows = (d && d.results) || [];
+      var g = state.games[id] || (state.games[id] = { last: {}, history: [] });
+      g.history = rows.map(function (r) {
+        return { issue: r.issue, nums: (r.nums || []).map(function (x) { var c = pad(x); return { c: c, z: zodiacOfNumber(c) || '', color: colorOf(c) }; }) };
+      });
+      var box = document.querySelector('.race-history'); if (box) box.innerHTML = histInner(id);
+    }).catch(function () {
+      var box = document.querySelector('.race-history'); if (box) box.innerHTML = '<div class="hh-empty">暂无历史数据</div>';
+    }).then(function () { state.histLoading[id] = 0; });
   }
   function toggleHistory(id) {
     var old = document.querySelector('.race-history');
