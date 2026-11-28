@@ -494,7 +494,7 @@
       try { localStorage.removeItem('xc-race-hist-' + id); } catch (e) {}
       var cr = currentRoute();
       if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) {
-        try { if (soft) updateFastHeader(id); else render(true); } catch (e1) {}
+        try { if (soft && id !== 'fast-k3') updateFastHeader(id); else render(true); } catch (e1) {}
       }
       try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e2) {}
     }).catch(function (e) {
