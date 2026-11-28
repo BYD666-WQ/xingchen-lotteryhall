@@ -982,7 +982,9 @@
     SSE.es.addEventListener('issue', function (ev) {
       var d = null; try { d = JSON.parse(ev.data); } catch (e) {}
       if (!d || !d.current) return;
+      var prevIssue = state.games[game] && state.games[game].nextIssue;
       applyStreamIssue(game, d);
+      if (String(prevIssue) !== String(d.current.issue)) syncIssueLight(game, true);
       SSE.errs = 0; SSE.degraded = false;
       updateRTStatus('SSE');
     });
