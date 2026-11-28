@@ -763,7 +763,7 @@
       var url = (data && (data.avatar || data.url)) || (data && data.user && (data.user.avatar || data.user.avatar_url)) || '';
       if (!url) { var e4 = new Error('NO_URL'); e4.code = 'NO_URL'; throw e4; }
       awUser.avatar = url;
-      updateUserChip(); render(true);
+      updateUserChip(); avatarMsg(''); render(true);
       try { showToast('头像已更新'); } catch (e5) {}
     } catch (e) {
       var map = { FORMAT: '仅支持 JPG / PNG / WebP 图片', TOO_BIG: '图片压缩后仍超过 300KB，请换一张', NO_URL: '上传失败（服务端未返回头像地址）' };
