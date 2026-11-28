@@ -1878,3 +1878,14 @@ body.dark-theme .rule-item2 h3,body.dark-theme .rule-item2 p b{color:#fff}
 /* 赔率长文本换行，避免右侧被裁切 */
 .rules-page .rule-item2 h3{display:block}
 .rules-page .rule-odds{display:block;margin:2px 0 0;white-space:normal;word-break:break-word;text-align:left}
+
+/* 首次进入站点级骨架（无加载文案） */
+.boot-skel{padding:12px 0 24px;background:#fff}
+.bsk-line{height:14px;background:#eee;border-radius:3px;margin:12px 16px;}
+.bsk-line.w40{width:40%}
+.bsk-hero{height:150px;margin:12px 16px;border-radius:6px;background:#f0f0f0;}
+.bsk-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px 16px;}
+.bsk-card{height:86px;border:1px solid #f0f0f0;border-radius:6px;padding:10px;box-sizing:border-box;}
+.bsk-card i{display:block;width:34px;height:34px;border-radius:50%;background:#eee;margin-bottom:8px;}
+.bsk-card b{display:block;height:10px;width:60%;background:#eee;border-radius:2px;margin-bottom:6px;}
+.bsk-card em{display:block;height:8px;width:40%;background:#f2f2f2;border-radius:2px;}

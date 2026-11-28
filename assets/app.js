@@ -205,6 +205,91 @@
     }).then(function () { state.loading = false; setRefreshBusy(false); });
   }
   function setRefreshBusy(on) { var b = $('#refreshDataBtn'); if (!b) return; b.classList.toggle('busy', on); b.disabled = on; b.setAttribute('aria-busy', on ? 'true' : 'false'); }
+  var BOOT = { data: null, ts: 0, loading: false, stale: false };
+  function bootSkeleton() {
+    var cards = '';
+    for (var i = 0; i < 10; i++) cards += '<div class="bsk-card"><i></i><b></b><em></em></div>';
+    return '<div class="boot-skel"><div class="bsk-line w40"></div><div class="bsk-hero"></div><div class="bsk-grid">' + cards + '</div></div>';
+  }
+  function bootToBalls(arr) {
+    return (arr || []).map(function (x) { var c = pad(x); return { c: c, z: zodiacOfNumber(c) || '', color: colorOf(c) }; });
+  }
+  function applyBootstrap(j, stale) {
+    var data = j && j.data ? j.data : (j || {});
+    BOOT.data = data; BOOT.ts = data.ts ? Date.parse(data.ts) || Date.now() : Date.now(); BOOT.stale = !!stale;
+    var games = Array.isArray(data.games) ? data.games : [];
+    games.forEach(function (item) {
+      if (!item || !item.id || !DEFS[item.id]) return;
+      var id = item.id, cur = item.current || item.next || {}, results = (item.results || []).slice();
+      results.sort(function (a, b) { return Number(b.issue) - Number(a.issue); });
+      var lastRow = results[0] || null;
+      var d = { issue: cur.issue, closeAt: cur.closeAt, periodSec: item.intervalSec || 0, lastResult: lastRow ? { issue: lastRow.issue, nums: lastRow.nums } : null };
+      var g = shapeFast(id, d);
+      g.intervalSec = Number(item.intervalSec) || 0;
+      g.nextIssue = cur.issue || g.nextIssue;
+      g.nextIssueLabel = cur.issue ? String(cur.issue) : g.nextIssueLabel;
+      g.mockNext = cur.closeAt ? Date.parse(cur.closeAt) : 0;
+      if (lastRow) { g.last.issue = lastRow.issue; g.last.nums = bootToBalls(lastRow.nums); }
+      g.history = results.map(function (r) { return { issue: r.issue, nums: bootToBalls(r.nums) }; });
+      state.games[id] = g;
+      FAST[id] = { data: d, syncedAt: BOOT.ts, lastTry: BOOT.ts, degraded: false };
+      state.win[id] = { open: true, startAt: cur.openAt || null, endAt: cur.closeAt || null, nextOpenAt: (item.next && item.next.openAt) || null, issue: cur.issue, degraded: false };
+    });
+    var daily = data.daily || {};
+    ['newhk', 'newmo', 'hk'].forEach(function (id) {
+      var x = daily[id]; if (!x || !DEFS[id]) return;
+      var lastD = x.last || null, nextD = x.next || null;
+      var nums = normNums((lastD && lastD.nums) || x.nums || []);
+      if (nums.length < 7) return;
+      var status = String(x.status || '').toLowerCase();
+      var drawn = status === 'published' || status === 'drawn';
+      var rawIssue = issueNo(lastD && lastD.issue != null ? lastD.issue : x.issue);
+      if (rawIssue == null) return;
+      var lastIssue = lastD ? rawIssue : (drawn ? rawIssue : rawIssue - 1);
+      var nextIssue = issueNo(nextD && nextD.issue != null ? nextD.issue : x.nextIssue) || (lastD ? lastIssue + 1 : (drawn ? rawIssue + 1 : rawIssue));
+      var g = state.games[id] || {};
+      g.last = { issue: lastIssue, issueLabel: String(lastIssue), nums: bootToBalls(nums) };
+      g.nextIssue = nextIssue;
+      g.nextIssueLabel = String(nextIssue);
+      g.history = [{ issue: lastIssue, nums: bootToBalls(nums) }];
+      g.pending = false;
+      g.timeCfg = timeCfg(state.config, id);
+      var nextMs = Date.parse((nextD && nextD.visibleFrom) || (lastD ? x.nextVisibleFrom : (drawn ? x.nextVisibleFrom : x.visibleFrom)) || '') || 0;
+      g.mockNext = nextMs > Date.now() ? nextMs : 0;
+      g.server = true;
+      state.games[id] = g;
+    });
+    if (data.odds) {
+      try { Object.assign(ODDS, data.odds); } catch (e) {}
+      if (data.odds.byPlay) { window.LH_ODDS_BY_PLAY = data.odds.byPlay; }
+    }
+    if (!stale) { try { sessionStorage.setItem('lh-bootstrap-v1', JSON.stringify({ ts: BOOT.ts, data: data })); } catch (e) {} }
+    try { render(true); } catch (e) {}
+    if (stale) { try { showToast('网络异常，显示 ' + new Date(BOOT.ts).toLocaleTimeString('zh-CN', { hour12: false }) + ' 的缓存数据'); } catch (e) {} }
+  }
+  function loadBootstrap(force) {
+    if (BOOT.loading) return;
+    if (BOOT.data && !force) return;
+    if (!window.LHAuth) { BOOT.loading = false; return; }
+    BOOT.loading = true;
+    var attempt = function (n) {
+      fetch(window.LHAuth.base + '/api/bootstrap', { cache: 'no-store' }).then(function (r) {
+        if (!r.ok) throw new Error('BOOTSTRAP_' + r.status);
+        return r.json();
+      }).then(function (j) {
+        if (!j || j.ok === false) throw new Error('BOOTSTRAP_BAD');
+        BOOT.loading = false; applyBootstrap(j, false);
+      }).catch(function (e) {
+        if (n < 2) { setTimeout(function () { attempt(n + 1); }, n === 0 ? 1000 : 3000); return; }
+        BOOT.loading = false;
+        var cached = null; try { cached = JSON.parse(sessionStorage.getItem('lh-bootstrap-v1') || 'null'); } catch (x) {}
+        if (cached && cached.data) { applyBootstrap(cached, true); }
+        else { try { render(true); } catch (x) {} }
+        try { console.warn('[bootstrap] failed:', e && e.message); } catch (x) {}
+      });
+    };
+    attempt(0);
+  }
   function balls(nums, compact) {
     if (!nums || !nums.length) return '<span class="data-empty">暂无开奖数据</span>';
     var out = '';
@@ -468,7 +553,7 @@
       });
     } catch (e) { DAILY_SYNC[id] = 0; }
   }
-  function syncFastIssue(id, soft, force) {
+  function syncFastIssue(id, soft, force, silent) {
     var def = DEFS[id];
     if (!def || !(def.mock || def.racing || /^fast-/.test(id))) return Promise.resolve();
     FAST[id] = FAST[id] || {};
@@ -496,12 +581,17 @@
       FAST[id].degraded = false;
       FAST[id].syncedAt = Date.now();
       try { localStorage.removeItem('xc-race-hist-' + id); } catch (e) {}
-      var cr = currentRoute();
-      if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) {
-        try { if (soft && id !== 'fast-k3') updateFastHeader(id); else render(true); } catch (e1) {}
-      }
       FAST[id].inFlight = false;
-      try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e2) {}
+      var cr0 = currentRoute();
+      if ((cr0.name === 'bet' || cr0.name === 'game') && cr0.id === id) {
+        try {
+          var hasHead = !!document.querySelector('[data-audit="head-wrap"]');
+          if (soft && id !== 'fast-k3' && hasHead) updateFastHeader(id); else render(true);
+        } catch (e1) {}
+      }
+      if (!silent) {
+        try { loadUserBets().then(function (b) { if (JSON.stringify(b) !== JSON.stringify(bets)) { bets = b; updateBetsOnly(); } }); } catch (e2) {}
+      }
     }).catch(function (e) {
       FAST[id].inFlight = false;
       FAST[id].failed = true;
@@ -563,13 +653,10 @@
     return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-last card"><div class="data-empty" data-loading>正在读取 ' + esc(def.name) + ' 数据…<div class="load-hint">首次加载可能较慢，最长等待 20 秒</div></div></div>';
   }
   function gamePage(id) {
-    if (/^(hk|newmo|newhk)$/.test(id)) syncDailyIssue(id);
-    try { console.info('[gp] ' + id + ' mock=' + (DEFS[id] && DEFS[id].mock)); } catch (e) {}
     var def = DEFS[id]; if (!def) return hallPage();
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
     var g = state.games[id];
-    if (!g && def.mock) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id, true); }
-    if (!g) { syncFastIssue(id, true); state.games[id] = mockGame(id); g = state.games[id]; }
+    if (!g || !g.last) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="data-empty" style="padding:40px 20px">数据待同步</div>';
     var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + esc(String(h.issue)) + ' 期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
@@ -857,7 +944,29 @@
       applyStreamIssue(game, d);
       SSE.errs = 0; SSE.degraded = false;
       updateRTStatus('SSE');
-      try { syncFastIssue(game, true, true); } catch (e) {}
+    });
+    ['result', 'results'].forEach(function (name) {
+      SSE.es.addEventListener(name, function (ev) {
+        var d = null; try { d = JSON.parse(ev.data); } catch (e) {}
+        if (!d) return;
+        var g = state.games[game]; if (!g) return;
+        var row = d.result || d;
+        if (row && row.issue && row.nums) {
+          g.last = { issue: row.issue, nums: bootToBalls(row.nums) };
+          g.history = [{ issue: row.issue, nums: bootToBalls(row.nums) }].concat((g.history || []).filter(function (h) { return String(h.issue) !== String(row.issue); })).slice(0, 12);
+        }
+        var cr = currentRoute();
+        if ((cr.name === 'bet' || cr.name === 'game') && cr.id === game) { try { render(true); } catch (e) {} }
+      });
+    });
+    SSE.es.addEventListener('odds', function (ev) {
+      var d = null; try { d = JSON.parse(ev.data); } catch (e) {}
+      if (!d) return;
+      var o = d.odds || d.config || d;
+      try { Object.assign(ODDS, o); } catch (e) {}
+      if (o && o.byPlay) window.LH_ODDS_BY_PLAY = o.byPlay;
+      var cr = currentRoute();
+      if (cr.name === 'bet' || cr.name === 'game') { try { render(true); } catch (e) {} }
     });
     SSE.es.onerror = function () {
       SSE.errs++;
@@ -1240,8 +1349,7 @@
     var def = DEFS[id]; if (!def) return hallPage();
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="detail-head"><span class="game-circle" style="--gc:' + def.color + '"><span class="game-glyph">' + def.icon + '</span></span><div><div class="page-kicker">' + esc(def.name) + ' · 占位</div><h1 class="page-title">' + esc(def.name) + '</h1><div class="page-sub">' + esc(def.provider || '演示占位') + '</div></div></div><div class="detail-last card">' + emptyState(def.note || '数据待接入，敬请期待') + '</div>';
     var g = state.games[id];
-    if (!g && def.mock) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id, true); }
-    if (!g) { state.games[id] = mockGame(id); g = state.games[id]; syncFastIssue(id, true); }
+    if (!g || !g.last) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a><div class="data-empty" style="padding:40px 20px">数据待同步</div>';
     var zeroTip = betZeroBanner();
     var last = g.last, hist = (g.history || []).slice(0, 10);
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + esc(String(h.issue)) + ' 期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
@@ -1894,7 +2002,6 @@
     var box = document.createElement('div'); box.className = 'race-history';
     box.innerHTML = histInner(id);
     head.parentNode.insertBefore(box, head.nextSibling);
-    loadHistoryData(id);
   }
   function racingHeaderHtml(def, g) {
     var nums = (g && g.last && g.last.nums) || [];
@@ -2240,7 +2347,21 @@
     box.className = 'k3-history';
     box.innerHTML = k3HistHtml(id);
     head.parentNode.insertBefore(box, head.nextSibling);
-    loadHistoryData(id);
+  }
+  function fastPlaceholderPage(id, def) {
+    var boxes = '';
+    for (var i = 0; i < 10; i++) boxes += '<i class="fl-ball"></i>';
+    return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
+      '<div class="race-head"><span class="race-title">' + esc(def.name) + ' »</span><span class="race-mode">信用玩法 ▾</span><span class="race-help">小助手</span><span class="race-menu">☰</span></div>' +
+      '<div class="fast-loading"><div class="fl-title">第 <b>——</b> 期开奖结果</div><div class="fl-balls">' + boxes + '</div></div>';
+  }
+  function prefetchFastGames() {
+    if (window.__lhFastPrefetch || !window.LHAuth) return;
+    window.__lhFastPrefetch = 1;
+    var first = ['fast-race-1','fast-k3','fast-txffc','fast-mark6-1','fast-race-30','fast-airship','fast-race-2','fast-race-5','fast-mark6-5','fast-bjrace','fast-luckyrace','fast-ship10','fast-tensc','fast-airship-5','fast-race-10'];
+    var ids = Object.keys(DEFS).filter(function (id) { return DEFS[id] && DEFS[id].mock; });
+    ids.sort(function (a, b) { var ia = first.indexOf(a), ib = first.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+    ids.forEach(function (id) { try { syncFastIssue(id, true, true, true); } catch (e) {} });
   }
   function fastErrorPage(id, def) {
     return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
@@ -2255,37 +2376,17 @@
       '<div class="fast-loading" data-fast-loading="' + esc(id) + '"><div class="fl-title">第 <b>——</b> 期开奖结果</div><div class="fl-balls">' + boxes + '</div><div class="fl-note">正在获取最新开奖数据…</div></div>';
   }
   function betPage(id) {
-    var def0 = DEFS[id] || DEFS.newhk;
-    if (!def0.mock && /^(hk|newmo|newhk)$/.test(id)) {
-      var dg0 = state.games[id];
-      if (!dg0 || !dg0.last || !(dg0.last.nums || []).length) {
-        loadData(true, true);
-        return betZeroBanner() + fastLoadingPage(id, def0);
-      }
-    }
-    var prevGame = betState.game;
-    var switching = prevGame !== id;
-    if (switching) {
-      betState.game = id; betState.sel = loadSel(id);
-      // 切彩种：清掉上一个彩种和本彩种的旧期号/号码/历史，避免串数据与旧值闪现
-      if (prevGame && prevGame !== id) { try { delete state.games[prevGame]; } catch (e) {} }
-      try { delete state.games[id]; } catch (e) {}
-    }
     var def = DEFS[id] || DEFS.newhk;
-    var fastReady = !def.mock || (state.games[id] && FAST[id] && FAST[id].data && !FAST[id].failedAt);
-    if (def.mock && !fastReady) {
-      if (FAST[id] && FAST[id].failedAt && Date.now() - FAST[id].failedAt < 15000) return betZeroBanner() + fastErrorPage(id, def);
-      syncFastIssue(id, false, true);
-      return betZeroBanner() + fastLoadingPage(id, def);
-    }
+    var cached = !!(state.games[id] && state.games[id].last && (state.games[id].last.nums || []).length);
+    if (!cached) return betZeroBanner() + fastPlaceholderPage(id, def);
+    if (betState.game !== id) { betState.game = id; betState.sel = loadSel(id); }
     var g = state.games[id] || (def.mock && FAST[id] && FAST[id].data ? shapeFast(id, FAST[id].data) : mockGame(id));
-    if (!def.mock && !state.win[id]) syncIssueWindow(id);
     if (def.racing) return betZeroBanner() + winBanner(id) + racingPage(id, def, g);
     if (id === 'newhk' || id === 'newmo' || id === 'hk' || id === 'fast-mark6-1' || id === 'fast-mark6-5') return betZeroBanner() + winBanner(id) + sixSpecialPage(id, def, g);
     if (id === 'fast-k3') return betZeroBanner() + winBanner(id) + k3Page(id, def, g);
     if (def.racing && !(def.cats || []).length) { /* racing 用 RACING_CATS */ }
     if (def.enabled === false) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState(def.note || '该彩种数据待接入');
-    if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + emptyState('正在读取 ' + def.name + ' 数据…');
+    if (!g) return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + fastPlaceholderPage(id, def);
     var open = betBalls(g.last.nums);
     var zeroTip = betZeroBanner();
     var title = def.name + (def.mock ? '' : '六合彩');
@@ -2492,26 +2593,19 @@
       (window.LH_GAMES || []).forEach(function (g) { if (g && g.id && !DEFS[g.id]) DEFS[g.id] = g; });
     } catch (e) {}
   }
-  var LAST_BET_ROUTE = '';
   function render(keepScroll) {
     window.__renderCount = (window.__renderCount || 0) + 1;
 
     refreshDefs();
     settleBets();
     var r = currentRoute(), view = $('#view'); if (!view) return;
-    if (r.name === 'bet') {
-      if (LAST_BET_ROUTE !== r.id) {
-        if (LAST_BET_ROUTE) { try { delete state.games[LAST_BET_ROUTE]; } catch (e0) {} }
-        try { delete state.games[r.id]; } catch (e1) {}
-      }
-      LAST_BET_ROUTE = r.id;
-    } else { LAST_BET_ROUTE = ''; }
     if (r.name === 'bet') betState.game = r.id;
     document.body.classList.toggle('bet-mode', r.name === 'bet');
     document.body.classList.toggle('rules-mode', r.name === 'rules');
     document.body.classList.toggle('race-mode', r.name === 'bet' && !!DEFS[r.id] && !!DEFS[r.id].racing);
     try {
-      if (r.name === 'game') view.innerHTML = gamePage(r.id);
+      if (r.name === 'lotteryhall' && !BOOT.data && BOOT.loading) view.innerHTML = bootSkeleton();
+      else if (r.name === 'game') view.innerHTML = gamePage(r.id);
       else if (r.name === 'bet') {
         view.innerHTML = betPage(r.id); updateBetBar();
       }
@@ -2818,7 +2912,7 @@
       })();
       return;
     }
-    if (e.target.closest('#refreshDataBtn')) { loadData(false); return; }
+    if (e.target.closest('#refreshDataBtn')) { loadBootstrap(true); return; }
   });
   document.addEventListener('submit', async function (e) {
     if (!e.target || e.target.id !== 'authForm') return;
@@ -2839,7 +2933,7 @@
   if (!location.hash) { try { history.replaceState(null, '', '#/lotteryhall'); } catch (e) { location.hash = '#/lotteryhall'; } }
   applyTheme();
   (async function () {
-    render(); loadData(true, true);
+    loadBootstrap(); render();
     try { await initAuth(); } catch (e) { try { console.warn('[auth] init failed:', (e && e.message) || e); } catch (x) {} }
   })();
   // 首屏只渲染一次；后续数据只做局部更新
@@ -2862,9 +2956,7 @@
     refreshPointsAndBets();
     pollTicks++;
     try {
-      var r = currentRoute();
-      if ((r.name === 'bet' || r.name === 'game') && DEFS[r.id] && DEFS[r.id].mock) syncFastIssue(r.id, true);
-      if (pollTicks % 4 === 0) loadData(true, true);
+      // 数据由 /api/bootstrap + SSE 维护，不做页面轮询
     } catch (e) {}
   }
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
