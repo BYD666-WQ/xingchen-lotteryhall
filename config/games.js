@@ -24,7 +24,7 @@ window.LH_RACING_ODDS = {
 window.LH_GAMES = [
   { id:'fast-airship-5', name:'幸运飞艇5分', provider:'快开', enabled:true, mock:true, period:'5分钟', periodSec:300, icon:'艇', color:'#4aa99d', drawKey:'mock', racing:true },
   { id:'fast-bjrace', name:'北京赛车', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'北', color:'#7b68c8', drawKey:'mock', racing:true },
-  { id:'fast-luckyrace', name:'幸运赛车', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'运', color:'#e6a62f', drawKey:'mock', racing:true },
+  { id:'fast-luckyrace', name:'幸运赛车', provider:'快开', enabled:true, mock:true, period:'3分钟', periodSec:180, icon:'运', color:'#e6a62f', drawKey:'mock', racing:true },
   { id:'fast-ship10', name:'澳洲幸运10', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'澳', color:'#5a8fd4', drawKey:'mock', racing:true },
   { id:'fast-tensc', name:'极速时时彩', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'时', color:'#5a7bd4', drawKey:'mock', racing:true },
   { id:'fast-txffc', name:'腾讯分分彩', provider:'快开', enabled:true, mock:true, period:'1分钟', periodSec:60, icon:'分', color:'#687bd0', drawKey:'mock', racing:true },
