@@ -1513,7 +1513,7 @@
       '<div class="bs-top"><span class="bs-game" style="--gc:' + esc(betGameColor(b.game)) + '"><i class="bs-icon">' + esc(betGameGlyph(b.game)) + '</i>' + esc(betGameName(b.game)) + '</span>' +
       '<span class="bs-issue">第 ' + esc(shortIssue(b.targetIssue)) + ' 期</span>' +
       '<em class="bs-status ' + st.cls + '">' + st.text + '</em></div>' +
-      '<div class="bs-picks">' + (chips || '<span class="bs-pick empty">明细缺失</span>') + '<span class="bs-qty">× ' + qty + ' 注</span></div>' +
+      '<div class="bs-picks">' + (chips || '<span class="bs-pick empty">明细缺失</span>') + '<span class="bs-qty">×' + qty + '</span></div>' +
       '<div class="bs-money"><div><span>投注额</span><b>' + betMoney(stake) + '</b></div><div><span>派彩</span>' + payHtml + '</div><div class="al-r"><span>盈亏</span>' + pfHtml + '</div></div>' +
       '<div class="bs-foot"><span class="bs-time">' + esc(when) + '</span>' + act + '</div>' +
     '</article>';
@@ -1976,7 +1976,7 @@
       '<div class="race-chips">' + chips + '</div>' +
       '<div class="race-amount"><label>金额：</label><input id="betQty" type="text" inputmode="numeric" value="' + esc(betState.qty) + '"><span class="race-unit">积分</span><button type="button" class="race-quick">快捷金额</button><button type="button" class="race-reset" data-race-reset>重置</button><button type="button" class="race-submit" data-bet-submit>下注</button></div>' +
       '<div class="race-keypad" id="raceKeypad" hidden>' + [1,2,3,4,5,6,7,8,9].map(function (d) { return '<button type="button" data-kp="' + d + '">' + d + '</button>'; }).join('') + '<button type="button" data-kp="del">删除</button><button type="button" data-kp="0">0</button><button type="button" data-kp="ok">确定</button></div>' +
-      '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
+      '<div class="race-foot">一共 ×<b data-bet-count>0</b>，共 <b data-bet-cost>0</b> 积分</div>';
     return topHtml + bottom;
   }
   var COLOR_WAVE_BY_GAME = {};
@@ -2084,7 +2084,7 @@
       '<div class="race-picked">已选：<b data-picked-list>—</b></div><div class="bet-hint" data-bet-hint></div>' +
       '<div class="race-chips">' + chips + '</div>' +
       '<div class="race-amount"><label>金额：</label><input id="betQty" type="text" inputmode="numeric" value="' + esc(betState.qty) + '"><span class="race-unit">积分</span><button type="button" class="race-quick">快捷金额</button><button type="button" class="race-reset" data-race-reset>重置</button><button type="button" class="race-submit" data-bet-submit>下注</button></div>' +
-      '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
+      '<div class="race-foot">一共 ×<b data-bet-count>0</b>，共 <b data-bet-cost>0</b> 积分</div>';
   }
 
   var K3_PIPS = { 1:[[50,50]], 2:[[26,26],[74,74]], 3:[[24,24],[50,50],[76,76]], 4:[[26,26],[74,26],[26,74],[74,74]], 5:[[26,26],[74,26],[50,50],[26,74],[74,74]], 6:[[26,24],[74,24],[26,50],[74,50],[26,76],[74,76]] };
@@ -2134,7 +2134,7 @@
       '<div class="race-picked">已选：<b data-picked-list>—</b></div><div class="bet-hint" data-bet-hint></div>' +
       '<div class="race-chips">' + chips + '</div>' +
       '<div class="race-amount"><label>金额：</label><input id="betQty" type="text" inputmode="numeric" value="' + esc(betState.qty) + '"><span class="race-unit">积分</span><button type="button" class="race-quick">快捷金额</button><button type="button" class="race-reset" data-race-reset>重置</button><button type="button" class="race-submit" data-bet-submit>下注</button></div>' +
-      '<div class="race-foot">一共 <b data-bet-count>0</b> 注，共 <b data-bet-cost>0</b> 积分</div>';
+      '<div class="race-foot">一共 ×<b data-bet-count>0</b>，共 <b data-bet-cost>0</b> 积分</div>';
     return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' + head +
       '<div class="k3-layout"><div class="k3-cats">' + cats + '</div><div class="k3-main">' + body + '</div></div>' + bottom;
   }
@@ -2192,7 +2192,7 @@
       '<div class="bet-open"><div class="bet-open-label">上期开奖 <span>第 ' + shortIssue(g.last.issue) + ' 期</span></div><div class="bet-open-balls">' + open.html + '<span class="bet-sum">总和 <b>' + open.sum + '</b></span></div></div></div>' +
       '<div class="bet-tabs"><button type="button" class="' + (credit ? 'on' : '') + '" data-bet-tab="credit">信用</button><button type="button" class="' + (!credit ? 'on' : '') + '" data-bet-tab="path">路子图</button></div>' +
       (credit ? '<div class="bet-layout"><div class="bet-cats">' + (def.racing ? RACING_CATS : BET_CATS).map(function (c) { return '<button type="button" class="' + (cat === c.id ? 'on' : '') + '" data-bet-cat="' + c.id + '"><span>' + c.short + '</span>' + c.name + '</button>'; }).join('') + '</div><div class="bet-center">' + betContent(cat) + '</div></div>' : '<div class="bet-path">' + emptyState('路子图演示占位，暂未开放') + '</div>') +
-      '<div class="picked-bar">已选：<b data-picked-list>—</b> · <b data-bet-count>0</b> 注 · 共 <b data-bet-cost>0</b> 分</div>' +
+      '<div class="picked-bar">已选：<b data-picked-list>—</b> · ×<b data-bet-count>0</b> · 共 <b data-bet-cost>0</b> 分</div>' +
       '<div class="odds-note">演示赔率，非真实 · 每注固定 2 积分 · 不构成任何投注建议</div>' + cfgNote + my +
       '<div class="bet-bar"><div class="bet-bar-row"><span class="bet-label">注数</span>' + [10,20,50,100,200,500,1000].map(function (n) { return '<button type="button" class="amount-chip ' + (String(qty) === String(n) ? 'on' : '') + '" data-qty="' + n + '">' + n + '</button>'; }).join('') + '<input id="betQty" type="text" inputmode="numeric" placeholder="自定义" value="' + esc(qty) + '"></div><div class="bet-bar-row"><span class="bet-selected">已选 <b data-bet-count>' + totalNotes() + '</b> 注 · 需 <b data-bet-cost>' + cost + '</b> 积分</span><button type="button" class="bet-clear" data-bet-clear>清空</button><button type="button" class="bet-submit" data-bet-submit>立即投注</button></div><div class="bet-hint" data-bet-hint></div></div>';
   }
