@@ -2328,7 +2328,7 @@
   function galleryPage() { return soonPage('49 图库', 'Demo · 图库待接入'); }
   function supportPage() { return soonPage('客服', 'Demo · 在线客服待接入'); }
   function rulesPage(anchor) {
-    var list = [
+    var general = [
       [1,'客户一经在本公司开户或投注，即被视为已接受这些规则。',0],
       [2,'如果客户怀疑自己的资料被盗用，应立即通知本公司，并更改个人详细资料，且之前所使用的使用者名称及密码将全部无效。',0],
       [3,'客户有责任确保自己的账户及登入资料的保密性。在本网站上以个人的使用者名称及密码进行的任何网上投注将被视为有效。',0],
@@ -2341,12 +2341,47 @@
       [10,'如因在本网站投注触犯当地法律，本公司概不负责。',0],
       [11,'敬请注意！本公司各游戏项目，开奖时间若有延后，本公司保留期数及注单至隔日早上 09:00；保留期间内若有开奖，一切以下注之期数为主；若无开奖，本公司将期数及注单全部取消，如有不便敬请见谅！',1]
     ];
-    var body = list.map(function (r) {
-      return '<p class="rules-p' + (r[2] ? ' red' : '') + '"><span class="rules-no">' + r[0] + '</span>' + r[1] + '</p>';
-    }).join('');
+    var six = [
+      { id:'special', name:'特码', odds:'47.3', def:'从 1–49 中任选 1 个号码，竞猜开奖的第 7 个号码（特码）。', win:'开奖特码与所选号码相同即中。', ex:'选 28，开奖特码为 28 → 中。' },
+      { id:'two-side', name:'两面', odds:'1.96', def:'按特码属性二选一：大小（25–49 为大、1–24 为小）、单双、合单双（各位数字之和）、尾数大小（0–4 小、5–9 大）。', win:'所选属性与开奖特码一致即中。', ex:'特码 41：大、单、合数 5（合单）、尾数 1（尾小）。' },
+      { id:'color', name:'色波', odds:'红 2.7 / 蓝 2.8 / 绿 2.8', def:'按特码所属波色三选一：红波、蓝波、绿波。', win:'开奖特码的波色与所选颜色一致即中。', ex:'选红波，特码 34 为红波 → 中。' },
+      { id:'zodiac', name:'特肖', odds:'马 9.5 / 其他 11.7', def:'按特码对应的生肖竞猜，共 12 个生肖。', win:'开奖特码的生肖与所选生肖相同即中。', ex:'选兔，特码 16 属兔 → 中。' },
+      { id:'regular', name:'正码', odds:'7.8', def:'从 1–49 中选 1 个号码，竞猜 6 个正码中是否出现。', win:'开奖的 6 个正码中包含所选号码即中。', ex:'选 08，6 个正码中有 08 → 中。' },
+      { id:'regular-special', name:'正特', odds:'47.3', def:'从 1–49 中选 1 个号码，竞猜整期 7 个号码（6 正码 + 特码）中是否出现。', win:'7 个开奖号码中包含所选号码即中。', ex:'选 23，任一正码或特码为 23 → 中。' },
+      { id:'regular-1-6', name:'正码 1-6', odds:'以页面显示为准', def:'指定第 1–6 位正码中的某一位，竞猜该位置号码的单双、大小、合单双或波色。', win:'该位置开出的号码属性与所选一致即中。', ex:'选「正码一 · 单」，第 1 个正码开 15 → 中。' },
+      { id:'combo', name:'连码', odds:'3.2 起', def:'从 1–49 中选 2–5 个号码组成一注组合。', win:'开奖的 7 个号码中全部包含所选号码即中；组合越长，赔率越高。', ex:'选 03 + 18，开奖号码同时含 03、18 → 中。' },
+      { id:'flat-zodiac', name:'平特一肖', odds:'马 1.8 / 其他 2', def:'选 1 个生肖，竞猜整期开奖号码中是否出现该生肖。', win:'7 个开奖号码中任意一个属于所选生肖即中。', ex:'选马，开奖号码中有 13（马）→ 中。' },
+      { id:'flat-tail', name:'平特尾', odds:'0 尾 2 / 1–9 尾 1.8', def:'选 1 个尾数（0–9），竞猜整期开奖号码中是否出现该尾数。', win:'7 个开奖号码中任意一个的尾数与所选相同即中。', ex:'选 8 尾，开奖号码中有 28 → 中。' },
+      { id:'sum-zodiac', name:'合肖', odds:'以页面显示为准', def:'选 2–5 个生肖组成一注，竞猜特码生肖是否落在组合内。', win:'开奖特码的生肖属于所选组合即中；组合越长，赔率越高。', ex:'选马 + 兔，特码 13（马）→ 中。' },
+      { id:'miss', name:'自选不中', odds:'2.0', def:'选 1 个号码，竞猜整期开奖号码中是否都不出现它。', win:'7 个开奖号码均不含所选号码即中。', ex:'选 49，开奖 7 个号码无 49 → 中。' },
+      { id:'chain-zodiac', name:'连肖', odds:'以页面显示为准', def:'选 2–5 个生肖组成连肖组合，按所选顺序组成一注。', win:'开奖特码生肖落在所选组合内即中；组合越长，赔率越高。', ex:'选鼠 + 牛，特码生肖为牛 → 中。' },
+      { id:'tail-chain', name:'尾数连', odds:'以页面显示为准', def:'选 2–5 个尾数组成一注。', win:'开奖的 7 个号码中，所选尾数全部至少出现一次即中。', ex:'选 2 尾 + 7 尾，开奖号码含 02 和 27 → 中。' },
+      { id:'dragon-tiger', name:'龙虎斗', odds:'以页面显示为准', def:'比较两个指定位置号码的大小：前者大为龙、后者大为虎、相同为和。', win:'所选结果与实际比较结果一致即中。', ex:'特码 41、正码一 18，选龙 → 中。' }
+    ];
+    var fast = [
+      { id:'rank', name:'名次（第 1–10 名）', odds:'9.98', def:'竞猜开奖号码在某一具体名次上的号码，或该名次号码的大小、单双、龙虎。', win:'所选名次的号码或属性与开奖结果一致即中。', ex:'第 1 名开 08，选「第 1 名 · 小」→ 中。' },
+      { id:'sum', name:'冠亚和值', odds:'冠亚大 2.19 / 冠亚小 1.79 / 冠亚单 1.79 / 冠亚双 2.19', def:'冠军号码与亚军号码相加得到和值，可竞猜和值大小、单双或具体点数。', win:'所选和值区间、单双或点数与实际和值一致即中。', ex:'冠军 09、亚军 02，和值 11；选「冠亚大」→ 中。' },
+      { id:'combo', name:'冠亚组合', odds:'以页面显示为准', def:'把冠军与亚军的号码按先后顺序组成一个组合，竞猜具体组合。', win:'开奖的冠军、亚军号码与所选组合完全一致即中。', ex:'冠军 01、亚军 02，选「1-2」→ 中。' },
+      { id:'two-side', name:'两面', odds:'1.99', def:'对冠亚和值或指定名次做二选一判断：大小、单双、龙虎。', win:'判断结果与实际开奖属性一致即中；龙虎按两个位置号码大小比较。', ex:'冠亚和值 15，选「大 · 单」→ 中。' },
+      { id:'dragon-tiger', name:'龙虎', odds:'1.99', def:'比较两个指定名次号码的大小，前者大为龙、后者大为虎。', win:'所选龙/虎与实际比较结果一致即中。', ex:'冠军 09、亚军 02，选龙 → 中。' }
+    ];
+    var faqs = [
+      ['开奖时间', '六合彩类按主站每日/每周开奖时间；快开类每个彩种有独立倒计时，以彩种页顶部倒计时为准。'],
+      ['赔率以哪里为准', '以彩种页/投注页实时显示的赔率为准；后台配置调整后页面会同步变化，本页数字仅为当前展示值的摘录。'],
+      ['怎样算中奖与结算', '开奖后系统按注单选项自动结算，可在「投注记录」查看待结算/已结算、派彩与盈亏。'],
+      ['为什么不同彩种玩法有差异', '不同彩种的号码个数、名次和可选玩法不同；具体可选选项以该彩种页面为准。']
+    ];
+    function item(x, group) {
+      return '<article class="rule-item2" id="rule-' + group + '-' + x.id + '"><h3>' + x.name + '<span class="rule-odds">参考赔率 ' + x.odds + '</span></h3><p><b>玩法说明：</b>' + x.def + '</p><p><b class="rules-red">中奖条件：</b>' + x.win + '</p><p class="rule-ex"><b>举例：</b>' + x.ex + '</p></article>';
+    }
+    var generalHtml = general.map(function (r) { return '<p class="rules-p' + (r[2] ? ' red' : '') + '"><span class="rules-no">' + r[0] + '</span>' + r[1] + '</p>'; }).join('');
     return '<div class="rules-page"><header class="rules-top"><a class="rules-back" href="#/lotteryhall" aria-label="返回大厅">‹</a><h1>玩法说明</h1><button type="button" class="rules-menu" data-rules-menu aria-label="目录">☰</button></header>' +
+      '<nav class="rules-toc"><a href="#/rules/general">一般规则</a><a href="#/rules/six">六合彩类</a><a href="#/rules/fast">快开类</a><a href="#/rules/faq">常见问题</a></nav>' +
       '<div class="rules-sub"><h2 id="rules-general">一般规则说明</h2><a href="#/bet/fast-race-1">极速赛车 ›</a></div><div class="rules-line"></div>' +
-      '<div class="rules-body">' + body + '</div>' +
+      '<div class="rules-body">' + generalHtml + '</div>' +
+      '<section class="rules-sec2" id="rules-six"><h2>六合彩类</h2><p class="rules-lead">适用于新香港、新澳、香港等 49 号码彩种。赔率为当前页面展示值，具体以投注页为准。</p>' + six.map(function (x) { return item(x, 'six'); }).join('') + '</section>' +
+      '<section class="rules-sec2" id="rules-fast"><h2>快开类</h2><p class="rules-lead">适用于赛车、飞艇、时时彩、分分彩等按名次或和值开奖的彩种。</p>' + fast.map(function (x) { return item(x, 'fast'); }).join('') + '</section>' +
+      '<section class="rules-sec2" id="rules-faq"><h2>常见问题</h2>' + faqs.map(function (q) { return '<div class="rule-faq"><h3>' + q[0] + '</h3><p>' + q[1] + '</p></div>'; }).join('') + '</section>' +
       '<div class="rules-more" id="rules-more">更多玩法说明整理中</div>' +
       '<footer class="rules-declare"><p>本页玩法说明由公开网络资料整理而成，部分表述参考自公开的彩票资料站点；玩法规则与赔率以官方及本平台页面显示为准，本说明仅作规则解释，不构成任何投注建议。</p></footer></div>';
   }

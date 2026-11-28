@@ -1855,3 +1855,26 @@ body.dark-theme .rules-line{border-color:#2a2a2a;background:#2a2a2a}
 
 .rules-mode .appbar{display:none !important}
 .rules-page .rules-declare{background:transparent !important;border:0 !important;border-top:1px solid #eee !important;border-radius:0 !important;padding:14px 0 0 !important}
+
+/* 玩法说明：分组目录 + 各彩种玩法条目 */
+.rules-page .rules-toc{top:50px;z-index:25;border-bottom:1px solid #eee;padding:9px 0}
+.rules-page .rules-toc a{font-size:12px;padding:6px 12px}
+.rules-sec2{padding:20px 16px 4px;border-top:1px solid #f0f0f0}
+.rules-sec2>h2{font-size:18px;font-weight:800;margin:0 0 4px;color:#111}
+.rules-sec2 .rules-lead{font-size:12px;line-height:1.7;color:#888;margin:0 0 8px}
+.rule-item2{padding:13px 0;border-bottom:1px solid #f2f2f2}
+.rule-item2:last-child{border-bottom:0}
+.rule-item2 h3{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:15px;font-weight:800;margin:0 0 5px;color:#111}
+.rule-odds{font-size:11px;font-weight:600;color:#EC2829;white-space:nowrap;flex:0 0 auto}
+.rule-item2 p{font-size:14px;line-height:1.85;color:#333;margin:3px 0}
+.rule-item2 p b{color:#111}
+.rule-item2 p .rules-red,.rules-red{color:#EC2829}
+.rule-item2 .rule-ex{font-size:13px;color:#777;margin-top:6px;padding-left:8px;border-left:2px solid #f0c4c4}
+.rule-faq h3{font-size:14px;font-weight:800;margin:10px 0 3px}
+.rule-faq p{font-size:13.5px;line-height:1.85;color:#444;margin:0 0 8px}
+body.dark-theme .rule-item2 p,body.dark-theme .rule-faq p{color:#bbb}
+body.dark-theme .rule-item2 h3,body.dark-theme .rule-item2 p b{color:#fff}
+
+/* 赔率长文本换行，避免右侧被裁切 */
+.rules-page .rule-item2 h3{display:block}
+.rules-page .rule-odds{display:block;margin:2px 0 0;white-space:normal;word-break:break-word;text-align:left}
