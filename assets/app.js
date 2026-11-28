@@ -2000,7 +2000,7 @@
       '<div class="rr-issue" data-audit="title" data-hist-toggle="' + id + '">' + (/^(hk|newmo|newhk)$/.test(id) ? '上期 ' : '第 ') + shortIssue(last.issueLabel || last.issue) + ' 期开奖结果 <i class="hist-arrow">▾</i></div>' +
       '<div class="rr-nums six-rr-nums">' + balls + '</div>' +
       '<div class="rr-labels six-rr-labels">' + zods + '</div></div>' +
-      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + ((g && (g.nextIssueLabel || g.nextIssue)) || last.issue + 1) + ' 期' + (g && g.pending ? ' · 待开' : '') + '</span><span data-audit="time-row"><i>封盘时间 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
+      '<div class="rr-right" data-audit="timepanel"><div class="rr-next"><span data-audit="time-row">' + ((g && (g.nextIssueLabel || g.nextIssue)) || last.issue + 1) + ' 期' + (g && g.pending ? ' · 待开' : '') + '</span><span data-audit="time-row"><i>距开奖 ⏱</i></span></div><div class="rr-cd" data-audit="time-row" data-cd="' + id + '">' + countdownText(g) + '</div></div></div>';
     var cats = SIX_CATS.map(function (c) { return '<button type="button" class="six-cat ' + (cat === c ? 'on' : '') + '" data-six-cat="' + c + '">' + c + '</button>'; }).join('');
     var main;
     if (cat === '特码') {
@@ -2240,6 +2240,7 @@
       if (dailyCd) {
         var dg = state.games[betState.game] || {};
         var at = Number(dg.mockNext) || 0;
+        if (!at && dg.timeCfg) { var nd = nextDrawAt(dg); at = nd ? nd.getTime() : 0; }
         if (!at) dailyCd.textContent = '——';
         else {
           var dl = Math.max(0, Math.round((at - Date.now()) / 1000));
