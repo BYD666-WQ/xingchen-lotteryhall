@@ -936,6 +936,43 @@
     if (SSE.fallback) { clearInterval(SSE.fallback); SSE.fallback = null; }
     SSE.game = ''; SSE.errs = 0; SSE.degraded = false;
   }
+  var ISSUE_SYNC = {};
+  function syncIssueLight(id, force) {
+    if (!id || !window.LHAuth) return;
+    var now = Date.now();
+    if (!force && ISSUE_SYNC[id] && now - ISSUE_SYNC[id] < 8000) return;
+    if (ISSUE_SYNC[id + '_inflight']) return;
+    ISSUE_SYNC[id] = now; ISSUE_SYNC[id + '_inflight'] = 1;
+    window.LHAuth.issue(id).then(function (d) {
+      ISSUE_SYNC[id + '_inflight'] = 0;
+      var cur = d && d.issues && d.issues[0]; if (!cur) return;
+      var g = state.games[id]; if (!g) return;
+      var closeAt = cur.closeAt ? Date.parse(cur.closeAt) : 0;
+      var changed = String(g.nextIssue) !== String(cur.issue) || Number(g.mockNext) !== closeAt;
+      var issueChanged = String(g.nextIssue) !== String(cur.issue);
+      g.nextIssue = cur.issue; g.nextIssueLabel = String(cur.issue); g.mockNext = closeAt;
+      if (FAST[id]) { FAST[id].data = FAST[id].data || {}; FAST[id].data.issue = cur.issue; FAST[id].data.closeAt = cur.closeAt; FAST[id].syncedAt = Date.now(); }
+      state.win[id] = Object.assign({}, state.win[id] || {}, { open: cur.status !== 'closed', endAt: cur.closeAt || null, issue: cur.issue });
+      var cr = currentRoute();
+      if ((cr.name === 'bet' || cr.name === 'game') && cr.id === id) {
+        try { render(true); } catch (e) {}
+      }
+      if (issueChanged && window.LHAuth && window.LHAuth.results) {
+        window.LHAuth.results(id, 12).then(function (rs) {
+          var rows = (rs && rs.results) || [];
+          if (!rows.length) return;
+          var latest = rows[0];
+          if (String(latest.issue) !== String(g.last.issue)) {
+            g.last = { issue: latest.issue, nums: bootToBalls(latest.nums) };
+            g.history = rows.map(function (r) { return { issue: r.issue, nums: bootToBalls(r.nums) }; });
+            var cr2 = currentRoute();
+            if ((cr2.name === 'bet' || cr2.name === 'game') && cr2.id === id) { try { render(true); } catch (e) {} }
+          }
+        }).catch(function () {});
+      }
+      if (closeAt && closeAt <= Date.now() + 1200) setTimeout(function () { syncIssueLight(id, true); }, 1200);
+    }).catch(function () { ISSUE_SYNC[id + '_inflight'] = 0; });
+  }
   function sseConnect(game) {
     if (!game || !window.EventSource || !window.LHAuth || !/^fast-/.test(game)) { sseStop(); updateRTStatus('关'); return; }
     if (SSE.es && SSE.game === game) return;
@@ -972,7 +1009,11 @@
       var cr = currentRoute();
       if (cr.name === 'bet' || cr.name === 'game') { try { render(true); } catch (e) {} }
     });
+    SSE.es.onopen = function () {
+      if (SSE.recovering) { SSE.recovering = false; syncIssueLight(game, true); }
+    };
     SSE.es.onerror = function () {
+      SSE.recovering = true;
       SSE.errs++;
       if (SSE.errs >= 2 || (SSE.es && SSE.es.readyState === 2)) {
         try { if (SSE.es) SSE.es.close(); } catch (e) {}
@@ -988,7 +1029,7 @@
     if (g) { g.nextIssue = cur.issue || g.nextIssue; g.mockNext = cur.closeAt ? Date.parse(cur.closeAt) : g.mockNext; }
     state.win[game] = { open: true, endAt: cur.closeAt || null, nextOpenAt: nxt.openAt || null, issue: cur.issue, degraded: false };
     var cr = currentRoute();
-    if (changed && (cr.name === 'bet' || cr.name === 'game') && cr.id === game) { try { render(true); } catch (e) {} }
+    if ((cr.name === 'bet' || cr.name === 'game') && cr.id === game) { try { render(true); } catch (e) {} }
   }
   function sseFallback(game) {
     if (!game) return;
@@ -2520,6 +2561,10 @@
         var left = closeAt ? Math.max(0, Math.round((closeAt - Date.now()) / 1000)) : 0;
         // 封盘窗口：显示遮罩 + 禁用下注（无 closeAt 不进入停售）
         var closed = !!(closeAt && Date.now() >= closeAt);
+        if (closeAt && left <= 0) {
+          var zg = state.games[betState.game];
+          if (!zg || zg.__zeroFor !== closeAt) { if (zg) zg.__zeroFor = closeAt; syncIssueLight(betState.game, true); }
+        }
         if (!closeAt) {
           cdEl.textContent = '——';
         }
@@ -2954,6 +2999,16 @@
     try { refreshPoints(); } catch (e) {}
     try { loadUserBets().then(function (nb) { if (JSON.stringify(nb) !== JSON.stringify(bets)) { bets = nb; updateBetsOnly(); } }); } catch (e) {}
   }
+  var issueSyncTimer = setInterval(function () {
+    try {
+      if (document.hidden) return;
+      var r = currentRoute();
+      if ((r.name === 'bet' || r.name === 'game') && DEFS[r.id] && DEFS[r.id].mock) {
+        var g = state.games[r.id];
+        if (!g || Date.now() - (ISSUE_SYNC[r.id] || 0) > 25000) syncIssueLight(r.id);
+      }
+    } catch (e) {}
+  }, 30000);
   var pollTimer = null, pollTicks = 0;
   function pollTick() {
     if (document.hidden) return;
