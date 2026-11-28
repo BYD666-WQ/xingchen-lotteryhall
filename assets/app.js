@@ -624,11 +624,12 @@
       var rows = (res && res.leaderboard) || [];
       if (!rows.length) { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无数据</div>'; return; }
       box.innerHTML = rows.slice(0, 20).map(function (r, i) {
-        var name = esc(String(r.email || '玩家'));
+        var rawName = String(r.username || (r.user && r.user.username) || r.email || '玩家');
+        var name = esc(rawName);
         var settled = Number(r.settled) || 0, wins = Number(r.wins) || 0, net = Number(r.net) || 0;
         var rateTxt = settled ? (Math.round(wins / settled * 1000) / 10).toFixed(1) + '%' : '—';
         var netTxt = (net > 0 ? '+' : '') + fmtPoints(net);
-        return '<div class="rank-row"><span class="rank-no">' + (i + 1) + '</span><span class="avatar">' + esc(name.slice(0, 1)) + '</span><div class="rank-info"><b>' + name + '</b><span>结算 ' + settled + ' · 胜 ' + wins + '</span></div><div class="rank-val"><b>' + rateTxt + '</b><span>盈亏 ' + netTxt + '</span></div></div>';
+        return '<div class="rank-row"><span class="rank-no">' + (i + 1) + '</span>' + avatarHtml({ username: rawName, avatar: r.avatar || r.avatar_url }) + '<div class="rank-info"><b>' + name + '</b><span>结算 ' + settled + ' · 胜 ' + wins + '</span></div><div class="rank-val"><b>' + rateTxt + '</b><span>盈亏 ' + netTxt + '</span></div></div>';
       }).join('');
     }).catch(function () { box.innerHTML = '<div class="data-empty" style="padding:30px 16px">暂无数据</div>'; });
   }
@@ -645,7 +646,8 @@
     var name = u ? u.username : '游客';
     var intro = u ? '已登录 · 账户积分与注单同步云端' : '登录后可查看账户积分并体验模拟投注';
     return catTabs('') + '<div class="page-head"><div><div class="page-kicker">PROFILE</div><h1 class="page-title">我的</h1><div class="page-sub">' + (u ? '已登录 · 演示账号' : '游客模式 · 演示账号') + '</div></div></div>' +
-      '<section class="profile"><span class="avatar">' + (u ? esc(u.username.slice(0,1)) : '游') + '</span><div class="profile-main"><b>' + esc(name) + '</b><span>' + esc(intro) + '</span><span class="tag">DEMO ACCOUNT</span></div>' + (u ? '<button class="btn btn-ghost" type="button" data-logout>退出</button>' : '<a class="btn btn-primary" href="#/login">登录</a>') + '</section>' +
+      '<section class="profile"><div class="profile-avatar"><button type="button" class="avatar-btn" data-avatar-pick aria-label="设置头像">' + avatarHtml(u || { username: '游客' }, 'lg') + '<i class="avatar-edit">✎</i></button><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp" hidden></div><div class="profile-main"><b>' + esc(name) + '</b><span>' + esc(intro) + '</span><span class="tag">DEMO ACCOUNT</span></div>' + (u ? '<button class="btn btn-ghost" type="button" data-logout>退出</button>' : '<a class="btn btn-primary" href="#/login">登录</a>') + '</section>' +
+      '<div class="avatar-set"><button type="button" class="btn btn-ghost" data-avatar-pick>设置头像</button><span>JPG / PNG / WebP · 自动压到 300KB 内</span></div><div id="avatarMsg" class="avatar-msg"></div>' +
       '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务；账户积分与注单存储在云端。</span></div>' +
       '<div class="menu"><button class="menu-row" type="button" data-demo="安全中心为演示入口"><span class="menu-ico">⌁</span><span class="txt">安全中心</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="消息中心为演示入口"><span class="menu-ico">◌</span><span class="txt">消息中心</span><em>0 条</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="客服为演示入口"><span class="menu-ico">?</span><span class="txt">帮助与客服</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="关于页面：演示站点，数据来自主站只读接口"><span class="menu-ico">i</span><span class="txt">关于本站</span><em>v0.4</em><span class="arrow">›</span></button></div>' +
       '<div class="mini-note">这是纯展示空壳站，不提供真实账号、交易或下注服务。</div>';
@@ -702,8 +704,73 @@
     return s.slice(0, 24);
   }
   function emailFor(name) { var s = String(name || '').toLowerCase().replace(/[^a-z0-9._-]/g, ''); if (!s) s = 'u' + Array.from(String(name || 'user')).map(function (c) { return c.codePointAt(0).toString(36); }).join('').slice(0, 20); return s + '@lottery-demo.com'; }
-  function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.name || awUser.email || '', id:awUser.$id, email:awUser.email || '' } : null; }
+  function currentUser() { return awUser && awRow ? { username:awRow.username || awUser.name || awUser.email || '', id:awUser.$id, email:awUser.email || '', avatar:awUser.avatar || '' } : null; }
   function saveAccounts() {}
+  function avatarSrc(a) {
+    var s = String(a || ''); if (!s) return '';
+    if (/^(https?:|data:|blob:)/i.test(s)) return s;
+    var b = (window.LHAuth && window.LHAuth.base) || '';
+    return b + (s.charAt(0) === '/' ? s : '/' + s);
+  }
+  function avatarHtml(u, cls) {
+    var name = String((u && (u.username || u.name)) || '');
+    var src = avatarSrc(u && (u.avatar || u.avatar_url));
+    if (src) return '<span class="avatar ' + (cls || '') + ' has-img"><img src="' + esc(src) + '" alt=""></span>';
+    return '<span class="avatar ' + (cls || '') + '">' + esc((name || '玩').slice(0, 1).toUpperCase()) + '</span>';
+  }
+  function avatarMsg(text, bad) {
+    var el = document.getElementById('avatarMsg');
+    if (el) { el.textContent = text || ''; el.className = 'avatar-msg' + (bad ? ' bad' : ''); }
+    else if (text) { try { showToast(text); } catch (e) {} }
+  }
+  function loadImageFile(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('IMAGE')); };
+      img.src = url;
+    });
+  }
+  function canvasBlob(canvas, q) { return new Promise(function (resolve) { canvas.toBlob(resolve, 'image/jpeg', q); }); }
+  async function compressAvatar(file) {
+    if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) { var e1 = new Error('FORMAT'); e1.code = 'FORMAT'; throw e1; }
+    if (file.size > 8 * 1024 * 1024) { var e2 = new Error('TOO_BIG'); e2.code = 'TOO_BIG'; throw e2; }
+    var img = await loadImageFile(file), max = 512;
+    for (var attempt = 0; attempt < 5; attempt++) {
+      var scale = Math.min(1, max / Math.max(img.width, img.height));
+      var w = Math.max(1, Math.round(img.width * scale)), h = Math.max(1, Math.round(img.height * scale));
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      var ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+      for (var q = 0.9; q >= 0.5; q -= 0.1) {
+        var blob = await canvasBlob(c, q);
+        if (blob && blob.size <= 300 * 1024) { blob.__dataUrl = c.toDataURL('image/jpeg', q); return blob; }
+      }
+      max = Math.floor(max * 0.75);
+    }
+    var e3 = new Error('TOO_BIG'); e3.code = 'TOO_BIG'; throw e3;
+  }
+  async function uploadAvatar(file) {
+    var u = currentUser();
+    if (!u) { avatarMsg('请先登录后再设置头像', true); return; }
+    avatarMsg('正在压缩并上传…');
+    try {
+      var blob = await compressAvatar(file);
+      var fd = new FormData(); fd.append('avatar', blob, 'avatar.jpg');
+      var token = localStorage.getItem('lh-auth-token-v1');
+      var res = await fetch(window.LHAuth.base + '/api/me/avatar', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+      var data = {}; try { data = await res.json(); } catch (e0) {}
+      if (!res.ok) { var err = new Error('HTTP'); err.status = res.status; err.code = String(data && data.error || ''); throw err; }
+      var url = (data && (data.avatar || data.url)) || (data && data.user && (data.user.avatar || data.user.avatar_url)) || '';
+      if (!url) { var e4 = new Error('NO_URL'); e4.code = 'NO_URL'; throw e4; }
+      awUser.avatar = url;
+      updateUserChip(); render(true);
+      try { showToast('头像已更新'); } catch (e5) {}
+    } catch (e) {
+      var map = { FORMAT: '仅支持 JPG / PNG / WebP 图片', TOO_BIG: '图片压缩后仍超过 300KB，请换一张', NO_URL: '上传失败（服务端未返回头像地址）' };
+      var msg = map[e.code] || (e.status === 401 ? '登录已过期，请重新登录' : (e.status === 413 ? '图片太大，请换一张' : (e.status === 415 ? '图片格式不支持' : '上传失败，请稍后重试')));
+      avatarMsg(msg, true);
+    }
+  }
   function updateUserChip() {
     var b = $('#userChip'); if (!b) return;
     var u = currentUser();
@@ -836,7 +903,7 @@
   }
   function applyUser(u) {
     var uname = String((u && (u.username || u.email)) || '');
-    awUser = { $id: (u && u.id) || '', email: String((u && u.email) || ''), name: uname };
+    awUser = { $id: (u && u.id) || '', email: String((u && u.email) || ''), name: uname, avatar: (u && (u.avatar || u.avatar_url)) || '' };
     var bal = Number(u && u.balance);
     awRow = { $id: (u && u.id) || '', username: uname, points: isFinite(bal) ? bal : 0 };
     points = awRow.points;
@@ -1227,7 +1294,8 @@
     var name = u ? u.username : '游客';
     var intro = u ? '已登录 · 账户积分与注单同步云端' : '登录后可查看账户积分并体验模拟投注';
     return catTabs('') + '<div class="page-head"><div><div class="page-kicker">PROFILE</div><h1 class="page-title">我的</h1><div class="page-sub">' + (u ? '已登录 · 演示账号' : '游客模式 · 演示账号') + '</div></div></div>' +
-      '<section class="profile"><span class="avatar">' + (u ? esc(u.username.slice(0,1)) : '游') + '</span><div class="profile-main"><b>' + esc(name) + '</b><span>' + esc(intro) + '</span><span class="tag">DEMO ACCOUNT</span></div>' + (u ? '<button class="btn btn-ghost" type="button" data-logout>退出</button>' : '<a class="btn btn-primary" href="#/login">登录</a>') + '</section>' +
+      '<section class="profile"><div class="profile-avatar"><button type="button" class="avatar-btn" data-avatar-pick aria-label="设置头像">' + avatarHtml(u || { username: '游客' }, 'lg') + '<i class="avatar-edit">✎</i></button><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp" hidden></div><div class="profile-main"><b>' + esc(name) + '</b><span>' + esc(intro) + '</span><span class="tag">DEMO ACCOUNT</span></div>' + (u ? '<button class="btn btn-ghost" type="button" data-logout>退出</button>' : '<a class="btn btn-primary" href="#/login">登录</a>') + '</section>' +
+      '<div class="avatar-set"><button type="button" class="btn btn-ghost" data-avatar-pick>设置头像</button><span>JPG / PNG / WebP · 自动压到 300KB 内</span></div><div id="avatarMsg" class="avatar-msg"></div>' +
       '<div class="demo-account-note"><b>演示账户</b><span>本站不提供真实交易、账户或提现服务；账户积分与注单存储在云端。</span></div>' +
       '<div class="menu"><button class="menu-row" type="button" data-demo="安全中心为演示入口"><span class="menu-ico">⌁</span><span class="txt">安全中心</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="消息中心为演示入口"><span class="menu-ico">◌</span><span class="txt">消息中心</span><em>0 条</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="客服为演示入口"><span class="menu-ico">?</span><span class="txt">帮助与客服</span><em>演示</em><span class="arrow">›</span></button><button class="menu-row" type="button" data-demo="关于页面：演示站点，数据来自主站只读接口"><span class="menu-ico">i</span><span class="txt">关于本站</span><em>v0.4</em><span class="arrow">›</span></button></div>' +
       '<div class="mini-note">这是纯展示空壳站，不提供真实账号、交易或下注服务。</div>';
@@ -2179,7 +2247,14 @@
       '<div class="fast-loading" data-fast-loading="' + esc(id) + '"><div class="fl-title">第 <b>——</b> 期开奖结果</div><div class="fl-balls">' + boxes + '</div><div class="fl-note">正在获取最新开奖数据…</div></div>';
   }
   function betPage(id) {
-    if (/^(hk|newmo|newhk)$/.test(id)) syncDailyIssue(id);
+    var def0 = DEFS[id] || DEFS.newhk;
+    if (!def0.mock && /^(hk|newmo|newhk)$/.test(id)) {
+      var dg0 = state.games[id];
+      if (!dg0 || !dg0.last || !(dg0.last.nums || []).length) {
+        loadData(true, true);
+        return betZeroBanner() + fastLoadingPage(id, def0);
+      }
+    }
     var prevGame = betState.game;
     var switching = prevGame !== id;
     if (switching) {
@@ -2447,6 +2522,13 @@
     }
     updatePointsUI();
   }
+  document.addEventListener('click', function (e) {
+    var pick = e.target.closest('[data-avatar-pick]');
+    if (pick) { e.preventDefault(); var inp = document.getElementById('avatarFile'); if (inp) inp.click(); }
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'avatarFile' && e.target.files && e.target.files[0]) uploadAvatar(e.target.files[0]);
+  });
   document.addEventListener('input', function (e) {
     if (e.target && e.target.id === 'betQty') {
       betState.qty = String(e.target.value || '').replace(/[^\d.]/g, '');
