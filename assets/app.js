@@ -359,9 +359,10 @@
     if (!winClosed(id)) return '';
     return '<div class="win-closed" data-win-banner="' + id + '"><b>' + winCloseText(id) + '</b><span data-win-cd>--:--</span></div>';
   }
-  // 新后端：GET /api/issues?game=xxx 返回 {issues:[当期,下一期]}；拿不到静默跳过。
+  // 只有 ISSUE_INTERVALS 里的快开彩种才请求新后端；每日彩种仍用 GitHub 数据 + 本地倒计时。
+  function isFastIssueGame(id) { return /^fast-/.test(String(id || '')); }
   function syncIssueWindow(id) {
-    if (!window.LHAuth) return Promise.resolve();
+    if (!isFastIssueGame(id) || !window.LHAuth) return Promise.resolve();
     return window.LHAuth.issue(id).then(function (d) {
       var cur = d && d.issues && d.issues[0];
       if (!cur) return;
@@ -709,8 +710,10 @@
       if (!isFinite(t)) t = Date.now();
       var prev = bets.filter(function (x) { return String(x.id) === String(r.id); })[0];
       var cat = r.cancelled_at || (prev && prev.cancelledAt) || null;
-      var pay = Number(r.payout) || 0;
-      return { id: r.id, game: r.game, targetIssue: r.issue, placedIssue: r.issue, qty: 1, cost: amount, notes: 0, selections: picks, picksText: '', labels: '', status: r.status || 'pending', payout: pay, profit: (r.status === 'settled' || r.status === 'win') ? pay - amount : 0, created: t, settledAt: r.settled_at || null, cancelledAt: cat };
+      var hasPay = r.payout != null && r.payout !== '';
+      var pay = hasPay ? Number(r.payout) : null;
+      var settled = r.status === 'settled' || r.status === 'win';
+      return { id: r.id, game: r.game, targetIssue: r.issue, placedIssue: r.issue, qty: 1, cost: amount, notes: 0, selections: picks, picksText: '', labels: '', status: r.status || 'pending', payout: (hasPay && isFinite(pay)) ? pay : null, profit: (settled && hasPay && isFinite(pay)) ? pay - amount : null, created: t, settledAt: r.settled_at || null, cancelledAt: cat };
     });
   }
   async function loadGameConfigs() {
@@ -1369,7 +1372,10 @@
     if (b.status === 'cancelled') return { cls: 'cancel', text: '已撤单' };
     if (b.status === 'win') return { cls: 'win', text: '已中奖' };
     if (b.status === 'lose') return { cls: 'lose', text: '未中奖' };
-    if (b.status === 'settled') return Number(b.payout) > 0 ? { cls: 'win', text: '已中奖' } : { cls: 'lose', text: '未中奖' };
+    if (b.status === 'settled') {
+      if (b.payout == null) return { cls: 'lose', text: '已结算' };
+      return Number(b.payout) > 0 ? { cls: 'win', text: '已中奖' } : { cls: 'lose', text: '未中奖' };
+    }
     return { cls: 'pending', text: '待结算' };
   }
   function betRangeStart(range) {
@@ -1425,9 +1431,12 @@
     var stake = Number(b.cost) || 0, pay = Number(b.payout) || 0;
     var payHtml = '<b class="max muted">—</b>', pfHtml = '<b class="max muted">—</b>';
     if (b.status === 'settled') {
-      var pf = (b.profit == null ? pay - stake : Number(b.profit)) || 0;
-      payHtml = '<b class="' + (pay > 0 ? 'pos' : 'max') + '">' + betMoney(pay) + '</b>';
-      pfHtml = '<b class="' + (pf > 0 ? 'pos' : (pf < 0 ? 'neg' : 'max')) + '">' + (pf > 0 ? '+' : '') + betMoney(pf) + '</b>';
+      if (b.payout == null) { payHtml = '<b class="max muted">—</b>'; pfHtml = '<b class="max muted">—</b>'; }
+      else {
+        var pf = (b.profit == null ? pay - stake : Number(b.profit)) || 0;
+        payHtml = '<b class="' + (pay > 0 ? 'pos' : 'max') + '">' + betMoney(pay) + '</b>';
+        pfHtml = '<b class="' + (pf > 0 ? 'pos' : (pf < 0 ? 'neg' : 'max')) + '">' + (pf > 0 ? '+' : '') + betMoney(pf) + '</b>';
+      }
     } else if (b.status === 'cancelled') {
       pfHtml = '<b class="max">0</b>';
     }
