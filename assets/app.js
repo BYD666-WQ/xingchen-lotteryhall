@@ -1432,7 +1432,7 @@
       pfHtml = '<b class="max">0</b>';
     }
     var when;
-    if (b.status === 'settled' && b.settledAt) when = '结算 ' + fmtSettled(b.settledAt);
+    if (b.status === 'settled') when = b.settledAt ? ('结算 ' + fmtSettled(b.settledAt)) : '已结算';
     else if (b.status === 'cancelled') when = '撤单' + (b.cancelledAt ? ' ' + fmtSettled(b.cancelledAt) : '') + ' · 退回 ' + betMoney(stake) + ' 积分';
     else when = '投注 ' + (b.created ? fmtSettled(b.created) : '—');
     var act = '';
