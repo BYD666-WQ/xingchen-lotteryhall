@@ -60,7 +60,7 @@
     { t: '图谱', icon: 'chart', i: '谱', c: '#6e8ee8', action: '图谱为演示入口，暂未开放' },
     { t: '排行榜', icon: 'rank', i: '榜', c: 'linear-gradient(135deg,#ff6a6e,#dc3c41)', href: '#/rank' },
     { t: '资料', icon: 'book', i: '资', c: '#3e9fe0', action: '资料库为演示入口，暂未开放' },
-    { t: '玩法说明', icon: 'rules', i: '规', c: '#58b5a6', href: '#/howto' },
+    { t: '玩法说明', icon: 'rules', i: '规', c: '#58b5a6', href: '#/rules' },
     { t: '客服', icon: 'support', i: '服', c: '#4f8fe0', action: '客服为演示入口' },
     { t: '活动', icon: 'activity', i: '活', c: 'linear-gradient(135deg,#ff686b,#dc3c41)', action: '活动为演示入口，不产生真实奖励' }
   ];
@@ -575,7 +575,7 @@
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + esc(String(h.issue)) + ' 期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
     return zeroTip + '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
       '<section class="detail-head"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><div><div class="page-kicker">' + def.name + ' · 实时数据</div><h1 class="page-title">' + def.name + '开奖</h1><div class="page-sub">' + esc(def.desc) + '</div></div></section>' +
-      '<div class="detail-actions"><a class="action-btn action-primary" href="#/bet/' + id + '">立即投注</a><a class="action-btn action-ghost" href="#/howto">玩法说明</a></div>' +
+      '<div class="detail-actions"><a class="action-btn action-primary" href="#/bet/' + id + '">立即投注</a><a class="action-btn action-ghost" href="#/rules">玩法说明</a></div>' +
       '<section class="detail-last"><div class="detail-label">上期开奖 <span>第 ' + shortIssue(last.issue) + ' 期</span></div><div class="detail-balls">' + balls(last.nums) + '</div><div class="wave-legend"><span><i class="r"></i>红波</span><span><i class="b"></i>蓝波</span><span><i class="g"></i>绿波</span><span class="special-legend">+ 后为特码</span></div></section>' +
       '<section class="next-card"><div><span>下期开奖</span><b>第 ' + shortIssue(g.nextIssue) + ' 期</b><em>' + (intervalLabel(id) || (g.timeCfg && g.timeCfg.time) || '实时') + (id === 'hk' ? ' · 周日' : ' · 每日') + '</em></div><strong data-cd="' + id + '">' + countdownText(g) + '</strong></section>' +
       '<div class="section"><div class="section-head"><h2 class="section-title">波色 / 生肖统计</h2><span class="section-link">近 10 期</span></div><div class="trend-panel">' + gameStats(g) + '</div></div>' +
@@ -984,7 +984,7 @@
     { t: '图谱', icon: 'chart', i: '谱', c: '#6e8ee8', action: '图谱为演示入口，暂未开放' },
     { t: '排行榜', icon: 'rank', i: '榜', c: 'linear-gradient(135deg,#ff6a6e,#dc3c41)', href: '#/rank' },
     { t: '资料', icon: 'book', i: '资', c: '#3e9fe0', action: '资料库为演示入口，暂未开放' },
-    { t: '玩法说明', icon: 'rules', i: '规', c: '#58b5a6', href: '#/howto' },
+    { t: '玩法说明', icon: 'rules', i: '规', c: '#58b5a6', href: '#/rules' },
     { t: '客服', icon: 'support', i: '服', c: '#4f8fe0', action: '客服为演示入口' },
     { t: '活动', icon: 'activity', i: '活', c: 'linear-gradient(135deg,#ff686b,#dc3c41)', action: '活动为演示入口，不产生真实奖励' }
   ];
@@ -1247,7 +1247,7 @@
     var rows = hist.map(function (h) { return '<div class="detail-hist-row"><span class="dh-iss">' + esc(String(h.issue)) + ' 期</span><span class="dh-balls">' + balls(h.nums, true) + '</span></div>'; }).join('') || '<div class="data-empty">暂无历史数据</div>';
     return '<a class="back-link" href="#/lotteryhall">‹ 返回大厅</a>' +
       '<section class="detail-head"><span class="game-circle" style="--gc:' + def.color + '">' + def.icon + '</span><div><div class="page-kicker">' + def.name + ' · 实时数据</div><h1 class="page-title">' + def.name + '开奖</h1><div class="page-sub">' + esc(def.desc) + '</div></div></section>' +
-      '<div class="detail-actions"><a class="action-btn action-primary" href="#/bet/' + id + '">立即投注</a><a class="action-btn action-ghost" href="#/howto">玩法说明</a></div>' +
+      '<div class="detail-actions"><a class="action-btn action-primary" href="#/bet/' + id + '">立即投注</a><a class="action-btn action-ghost" href="#/rules">玩法说明</a></div>' +
       '<section class="detail-last"><div class="detail-label">上期开奖 <span>第 ' + shortIssue(last.issue) + ' 期</span></div><div class="detail-balls">' + balls(last.nums) + '</div><div class="wave-legend"><span><i class="r"></i>红波</span><span><i class="b"></i>蓝波</span><span><i class="g"></i>绿波</span><span class="special-legend">+ 后为特码</span></div></section>' +
       '<section class="next-card"><div><span>下期开奖</span><b>第 ' + shortIssue(g.nextIssue) + ' 期</b><em>' + (intervalLabel(id) || (g.timeCfg && g.timeCfg.time) || '实时') + (id === 'hk' ? ' · 周日' : ' · 每日') + '</em></div><strong data-cd="' + id + '">' + countdownText(g) + '</strong></section>' +
       '<div class="section"><div class="section-head"><h2 class="section-title">波色 / 生肖统计</h2><span class="section-link">近 10 期</span></div><div class="trend-panel">' + gameStats(g) + '</div></div>' +
@@ -1329,8 +1329,8 @@
   var bets = [];
   function pointsBar() {
     var u = currentUser();
-    if (!u) return '<div class="points-bar guest"><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/howto">玩法说明</a></div>';
-    return '<div class="points-bar"><span>账户余额</span><b data-points-value>' + fmtPoints(points) + '</b><span class="rt-status">演示账户</span><a class="points-help" href="#/howto">玩法说明</a></div>';
+    if (!u) return '<div class="points-bar guest"><a class="points-login" href="#/login">登录</a><a class="points-help" href="#/rules">玩法说明</a></div>';
+    return '<div class="points-bar"><span>账户余额</span><b data-points-value>' + fmtPoints(points) + '</b><span class="rt-status">演示账户</span><a class="points-help" href="#/rules">玩法说明</a></div>';
   }
   function updatePointsUI() { $$('[data-points-value]').forEach(function (el) { el.textContent = fmtPoints(points); }); }
   function attrFor(n) { return state.attrs[parseInt(n,10)] || { z:'', color:colorOf(n) }; }
@@ -1338,7 +1338,7 @@
   function selectedCount() { return Object.keys(betState.sel).length; }
   function totalNotes() { var q = parseInt(betState.qty, 10); return (isFinite(q) && q > 0) ? selectedCount() * q : 0; }
   function totalCost() { return totalNotes(); }
-  function betHelp(cat) { return '<a class="help-link" href="#/howto/' + cat + '" aria-label="玩法说明">?</a>'; }
+  function betHelp(cat) { return '<a class="help-link" href="#/rules/' + cat + '" aria-label="玩法说明">?</a>'; }
   function zodiacGrid(prefix, odds) {
     return '<div class="zodiac-grid">' + ZODIACS.map(function (z) {
       var key = prefix + '-' + z;
@@ -1922,9 +1922,17 @@
       '<div class="race-balance"><span>余额：<b>' + fmtPoints(points) + '</b> 积分</span><span class="rb-robot">🤖 机器选号</span><span class="rb-single"><i class="on"></i>快捷<i></i>一般</span></div>';
   }
   function menuHtml() {
-    return ['投注记录: bets','玩法说明: howto','历史开奖: history','出码排行: rank','切换主题: theme','音效切换: sound','开奖网: open'].map(function (x) {
+    return ['投注记录: bets','玩法说明: rules','历史开奖: history','出码排行: rank','切换主题: theme','音效切换: sound','开奖网: open'].map(function (x) {
       var parts = x.split(': '); return '<button type="button" class="drop-item" data-menu="' + parts[1] + '">' + parts[0] + '</button>';
     }).join('');
+  }
+  function openRulesToc(anchor) {
+    var old = document.querySelector('[data-drop-card]'); if (old) old.parentNode.removeChild(old.parentNode);
+    var a = anchor ? anchor.getBoundingClientRect() : { right: innerWidth - 10, bottom: 60 };
+    var w = 210, left = Math.max(8, Math.min(innerWidth - w - 8, a.right - w));
+    var box = document.createElement('div'); box.className = 'drop-wrap';
+    box.innerHTML = '<div class="drop-backdrop" data-menu-close></div><aside class="drop-card" data-drop-card style="left:' + left + 'px;top:' + Math.round(a.bottom + 6) + 'px;width:' + w + 'px"><button type="button" class="drop-item" data-rule-jump="rules-general">一般规则说明</button><button type="button" class="drop-item" data-rule-jump="rules-more">更多玩法说明整理中</button></aside>';
+    document.body.appendChild(box);
   }
   function openMenu(anchor) {
     var old = document.querySelector('[data-drop-card]'); if (old) old.parentNode.removeChild(old.parentNode);
@@ -2303,7 +2311,7 @@
   }
   function howtoPage(anchor) {
     var active = anchor || 'special';
-    var nav = HOWTO.map(function (h) { return '<a class="' + (h.id === active ? 'on' : '') + '" href="#/howto/' + h.id + '">' + h.name + '</a>'; }).join('');
+    var nav = HOWTO.map(function (h) { return '<a class="' + (h.id === active ? 'on' : '') + '" href="#/rules/' + h.id + '">' + h.name + '</a>'; }).join('');
     var blocks = HOWTO.map(function (h) {
       return '<section class="howto-block" id="howto-' + h.id + '"><div class="howto-head"><h2>' + h.name + '</h2><span>演示赔率 ' + h.odds + '</span></div><p><b>规则：</b>' + h.rule + '</p><p><b>举例：</b>' + h.example + '</p><a class="howto-back" href="#/bet/newhk">去模拟投注 →</a></section>';
     }).join('');
@@ -2319,13 +2327,37 @@
   function soonPage(title, note) { return '<div class="page-head"><div><div class="page-kicker">COMING SOON</div><h1 class="page-title">' + title + '</h1><div class="page-sub">' + note + '</div></div></div><div class="data-empty" style="padding:40px 20px">该板块为演示占位，待接入后开放。</div>'; }
   function galleryPage() { return soonPage('49 图库', 'Demo · 图库待接入'); }
   function supportPage() { return soonPage('客服', 'Demo · 在线客服待接入'); }
-  var ROUTES = { lotteryhall: hallPage, history: historyPage, trend: trendPage, rank: rankPage, bets: betsPage, me: mePage, points: mePage, gallery: galleryPage, support: supportPage };
-  var TITLES = { lotteryhall: '彩票大厅', history: '开奖记录', trend: '号码走势', rank: '高手排行', bets: '投注记录', me: '我的', points: '我的积分', gallery: '49图库', support: '客服', howto: '玩法说明', login: '登录' };
+  function rulesPage(anchor) {
+    var list = [
+      [1,'客户一经在本公司开户或投注，即被视为已接受这些规则。',0],
+      [2,'如果客户怀疑自己的资料被盗用，应立即通知本公司，并更改个人详细资料，且之前所使用的使用者名称及密码将全部无效。',0],
+      [3,'客户有责任确保自己的账户及登入资料的保密性。在本网站上以个人的使用者名称及密码进行的任何网上投注将被视为有效。',0],
+      [4,'为了避免出现争议，请务必在下注之后检查「下注状况」。',0],
+      [5,'不论任何原因，开奖之后所接受的投注，将一律被视为「无效」。',1],
+      [6,'任何的投诉必须在开奖之前提出，本公司将不会受理任何开奖之后的投诉。',0],
+      [7,'公布的投注时间、项目及赔率出现任何打字错误或非故意人为失误，本公司将保留改正错误和按正确搅珠时间、赔率结算注单的权力。',0],
+      [8,'公布之所有赔率为浮动赔率，派彩时的赔率将以本公司确认投注时之赔率计算。',0],
+      [9,'如本公司察觉客户投注状况异常时，有权及时终止客户投注并删除不正常注单；在本公司终止下注前，客户所有正常投注仍属有效，不得要求取消、延迟交收及不得有任何异议。',0],
+      [10,'如因在本网站投注触犯当地法律，本公司概不负责。',0],
+      [11,'敬请注意！本公司各游戏项目，开奖时间若有延后，本公司保留期数及注单至隔日早上 09:00；保留期间内若有开奖，一切以下注之期数为主；若无开奖，本公司将期数及注单全部取消，如有不便敬请见谅！',1]
+    ];
+    var body = list.map(function (r) {
+      return '<p class="rules-p' + (r[2] ? ' red' : '') + '"><span class="rules-no">' + r[0] + '</span>' + r[1] + '</p>';
+    }).join('');
+    return '<div class="rules-page"><header class="rules-top"><a class="rules-back" href="#/lotteryhall" aria-label="返回大厅">‹</a><h1>玩法说明</h1><button type="button" class="rules-menu" data-rules-menu aria-label="目录">☰</button></header>' +
+      '<div class="rules-sub"><h2 id="rules-general">一般规则说明</h2><a href="#/bet/fast-race-1">极速赛车 ›</a></div><div class="rules-line"></div>' +
+      '<div class="rules-body">' + body + '</div>' +
+      '<div class="rules-more" id="rules-more">更多玩法说明整理中</div>' +
+      '<footer class="rules-declare"><p>本页玩法说明由公开网络资料整理而成，部分表述参考自公开的彩票资料站点；玩法规则与赔率以官方及本平台页面显示为准，本说明仅作规则解释，不构成任何投注建议。</p></footer></div>';
+  }
+  var ROUTES = { lotteryhall: hallPage, history: historyPage, trend: trendPage, rank: rankPage, bets: betsPage, me: mePage, points: mePage, gallery: galleryPage, support: supportPage, rules: rulesPage };
+  var TITLES = { lotteryhall: '彩票大厅', history: '开奖记录', trend: '号码走势', rank: '高手排行', bets: '投注记录', me: '我的', points: '我的积分', gallery: '49图库', support: '客服', howto: '玩法说明', rules: '玩法说明', login: '登录' };
   function currentRoute() {
     var h = String(location.hash || '').replace(/^#\/?/, ''), parts = h.split('/');
     if (parts[0] === 'game' && DEFS[parts[1]]) return { name: 'game', id: parts[1] };
     if (parts[0] === 'bet' && DEFS[parts[1]]) return { name: 'bet', id: parts[1] };
     if (parts[0] === 'howto') return { name: 'howto', anchor: parts[1] || '' };
+    if (parts[0] === 'rules') return { name: 'rules', anchor: parts[1] || '' };
     if (parts[0] === 'login') return { name: 'login', id: null };
     return { name: ROUTES[parts[0]] ? parts[0] : 'lotteryhall', id: null };
   }
@@ -2441,6 +2473,7 @@
     } else { LAST_BET_ROUTE = ''; }
     if (r.name === 'bet') betState.game = r.id;
     document.body.classList.toggle('bet-mode', r.name === 'bet');
+    document.body.classList.toggle('rules-mode', r.name === 'rules');
     document.body.classList.toggle('race-mode', r.name === 'bet' && !!DEFS[r.id] && !!DEFS[r.id].racing);
     try {
       if (r.name === 'game') view.innerHTML = gamePage(r.id);
@@ -2448,6 +2481,7 @@
         view.innerHTML = betPage(r.id); updateBetBar();
       }
       else if (r.name === 'howto') view.innerHTML = howtoPage(r.anchor);
+      else if (r.name === 'rules') view.innerHTML = rulesPage(r.anchor);
       else if (r.name === 'login') view.innerHTML = loginPage();
       else if (r.name === 'rank') { view.innerHTML = rankPage(); loadRankLive(); }
       else view.innerHTML = ROUTES[r.name] ? ROUTES[r.name]() : hallPage();
@@ -2460,6 +2494,7 @@
     var ttl = r.name === 'game' ? DEFS[r.id].name + '开奖' : (r.name === 'bet' ? (DEFS[r.id].name + '模拟投注') : (r.name === 'howto' ? '玩法说明' : (r.name === 'login' ? '登录 / 注册' : TITLES[r.name])));
     document.title = ttl + ' · 彩票大厅（演示）';
     if (!keepScroll) {
+      if (r.name === 'rules' && r.anchor) setTimeout(function () { var el = document.getElementById('rules-' + r.anchor); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); else window.scrollTo(0, 0); }, 60);
       if (r.name === 'howto' && r.anchor) setTimeout(function () { var el = document.getElementById('howto-' + r.anchor); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); else window.scrollTo(0, 0); }, 30);
       else window.scrollTo(0, 0);
     }
@@ -2600,6 +2635,9 @@
       if (act === 'open') { window.open('https://byd666-wq.github.io/xingchen-caixun/', '_blank'); return; }
       location.hash = '#/' + act; return;
     }
+    if (e.target.closest('[data-rules-menu]')) { openRulesToc(e.target.closest('[data-rules-menu]')); return; }
+    var rj = e.target.closest('[data-rule-jump]');
+    if (rj) { var rid2 = rj.getAttribute('data-rule-jump'); closeMenu(); var rel = document.getElementById(rid2); if (rel) rel.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     if (e.target.closest('.race-menu')) { openMenu(e.target.closest('.race-menu')); return; }
     if (e.target.closest('.race-help')) { openMenu(e.target.closest('.race-help')); return; }
     var soon = e.target.closest('[data-soon]'); if (soon) { e.preventDefault(); showModal(soon.getAttribute('data-soon') + ' 暂未接入，敬请期待'); return; }
