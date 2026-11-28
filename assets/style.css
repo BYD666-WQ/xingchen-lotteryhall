@@ -1749,3 +1749,29 @@ body.dark-theme .k3-cd{color:#ff6b6b !important;}
 body.dark-theme .k3-history{background:#1b1b1b;border-color:#2a2a2a}
 body.dark-theme .k3-hist-row{border-top-color:#2a2a2a}
 body.dark-theme .k3-hist-issue{color:#eaeaea}
+
+/* ==== 新香港六合彩「装修」：与赛车/快三统一版式（2026-11-28） ==== */
+.six-head{height:2.8271rem !important;padding:0 12px !important;font-size:1.17rem !important}
+.six-result{background:#fff !important;padding:0 !important;border-bottom:1px solid #e5e5e5 !important}
+.six-main{background:#fff !important}
+/* 结果区 7 球与赛车结果同尺寸 */
+.six-rr-nums{gap:0.1299rem !important}
+.six-ball{width:1.5596rem !important;height:1.5596rem !important;font-size:.91rem !important;box-sizing:border-box;border:1px solid rgba(0,0,0,.32);box-shadow:inset 0 2px 2px rgba(255,255,255,.55),inset 0 -3px 4px rgba(0,0,0,.30)}
+.six-zods{gap:0.1299rem !important;height:1.72rem !important}
+.six-zods i{width:1.5596rem !important;font-size:.85rem !important}
+/* 左侧玩法栏与赛车同宽/同选中态 */
+.six-cats{width:6.0498rem !important;flex:0 0 6.0498rem !important}
+.six-cat{width:6.0498rem !important;height:2.6621rem !important;font-size:1.0075rem !important;padding-left:.845rem !important;border-left:3px solid transparent;}
+.six-cat.on{background:#fff !important;color:#EC2829 !important;font-weight:800;border-left:3px solid #EC2829;}
+/* 玩法标题：左对齐小节头，不再居中大白条 */
+.six-title{height:2.4rem !important;justify-content:flex-start !important;text-align:left;padding-left:.8rem;font-weight:800;font-size:1.05rem;color:#222;background:#fff !important;border-bottom:1px solid #f2f2f2 !important;}
+/* 号码格/选项：与 rank-cell 同一套细边框 + 方形号码块 */
+.six-grid{background:#fff !important}
+.six-cell{height:3.44rem !important;padding-left:1rem !important;gap:.6rem !important;justify-content:flex-start !important;border-right:0 !important;border-bottom:1px solid #f4dede !important;}
+.six-cell:nth-child(3n){border-right:0 !important}
+.six-cell .six-ball{width:1.88475rem !important;height:1.88475rem !important;border-radius:.13rem !important;font-size:1.1rem !important;box-shadow:inset 0 -2px 3px rgba(0,0,0,.22),inset 0 2px 2px rgba(255,255,255,.28)}
+.six-opt{height:3.44rem !important;padding:0 1rem !important;border-right:0 !important;border-bottom:1px solid #f4dede !important;}
+.six-opt:nth-child(3n){border-right:0 !important}
+/* 生肖筛选条：白底红字下划线，与主 tab 一致 */
+.six-zodiac-strip{border-bottom:1px solid #f2f2f2 !important;background:#fff !important}
+.six-ztab.on{background:#fff !important;color:#EC2829 !important;border-bottom:2px solid #EC2829;font-weight:800;}
