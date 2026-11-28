@@ -1727,3 +1727,11 @@ body.dark-theme .k3-cd{color:#ff6b6b !important;}
 
 /* 注册：确认密码不一致时按钮禁用态 */
 .auth-submit[disabled]{opacity:.55;pointer-events:none;cursor:not-allowed}
+
+/* 快开历史：10 个号码球一行放得下（390/320 不横向溢出） */
+.hh-ball{width:25px;height:25px;font-size:11px}
+@media(max-width:360px){
+  .hh-issue{width:78px;flex-basis:78px;font-size:12px}
+  .hh-ball{width:20px;height:20px;font-size:10px}
+  .hh-cells{gap:1px}
+}
