@@ -89,16 +89,36 @@
     } catch (e) { return null; }
   }
   function issueNo(v) { var n = parseInt(v, 10); return isFinite(n) ? n : null; }
+  // 与主站一致的 mdCompat：兼容 current/history 新结构 + 顶层 issue/nums 旧结构
   function parseManual(manual, now) {
     if (!manual) return null;
-    var hist = (manual.history || []).map(function (h) { var n = normNums(h.nums); return n.length === 7 ? { issue: issueNo(h.issue), nums: n } : null; }).filter(Boolean).sort(function (a, b) { return b.issue - a.issue; });
-    var cur = manual.current || {}, curNums = normNums(cur.nums), visible = cur.visibleFrom ? Date.parse(cur.visibleFrom) : 0;
-    if (curNums.length < 7 && cur.numsEnc && (!visible || visible <= now)) { var d = vfDec(cur.numsEnc); if (d) curNums = normNums(d); }
-    var last, nextIssue;
-    if (curNums.length === 7) {
+    var nowMs = now || Date.now();
+    function pubOk(x) {
+      if (!x) return false;
+      var vis = x.visibleFrom ? Date.parse(x.visibleFrom) : 0;
+      var pub = x.publishedAt ? Date.parse(x.publishedAt) : 0;
+      return !!(pub || !vis || vis <= nowMs);
+    }
+    var hist = (manual.history || []).map(function (h) {
+      var n = normNums(h && h.nums);
+      return n.length === 7 ? { issue: issueNo(h.issue), nums: n, raw: h } : null;
+    }).filter(function (h) { return h && h.issue && pubOk(h.raw); }).sort(function (a, b) { return b.issue - a.issue; });
+    hist = hist.map(function (h) { return { issue: h.issue, nums: h.nums }; });
+    var cur = manual.current || {}, curNums = normNums(cur.nums);
+    if (curNums.length < 7 && cur.numsEnc && pubOk(cur)) { var d = vfDec(cur.numsEnc); if (d) curNums = normNums(d); }
+    var last = null, nextIssue = null;
+    if (curNums.length === 7 && pubOk(cur)) {
       last = { issue: issueNo(cur.issue), nums: curNums }; nextIssue = last.issue + 1;
       hist = [{ issue: last.issue, nums: last.nums }].concat(hist.filter(function (h) { return h.issue !== last.issue; }));
-    } else { last = hist[0] || null; nextIssue = cur.issue ? issueNo(cur.issue) : (last ? last.issue + 1 : null); }
+    } else {
+      last = hist[0] || null;
+      nextIssue = cur.issue ? issueNo(cur.issue) : (last ? last.issue + 1 : null);
+    }
+    // 旧结构兜底：顶层 {issue, nums}
+    if (!last && manual.issue != null && manual.nums) {
+      var on = normNums(manual.nums);
+      if (on.length === 7) { last = { issue: issueNo(manual.issue), nums: on }; nextIssue = last.issue + 1; hist = [{ issue: last.issue, nums: on }].concat(hist); }
+    }
     var seen = {};
     hist = hist.filter(function (h) { if (seen[h.issue]) return false; seen[h.issue] = 1; return true; }).slice(0, 20);
     return { last: last, nextIssue: nextIssue, history: hist };
@@ -175,6 +195,10 @@
       setData(manual, draw, cfg, attrs);
       if (!silent) showToast('数据已更新');
       if (!soft) render(true);
+      else {
+        var cr = currentRoute();
+        if ((cr.name === 'bet' || cr.name === 'game') && cr.id && DEFS[cr.id] && !DEFS[cr.id].mock) render(true);
+      }
     }).catch(function (e) {
       state.error = String(e && e.message || e); if (!soft && !state.games.newhk && !state.games.newmo && !state.games.hk) render(true); if (!silent) showToast('刷新失败，稍后重试');
     }).then(function () { state.loading = false; setRefreshBusy(false); });
@@ -910,16 +934,36 @@
     } catch (e) { return null; }
   }
   function issueNo(v) { var n = parseInt(v, 10); return isFinite(n) ? n : null; }
+  // 与主站一致的 mdCompat：兼容 current/history 新结构 + 顶层 issue/nums 旧结构
   function parseManual(manual, now) {
     if (!manual) return null;
-    var hist = (manual.history || []).map(function (h) { var n = normNums(h.nums); return n.length === 7 ? { issue: issueNo(h.issue), nums: n } : null; }).filter(Boolean).sort(function (a, b) { return b.issue - a.issue; });
-    var cur = manual.current || {}, curNums = normNums(cur.nums), visible = cur.visibleFrom ? Date.parse(cur.visibleFrom) : 0;
-    if (curNums.length < 7 && cur.numsEnc && (!visible || visible <= now)) { var d = vfDec(cur.numsEnc); if (d) curNums = normNums(d); }
-    var last, nextIssue;
-    if (curNums.length === 7) {
+    var nowMs = now || Date.now();
+    function pubOk(x) {
+      if (!x) return false;
+      var vis = x.visibleFrom ? Date.parse(x.visibleFrom) : 0;
+      var pub = x.publishedAt ? Date.parse(x.publishedAt) : 0;
+      return !!(pub || !vis || vis <= nowMs);
+    }
+    var hist = (manual.history || []).map(function (h) {
+      var n = normNums(h && h.nums);
+      return n.length === 7 ? { issue: issueNo(h.issue), nums: n, raw: h } : null;
+    }).filter(function (h) { return h && h.issue && pubOk(h.raw); }).sort(function (a, b) { return b.issue - a.issue; });
+    hist = hist.map(function (h) { return { issue: h.issue, nums: h.nums }; });
+    var cur = manual.current || {}, curNums = normNums(cur.nums);
+    if (curNums.length < 7 && cur.numsEnc && pubOk(cur)) { var d = vfDec(cur.numsEnc); if (d) curNums = normNums(d); }
+    var last = null, nextIssue = null;
+    if (curNums.length === 7 && pubOk(cur)) {
       last = { issue: issueNo(cur.issue), nums: curNums }; nextIssue = last.issue + 1;
       hist = [{ issue: last.issue, nums: last.nums }].concat(hist.filter(function (h) { return h.issue !== last.issue; }));
-    } else { last = hist[0] || null; nextIssue = cur.issue ? issueNo(cur.issue) : (last ? last.issue + 1 : null); }
+    } else {
+      last = hist[0] || null;
+      nextIssue = cur.issue ? issueNo(cur.issue) : (last ? last.issue + 1 : null);
+    }
+    // 旧结构兜底：顶层 {issue, nums}
+    if (!last && manual.issue != null && manual.nums) {
+      var on = normNums(manual.nums);
+      if (on.length === 7) { last = { issue: issueNo(manual.issue), nums: on }; nextIssue = last.issue + 1; hist = [{ issue: last.issue, nums: on }].concat(hist); }
+    }
     var seen = {};
     hist = hist.filter(function (h) { if (seen[h.issue]) return false; seen[h.issue] = 1; return true; }).slice(0, 20);
     return { last: last, nextIssue: nextIssue, history: hist };
@@ -996,6 +1040,10 @@
       setData(manual, draw, cfg, attrs);
       if (!silent) showToast('数据已更新');
       if (!soft) render(true);
+      else {
+        var cr = currentRoute();
+        if ((cr.name === 'bet' || cr.name === 'game') && cr.id && DEFS[cr.id] && !DEFS[cr.id].mock) render(true);
+      }
     }).catch(function (e) {
       state.error = String(e && e.message || e); if (!soft && !state.games.newhk && !state.games.newmo && !state.games.hk) render(true); if (!silent) showToast('刷新失败，稍后重试');
     }).then(function () { state.loading = false; setRefreshBusy(false); });
