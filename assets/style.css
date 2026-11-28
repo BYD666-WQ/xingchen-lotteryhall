@@ -1775,3 +1775,11 @@ body.dark-theme .k3-hist-issue{color:#eaeaea}
 /* 生肖筛选条：白底红字下划线，与主 tab 一致 */
 .six-zodiac-strip{border-bottom:1px solid #f2f2f2 !important;background:#fff !important}
 .six-ztab.on{background:#fff !important;color:#EC2829 !important;border-bottom:2px solid #EC2829;font-weight:800;}
+
+/* 快开彩种进入时加载骨架：先占位，API 返回后再渲染真实数据 */
+.fast-loading{padding:24px 16px;background:#fff;min-height:320px;}
+.fast-loading .fl-title{font-size:15px;font-weight:800;color:#B00016;text-align:center;margin-bottom:14px;}
+.fast-loading .fl-balls{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:18px;}
+.fast-loading .fl-ball{width:26px;height:26px;border-radius:3px;background:#eee;display:inline-block;animation:fl-pulse 1s ease-in-out infinite;}
+.fast-loading .fl-note{text-align:center;font-size:12px;color:#999;}
+@keyframes fl-pulse{0%,100%{opacity:.45}50%{opacity:.9}}
